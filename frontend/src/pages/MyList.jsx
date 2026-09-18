@@ -31,8 +31,6 @@ export default function MyList() {
 
   useEffect(() => { refresh(); }, []);
 
-  // Update the entry in place — no refetch, so the list never reorders
-  // out from under you while you're mid-edit (that was the rating bug).
   function updateLocal(id, patch) {
     setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)));
   }
@@ -40,6 +38,15 @@ export default function MyList() {
   async function persist(id, patch) {
     await api.updateEntry(id, patch);
     refreshStats();
+  }
+
+  function handleStatusChange(entry, status) {
+    const patch = { status };
+    if (status === 'completed' && entry.total_episodes) {
+      patch.episodes_watched = entry.total_episodes;
+    }
+    updateLocal(entry.id, patch);
+    persist(entry.id, patch);
   }
 
   async function removeEntry(id) {
@@ -86,17 +93,12 @@ export default function MyList() {
           <div>
             <h3>{entry.title}</h3>
             <div className="meta">
-              Ep {entry.episodes_watched}
-              {entry.total_episodes ? ` / ${entry.total_episodes}` : ''}
+              {entry.total_episodes ? `of ${entry.total_episodes} episodes` : 'Episode count unknown'}
             </div>
           </div>
           <select
             value={entry.status}
-            onChange={(e) => {
-              const status = e.target.value;
-              updateLocal(entry.id, { status });
-              persist(entry.id, { status });
-            }}
+            onChange={(e) => handleStatusChange(entry, e.target.value)}
           >
             {TABS.filter((t) => t.key !== 'all').map((t) => (
               <option key={t.key} value={t.key}>{t.label}</option>
@@ -105,10 +107,27 @@ export default function MyList() {
           <input
             type="number"
             min="0"
+            max={entry.total_episodes || undefined}
+            value={entry.episodes_watched ?? 0}
+            title="Episodes watched"
+            style={{ width: 56 }}
+            onChange={(e) => {
+              const value = e.target.value;
+              updateLocal(entry.id, { episodes_watched: value === '' ? 0 : Number(value) });
+            }}
+            onBlur={(e) => {
+              const value = e.target.value;
+              persist(entry.id, { episodes_watched: value === '' ? 0 : Number(value) });
+            }}
+          />
+          <input
+            type="number"
+            min="0"
             max="10"
             value={entry.score ?? ''}
             placeholder="Score"
-            style={{ width: 60 }}
+            title="Your score"
+            style={{ width: 56 }}
             onChange={(e) => {
               const value = e.target.value;
               updateLocal(entry.id, { score: value === '' ? null : Number(value) });
