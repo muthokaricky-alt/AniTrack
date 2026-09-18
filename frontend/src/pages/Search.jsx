@@ -5,19 +5,21 @@ import AnimeCard from '../components/AnimeCard.jsx';
 export default function Search() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  async function handleSearch(e) {
-    e.preventDefault();
-    if (!query.trim()) return;
+  async function runSearch(targetPage) {
     setLoading(true);
     setSearched(true);
     setErrorMessage('');
     try {
-      const data = await api.searchAnime(query);
+      const data = await api.searchAnime(query, targetPage);
       setResults(data.data || []);
+      setHasNextPage(Boolean(data.pagination?.has_next_page));
+      setPage(targetPage);
     } catch (err) {
       setResults([]);
       setErrorMessage(
@@ -28,6 +30,12 @@ export default function Search() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleSearch(e) {
+    e.preventDefault();
+    if (!query.trim()) return;
+    runSearch(1);
   }
 
   return (
@@ -54,6 +62,14 @@ export default function Search() {
       <div className="anime-grid">
         {results.map((a) => <AnimeCard key={a.mal_id} anime={a} />)}
       </div>
+
+      {!loading && !errorMessage && results.length > 0 && (
+        <div className="pagination-bar">
+          <button disabled={page <= 1} onClick={() => runSearch(page - 1)}>← Previous</button>
+          <span>Page {page}</span>
+          <button disabled={!hasNextPage} onClick={() => runSearch(page + 1)}>Next →</button>
+        </div>
+      )}
     </>
   );
 }
