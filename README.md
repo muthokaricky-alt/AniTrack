@@ -3,6 +3,8 @@
 A personal anime watchlist tracker, in the spirit of MyAnimeList. Search the
 anime catalog, log what you're watching, rate and review, and see your stats.
 
+![AniTrack homepage](./homepage.png)
+
 ## Stack
 
 - **Frontend**: React 18 + Vite, React Router, plain CSS (no framework)
