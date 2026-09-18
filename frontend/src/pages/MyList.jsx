@@ -24,16 +24,28 @@ export default function MyList() {
     setLoading(false);
   }
 
+  async function refreshStats() {
+    const statData = await api.getStats();
+    setStats(statData);
+  }
+
   useEffect(() => { refresh(); }, []);
 
-  async function updateEntry(id, patch) {
+  // Update the entry in place — no refetch, so the list never reorders
+  // out from under you while you're mid-edit (that was the rating bug).
+  function updateLocal(id, patch) {
+    setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)));
+  }
+
+  async function persist(id, patch) {
     await api.updateEntry(id, patch);
-    refresh();
+    refreshStats();
   }
 
   async function removeEntry(id) {
     await api.removeEntry(id);
-    refresh();
+    setEntries((prev) => prev.filter((e) => e.id !== id));
+    refreshStats();
   }
 
   const visible = tab === 'all' ? entries : entries.filter((e) => e.status === tab);
@@ -64,7 +76,7 @@ export default function MyList() {
 
       {visible.length === 0 && (
         <div className="empty-state">
-          Nothing here yet. <Link to="/search" style={{ borderBottom: '1px solid var(--stamp)' }}>Search for something to add</Link>.
+          Nothing here yet. <Link to="/search" style={{ borderBottom: '1px solid var(--accent)' }}>Search for something to add</Link>.
         </div>
       )}
 
@@ -78,7 +90,14 @@ export default function MyList() {
               {entry.total_episodes ? ` / ${entry.total_episodes}` : ''}
             </div>
           </div>
-          <select value={entry.status} onChange={(e) => updateEntry(entry.id, { status: e.target.value })}>
+          <select
+            value={entry.status}
+            onChange={(e) => {
+              const status = e.target.value;
+              updateLocal(entry.id, { status });
+              persist(entry.id, { status });
+            }}
+          >
             {TABS.filter((t) => t.key !== 'all').map((t) => (
               <option key={t.key} value={t.key}>{t.label}</option>
             ))}
@@ -90,7 +109,14 @@ export default function MyList() {
             value={entry.score ?? ''}
             placeholder="Score"
             style={{ width: 60 }}
-            onChange={(e) => updateEntry(entry.id, { score: Number(e.target.value) || null })}
+            onChange={(e) => {
+              const value = e.target.value;
+              updateLocal(entry.id, { score: value === '' ? null : Number(value) });
+            }}
+            onBlur={(e) => {
+              const value = e.target.value;
+              persist(entry.id, { score: value === '' ? null : Number(value) });
+            }}
           />
           <button className="nav-user-btn" onClick={() => removeEntry(entry.id)}>Remove</button>
         </div>

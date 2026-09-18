@@ -166,11 +166,19 @@ h1, h2, h3 {
 }
 
 .brand-mark {
-  display: inline-block;
-  width: 20px;
-  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
   background: linear-gradient(135deg, var(--accent), var(--accent-hover));
-  border-radius: 6px;
+  border-radius: 7px;
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 16px;
+  color: #ffffff;
+  box-shadow: var(--shadow-sm);
 }
 
 .nav-links {

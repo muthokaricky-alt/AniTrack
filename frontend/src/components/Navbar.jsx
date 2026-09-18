@@ -24,7 +24,7 @@ export default function Navbar() {
   return (
     <nav className="navbar">
       <Link to="/" className="brand">
-        <span className="brand-mark" />
+        <span className="brand-mark">A</span>
         AniTrack
       </Link>
       <div className="nav-links">
