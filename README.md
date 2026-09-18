@@ -69,5 +69,6 @@ App runs on `http://localhost:5173` and proxies `/api` calls to the backend.
 - Reviews page showing all your written reviews
 - Public profile pages (shareable list)
 - Automatic retry on transient Jikan/MAL failures
+- In future, add some manga option too- to also track manga read 
 - Character and staff pages (Jikan supports these too)
 - Rate-limit-aware request queue for Jikan (currently a simple 5-min cache)
