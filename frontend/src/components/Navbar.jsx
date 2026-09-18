@@ -1,10 +1,23 @@
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+
+function getInitialTheme() {
+  const saved = localStorage.getItem('anitrack_theme');
+  if (saved === 'light' || saved === 'dark') return saved;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const [theme, setTheme] = useState(getInitialTheme);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('anitrack_theme', theme);
+  }, [theme]);
 
   const isActive = (path) => (pathname === path ? 'active' : '');
 
@@ -25,6 +38,13 @@ export default function Navbar() {
         ) : (
           <Link to="/login" className="nav-user-btn" style={{ display: 'inline-block' }}>Log in</Link>
         )}
+        <button
+          className="theme-toggle"
+          onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {theme === 'dark' ? '☀️' : '🌙'}
+        </button>
       </div>
     </nav>
   );
