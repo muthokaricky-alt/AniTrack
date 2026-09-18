@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client.js';
 import AnimeCard from '../components/AnimeCard.jsx';
+  import SkeletonGrid from '../components/SkeletonGrid.jsx';
 
 export default function Home() {
   const [top, setTop] = useState([]);
@@ -33,7 +34,7 @@ export default function Home() {
         </div>
       </section>
 
-      {loading && <p>Loading catalog…</p>}
+       {loading && <SkeletonGrid count={12} />}
 
       {!loading && seasonal.length > 0 && (
         <>

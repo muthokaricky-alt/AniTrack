@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api } from '../api/client.js';
 import AnimeCard from '../components/AnimeCard.jsx';
+  import SkeletonGrid from '../components/SkeletonGrid.jsx';
 
 export default function Search() {
   const [query, setQuery] = useState('');
@@ -52,7 +53,7 @@ export default function Search() {
         <button type="submit">Search</button>
       </form>
 
-      {loading && <p>Searching…</p>}
+        {loading && <SkeletonGrid count={8} />}
       {!loading && errorMessage && (
         <div className="empty-state">{errorMessage}</div>
       )}
