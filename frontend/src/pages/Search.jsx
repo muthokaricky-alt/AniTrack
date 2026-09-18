@@ -7,17 +7,24 @@ export default function Search() {
   const [results, setResults] = useState([]);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   async function handleSearch(e) {
     e.preventDefault();
     if (!query.trim()) return;
     setLoading(true);
     setSearched(true);
+    setErrorMessage('');
     try {
       const data = await api.searchAnime(query);
       setResults(data.data || []);
-    } catch {
+    } catch (err) {
       setResults([]);
+      setErrorMessage(
+        err.message === 'Failed to reach anime data source'
+          ? 'The anime database is temporarily unavailable — try again shortly.'
+          : 'Something went wrong while searching. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
@@ -38,7 +45,10 @@ export default function Search() {
       </form>
 
       {loading && <p>Searching…</p>}
-      {!loading && searched && results.length === 0 && (
+      {!loading && errorMessage && (
+        <div className="empty-state">{errorMessage}</div>
+      )}
+      {!loading && !errorMessage && searched && results.length === 0 && (
         <div className="empty-state">Nothing matched that title. Try another spelling.</div>
       )}
       <div className="anime-grid">
