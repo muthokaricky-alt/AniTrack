@@ -92,10 +92,12 @@ export default function MyList() {
           {entry.image_url && <img src={entry.image_url} alt={entry.title} />}
           <div>
             <h3>{entry.title}</h3>
-            <div className="meta">
-              {entry.total_episodes ? `of ${entry.total_episodes} episodes` : 'Episode count unknown'}
-            </div>
           </div>
+
+          <div className="meta">
+  {entry.total_episodes ? `of ${entry.total_episodes} episodes` : 'Episode count unknown'}
+</div>
+
           <select
             value={entry.status}
             onChange={(e) => handleStatusChange(entry, e.target.value)}
