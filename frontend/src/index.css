@@ -559,7 +559,7 @@ h1, h2, h3 {
 /* ===== List rows ===== */
 .list-row {
   display: grid;
-  grid-template-columns: 52px 1fr auto auto auto auto;
+  grid-template-columns: 52px 1fr auto auto auto auto ;
   gap: 16px;
   align-items: center;
   padding: 14px 16px;

@@ -1,0 +1,17 @@
+# Dependencies
+**/node_modules/
+
+# Build output
+frontend/dist/
+
+# Database temporary files
+backend/*.db-shm
+backend/*.db-wal
+
+# Environment files
+**/.env
+**/.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
