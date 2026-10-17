@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useList } from '../context/ListContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 import { useReveal } from '../lib/useReveal.js';
 import { ScrollTrigger } from '../lib/gsap.js';
 import { getLenis } from '../components/SmoothScroll.jsx';
@@ -72,6 +73,7 @@ function HowItWorks() {
 function ContinueWatching({ entries }) {
   const root = useRef(null);
   const { updateEntry } = useList();
+  const toast = useToast();
   useReveal(root, '.cw-row', [entries.length]);
   return (
     <section className="paper" ref={root}>
@@ -94,7 +96,7 @@ function ContinueWatching({ entries }) {
                 <button
                   className="btn btn-dark btn-sm"
                   disabled={total ? next > total : false}
-                  onClick={() => updateEntry(e.id, { episodes_watched: next }).catch(() => {})}
+                  onClick={() => updateEntry(e.id, { episodes_watched: next }).catch((err) => toast(err.message, 'error'))}
                 >
                   + Ep {next}
                 </button>

@@ -2,12 +2,16 @@ import { Component } from 'react';
 import { Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import { ListProvider } from './context/ListContext.jsx';
+import { MangaListProvider } from './context/MangaListContext.jsx';
+import { ToastProvider } from './context/ToastContext.jsx';
 import SmoothScroll from './components/SmoothScroll.jsx';
 import Navbar from './components/Navbar.jsx';
 import Home from './pages/Home.jsx';
 import Search from './pages/Search.jsx';
 import AnimeDetail from './pages/AnimeDetail.jsx';
 import MyList from './pages/MyList.jsx';
+import Schedule from './pages/Schedule.jsx';
+import Manga from './pages/Manga.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 
@@ -73,7 +77,10 @@ function Shell() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/search" element={<Search />} />
-          <Route path="/anime/:id" element={<AnimeDetail />} />
+          <Route path="/schedule" element={<Schedule />} />
+          <Route path="/anime/:id" element={<AnimeDetail kind="anime" />} />
+          <Route path="/manga" element={<Manga />} />
+          <Route path="/manga/:id" element={<AnimeDetail kind="manga" />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/my-list" element={<PrivateRoute><MyList /></PrivateRoute>} />
@@ -90,7 +97,11 @@ export default function App() {
   return (
     <AuthProvider>
       <ListProvider>
-        <Shell />
+        <MangaListProvider>
+          <ToastProvider>
+            <Shell />
+          </ToastProvider>
+        </MangaListProvider>
       </ListProvider>
     </AuthProvider>
   );

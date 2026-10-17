@@ -29,7 +29,10 @@ async function request(path, options = {}) {
     // Token expired or invalid: sign the user out everywhere
     window.dispatchEvent(new Event('anitrack:unauthorized'));
   }
-  if (!res.ok) throw new Error(data.error || 'Request failed');
+  if (!res.ok) {
+    if (data.detail) console.warn(`API detail (${path}):`, data.detail); // the upstream reason for a 502
+    throw new Error(data.error || 'Request failed');
+  }
   return data;
 }
 
@@ -37,7 +40,13 @@ export const api = {
   register: (body) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
   login: (body) => request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
 
-  searchAnime: (q, page = 1) => request(`/anime/search?q=${encodeURIComponent(q)}&page=${page}`),
+  searchAnime: (q, page = 1, genre = '') => {
+    const params = new URLSearchParams({ page: String(page) });
+    if (q) params.set('q', q);
+    if (genre) params.set('genre', genre);
+    return request(`/anime/search?${params}`);
+  },
+  schedule: (from, to) => request(`/anime/schedule?from=${from}&to=${to}`),
   topAnime: (page = 1) => request(`/anime/top?page=${page}`),
   seasonalAnime: () => request('/anime/season/now'),
   animeDetail: (id) => request(`/anime/${id}`),
@@ -45,5 +54,28 @@ export const api = {
   getList: () => request('/list'),
   addToList: (body) => request('/list', { method: 'POST', body: JSON.stringify(body) }),
   updateEntry: (id, body) => request(`/list/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-  removeEntry: (id) => request(`/list/${id}`, { method: 'DELETE' })
+  removeEntry: (id) => request(`/list/${id}`, { method: 'DELETE' }),
+  importList: (entries) => request('/list/import', { method: 'POST', body: JSON.stringify({ entries }) }),
+
+  searchManga: (q, page = 1, genre = '') => {
+    const params = new URLSearchParams({ page: String(page) });
+    if (q) params.set('q', q);
+    if (genre) params.set('genre', genre);
+    return request(`/manga/search?${params}`);
+  },
+  topManga: (page = 1) => request(`/manga/top?page=${page}`),
+  trendingManga: () => request('/manga/trending'),
+  mangaDetail: (id) => request(`/manga/${id}`),
+
+  // The anime list and the manga list share the same operations on different endpoints
+  list: (kind) => {
+    const base = kind === 'manga' ? '/manga-list' : '/list';
+    return {
+      get: () => request(base),
+      add: (body) => request(base, { method: 'POST', body: JSON.stringify(body) }),
+      update: (id, body) => request(`${base}/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+      remove: (id) => request(`${base}/${id}`, { method: 'DELETE' }),
+      import: (entries) => request(`${base}/import`, { method: 'POST', body: JSON.stringify({ entries }) })
+    };
+  }
 };

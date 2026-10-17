@@ -42,8 +42,10 @@ export default function Navbar() {
         <span className="brand-name">ANITRACK</span>
       </Link>
       <nav className="nav-links" aria-label="Main">
-        <NavLink to="/" end>Browse</NavLink>
+        <NavLink to="/" end className="nav-home">Browse</NavLink>
         <NavLink to="/search">Search</NavLink>
+        <NavLink to="/schedule">Schedule</NavLink>
+        <NavLink to="/manga">Manga</NavLink>
         {user && <NavLink to="/my-list">My List</NavLink>}
       </nav>
       <div className="nav-end">

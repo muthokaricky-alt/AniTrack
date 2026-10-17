@@ -6,4 +6,51 @@ export const STATUSES = [
   { key: 'plan_to_watch', label: 'Plan to watch' }
 ];
 
-export const STATUS_LABEL = Object.fromEntries(STATUSES.map((s) => [s.key, s.label]));
+export const MANGA_STATUSES = [
+  { key: 'reading', label: 'Reading' },
+  { key: 'completed', label: 'Completed' },
+  { key: 'on_hold', label: 'On hold' },
+  { key: 'dropped', label: 'Dropped' },
+  { key: 'plan_to_read', label: 'Plan to read' }
+];
+
+export const STATUS_LABEL = Object.fromEntries([...STATUSES, ...MANGA_STATUSES].map((s) => [s.key, s.label]));
+
+// Everything that differs between the anime list and the manga list lives here
+export const KINDS = {
+  anime: {
+    key: 'anime',
+    path: '/anime',
+    name: 'Anime',
+    statuses: STATUSES,
+    activeStatus: 'watching',
+    defaultStatus: 'plan_to_watch',
+    planLabel: 'Plan to watch',
+    progress: 'episodes_watched', // field on a list entry
+    total: 'total_episodes', // field on a list entry
+    totalProp: 'episodes', // field on a catalogue item
+    unit: 'Episodes',
+    unitShort: 'EP',
+    progressLabel: 'Episodes watched'
+  },
+  manga: {
+    key: 'manga',
+    path: '/manga',
+    name: 'Manga',
+    statuses: MANGA_STATUSES,
+    activeStatus: 'reading',
+    defaultStatus: 'plan_to_read',
+    planLabel: 'Plan to read',
+    progress: 'chapters_read',
+    total: 'total_chapters',
+    totalProp: 'chapters',
+    unit: 'Chapters',
+    unitShort: 'CH',
+    progressLabel: 'Chapters read'
+  }
+};
+
+export const GENRES = [
+  'Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Horror', 'Mahou Shoujo', 'Mecha', 'Music',
+  'Mystery', 'Psychological', 'Romance', 'Sci-Fi', 'Slice of Life', 'Sports', 'Supernatural', 'Thriller'
+];

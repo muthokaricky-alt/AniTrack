@@ -2,11 +2,18 @@ import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useList } from '../context/ListContext.jsx';
-import { STATUS_LABEL } from '../constants.js';
+import { useMangaList } from '../context/MangaListContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
+import { STATUS_LABEL, KINDS } from '../constants.js';
 
-export default function AnimeCard({ anime, rank }) {
+// Works for anime and manga: pass kind="manga" for manga items
+export default function AnimeCard({ anime, rank, kind = 'anime' }) {
   const { user } = useAuth();
-  const { byMalId, addToList } = useList();
+  const animeList = useList();
+  const mangaList = useMangaList();
+  const { byMalId, addToList } = kind === 'manga' ? mangaList : animeList;
+  const cfg = KINDS[kind];
+  const toast = useToast();
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
   const image = anime.images?.jpg?.image_url;
@@ -19,16 +26,20 @@ export default function AnimeCard({ anime, rank }) {
     setSaving(true);
     setFailed(false);
     try {
-      await addToList(anime, 'plan_to_watch', { keepExisting: true });
-    } catch {
+      await addToList(anime, cfg.defaultStatus, { keepExisting: true });
+      toast(`Added “${anime.title}” to ${cfg.planLabel}`);
+    } catch (err) {
       setFailed(true);
+      toast(err.message || 'Could not add that title', 'error');
     } finally {
       setSaving(false);
     }
   }
 
+  const count = anime[cfg.totalProp];
+
   return (
-    <Link to={`/anime/${anime.mal_id}`} className="anime-card">
+    <Link to={`${cfg.path}/${anime.mal_id}`} className="anime-card">
       <div className="poster">
         {image ? <img src={image} alt="" loading="lazy" draggable="false" /> : <div className="img-fallback">No image</div>}
         {rank != null && <span className="rank" aria-label={`Rank ${rank}`}>{rank}</span>}
@@ -42,8 +53,8 @@ export default function AnimeCard({ anime, rank }) {
             className={`quick-add ${failed ? 'failed' : ''}`}
             onClick={quickAdd}
             disabled={saving}
-            aria-label={`Add ${anime.title} to Plan to Watch`}
-            title={failed ? 'Could not add. Click to retry' : 'Add to Plan to Watch'}
+            aria-label={`Add ${anime.title} to ${cfg.planLabel}`}
+            title={failed ? 'Could not add. Click to retry' : `Add to ${cfg.planLabel}`}
           >
             {saving ? '…' : failed ? '!' : '+'}
           </button>
@@ -52,7 +63,7 @@ export default function AnimeCard({ anime, rank }) {
       <div className="card-meta">
         <h3>{anime.title}</h3>
         <p>
-          {anime.type || 'TV'} · {anime.episodes ?? '?'} EP
+          {anime.type || (kind === 'manga' ? 'MANGA' : 'TV')} · {count ?? '?'} {cfg.unitShort}
           {anime.score != null && <b> · ★ {Number(anime.score).toFixed(1)}</b>}
         </p>
       </div>

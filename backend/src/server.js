@@ -5,8 +5,10 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.js';
-import listRoutes from './routes/lists.js';
+import listRoutes, { mangaListRoutes } from './routes/lists.js';
 import animeRoutes from './routes/anime.js';
+import mangaRoutes from './routes/manga.js';
+import { rateLimit } from './middleware/rateLimit.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -21,14 +23,32 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'change_this_to_a_long
 }
 
 const app = express();
+app.disable('x-powered-by');
+app.set('trust proxy', 1); // behind Render's proxy, so req.ip is the real client
+app.use((req, res, next) => {
+  res.set({
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'SAMEORIGIN',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+  });
+  next();
+});
 app.use(cors({ origin: process.env.CORS_ORIGIN || true }));
+app.use(['/api/list/import', '/api/manga-list/import'], express.json({ limit: '2mb' })); // list backups can be large
 app.use(express.json({ limit: '100kb' }));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
-app.use('/api/auth', authRoutes);
+app.use(
+  '/api/auth',
+  rateLimit({ windowMs: 15 * 60 * 1000, max: 30, message: 'Too many login attempts. Try again in a few minutes.' }),
+  authRoutes
+);
 app.use('/api/list', listRoutes);
+app.use('/api/manga-list', mangaListRoutes);
 app.use('/api/anime', animeRoutes);
+app.use('/api/manga', mangaRoutes);
 app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
 
 // In production the Express server also serves the built React app,

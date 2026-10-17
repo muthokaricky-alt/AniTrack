@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useList } from '../context/ListContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 import { gsap, useGSAP, prefersReducedMotion } from '../lib/gsap.js';
 
 const INTERVAL = 7000;
@@ -10,6 +11,7 @@ const INTERVAL = 7000;
 export default function Spotlight({ items }) {
   const { user } = useAuth();
   const { byMalId, addToList } = useList();
+  const toast = useToast();
   const root = useRef(null);
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -46,8 +48,9 @@ export default function Spotlight({ items }) {
     setBusy(true);
     try {
       await addToList(a, 'plan_to_watch', { keepExisting: true });
-    } catch {
-      /* the card shows nothing new; user can retry */
+      toast(`Added “${a.title}” to Plan to watch`);
+    } catch (err) {
+      toast(err.message || 'Could not add that title', 'error');
     } finally {
       setBusy(false);
     }

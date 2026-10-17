@@ -3,13 +3,40 @@ import { useParams, Link } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useList } from '../context/ListContext.jsx';
-import { STATUSES } from '../constants.js';
+import { useMangaList } from '../context/MangaListContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
+import { KINDS } from '../constants.js';
 import { gsap, ScrollTrigger, useGSAP } from '../lib/gsap.js';
+import AnimeCard from '../components/AnimeCard.jsx';
 
-export default function AnimeDetail() {
+// "Episode 7 airs in 2d 4h 10m", refreshed every 30 seconds
+function Countdown({ at, episode }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(id);
+  }, []);
+  const secs = Math.max(0, at - Math.floor(now / 1000));
+  const d = Math.floor(secs / 86400);
+  const h = Math.floor((secs % 86400) / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  return (
+    <div className="d-next">
+      <dt>Episode {episode} airs in</dt>
+      <dd>{d > 0 ? `${d}d ` : ''}{h}h {m}m</dd>
+    </div>
+  );
+}
+
+// Serves /anime/:id and /manga/:id
+export default function AnimeDetail({ kind = 'anime' }) {
+  const cfg = KINDS[kind];
   const { id } = useParams();
   const { user } = useAuth();
-  const { byMalId, addToList, updateEntry, removeEntry } = useList();
+  const animeList = useList();
+  const mangaList = useMangaList();
+  const { byMalId, addToList, updateEntry, removeEntry } = kind === 'manga' ? mangaList : animeList;
+  const toast = useToast();
   const root = useRef(null);
   const [anime, setAnime] = useState(null);
   const [error, setError] = useState('');
@@ -22,12 +49,11 @@ export default function AnimeDetail() {
     setAnime(null);
     setError('');
     setExpanded(false);
-    api
-      .animeDetail(id)
+    (kind === 'manga' ? api.mangaDetail(id) : api.animeDetail(id))
       .then((res) => !cancelled && setAnime(res.data))
       .catch((e) => !cancelled && setError(e.message));
     return () => { cancelled = true; };
-  }, [id]);
+  }, [id, kind]);
 
   // Intro stagger + slow parallax on the banner
   useGSAP(
@@ -44,15 +70,15 @@ export default function AnimeDetail() {
         ScrollTrigger.refresh();
       });
     },
-    { scope: root, dependencies: [anime?.mal_id] }
+    { scope: root, dependencies: [anime?.mal_id, kind] }
   );
 
   if (error) {
     return (
       <div className="wrap page-pad">
         <div className="empty-state">
-          <p>{error === 'Anime not found' ? "We couldn't find that anime." : error}</p>
-          <Link to="/search" className="btn btn-line">Back to search</Link>
+          <p>{/not found/i.test(error) ? "We couldn't find that one." : error}</p>
+          <Link to={kind === 'manga' ? '/manga' : '/search'} className="btn btn-line">Back to {kind === 'manga' ? 'manga' : 'search'}</Link>
         </div>
       </div>
     );
@@ -63,14 +89,17 @@ export default function AnimeDetail() {
   const image = anime.images?.jpg?.image_url;
   const synopsis = anime.synopsis || 'No synopsis available.';
   const long = synopsis.length > 420;
+  const total = anime[cfg.totalProp];
 
-  async function run(action) {
+  async function run(action, success) {
     setSaving(true);
     setActionError('');
     try {
       await action();
+      if (success) toast(success);
     } catch (e) {
       setActionError(e.message);
+      toast(e.message, 'error');
     } finally {
       setSaving(false);
     }
@@ -93,7 +122,9 @@ export default function AnimeDetail() {
 
           <dl className="d-facts d-in">
             <div><dt>Score</dt><dd>{anime.score ?? '—'}</dd></div>
-            <div><dt>Episodes</dt><dd>{anime.episodes ?? '?'}</dd></div>
+            <div><dt>{cfg.unit}</dt><dd>{total ?? '?'}</dd></div>
+            {kind === 'manga' && anime.volumes && <div><dt>Volumes</dt><dd>{anime.volumes}</dd></div>}
+            {kind === 'anime' && anime.next_airing && <Countdown at={anime.next_airing.airing_at} episode={anime.next_airing.episode} />}
             {anime.genres?.length > 0 && <div className="d-genres"><dt>Genres</dt><dd>{anime.genres.join(' / ')}</dd></div>}
           </dl>
 
@@ -110,47 +141,63 @@ export default function AnimeDetail() {
             <div className="tracker d-in">
               <p className="kicker">Your list</p>
               <div className="status-picker">
-                {STATUSES.map((s) => (
+                {cfg.statuses.map((s) => (
                   <button
                     key={s.key}
                     className={entry?.status === s.key ? 'active' : ''}
                     disabled={saving}
-                    onClick={() => run(() => addToList(anime, s.key))}
+                    onClick={() => run(() => addToList(anime, s.key), `Marked as ${s.label.toLowerCase()}`)}
                   >
                     {s.label}
                   </button>
                 ))}
               </div>
               {entry && (
-                <div className="tracker-fields">
-                  <label>
-                    Score
-                    <select
-                      value={entry.score ?? ''}
-                      onChange={(e) => run(() => updateEntry(entry.id, { score: e.target.value === '' ? null : Number(e.target.value) }))}
-                    >
-                      <option value="">Not rated</option>
-                      {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{n}</option>)}
-                    </select>
-                  </label>
-                  <label>
-                    Episodes watched
-                    <input
-                      type="number"
-                      min="0"
-                      max={entry.total_episodes || undefined}
-                      defaultValue={entry.episodes_watched ?? 0}
-                      key={entry.episodes_watched}
+                <>
+                  <div className="tracker-fields">
+                    <label>
+                      Score
+                      <select
+                        value={entry.score ?? ''}
+                        onChange={(e) => run(() => updateEntry(entry.id, { score: e.target.value === '' ? null : Number(e.target.value) }))}
+                      >
+                        <option value="">Not rated</option>
+                        {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{n}</option>)}
+                      </select>
+                    </label>
+                    <label>
+                      {cfg.progressLabel}
+                      <input
+                        type="number"
+                        min="0"
+                        max={entry[cfg.total] || undefined}
+                        defaultValue={entry[cfg.progress] ?? 0}
+                        key={entry[cfg.progress]}
+                        onBlur={(e) => {
+                          const v = Math.max(0, Number(e.target.value) || 0);
+                          if (v !== entry[cfg.progress]) run(() => updateEntry(entry.id, { [cfg.progress]: v }));
+                        }}
+                      />
+                    </label>
+                    <button className="btn btn-quiet" disabled={saving} onClick={() => run(() => removeEntry(entry.id), 'Removed from your list')}>
+                      Remove
+                    </button>
+                  </div>
+                  <label className="notes">
+                    Private notes
+                    <textarea
+                      rows="3"
+                      maxLength="5000"
+                      placeholder="Thoughts, where you stopped, who recommended it…"
+                      defaultValue={entry.review || ''}
+                      key={`notes-${entry.id}`}
                       onBlur={(e) => {
-                        const v = Math.max(0, Number(e.target.value) || 0);
-                        if (v !== entry.episodes_watched) run(() => updateEntry(entry.id, { episodes_watched: v }));
+                        const v = e.target.value.trim();
+                        if (v !== (entry.review || '')) run(() => updateEntry(entry.id, { review: v || null }), 'Notes saved');
                       }}
                     />
                   </label>
-                  <button className="btn btn-quiet" disabled={saving} onClick={() => run(() => removeEntry(entry.id))}>
-                    Remove
-                  </button>
-                </div>
+                </>
               )}
               {actionError && <p className="error-text">{actionError}</p>}
             </div>
@@ -159,6 +206,16 @@ export default function AnimeDetail() {
           )}
         </div>
       </div>
+
+      {anime.recommendations?.length > 0 && (
+        <div className="wrap recs">
+          <p className="kicker">Readers also liked</p>
+          <h2 className="h2">More like this</h2>
+          <div className="anime-grid recs-grid">
+            {anime.recommendations.slice(0, 6).map((r) => <AnimeCard key={r.mal_id} anime={r} kind={kind} />)}
+          </div>
+        </div>
+      )}
     </article>
   );
 }

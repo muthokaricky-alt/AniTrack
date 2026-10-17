@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../api/client.js';
+import { GENRES } from '../constants.js';
 import { getLenis } from '../components/SmoothScroll.jsx';
 import AnimeCard from '../components/AnimeCard.jsx';
 import SkeletonGrid from '../components/SkeletonGrid.jsx';
@@ -8,6 +9,7 @@ import SkeletonGrid from '../components/SkeletonGrid.jsx';
 export default function Search() {
   const [params, setParams] = useSearchParams();
   const q = params.get('q') || '';
+  const genre = params.get('genre') || '';
   const page = Math.max(1, Number(params.get('page')) || 1);
 
   const [input, setInput] = useState(q);
@@ -20,7 +22,7 @@ export default function Search() {
 
   // Searching is driven by the URL, so results survive refresh/back and can be shared
   useEffect(() => {
-    if (!q) {
+    if (!q && !genre) {
       setResults([]);
       return;
     }
@@ -28,7 +30,7 @@ export default function Search() {
     setLoading(true);
     setError('');
     api
-      .searchAnime(q, page)
+      .searchAnime(q, page, genre)
       .then((data) => {
         if (cancelled) return;
         setResults(data.data || []);
@@ -45,25 +47,39 @@ export default function Search() {
       })
       .finally(() => !cancelled && setLoading(false));
     return () => { cancelled = true; };
-  }, [q, page]);
+  }, [q, genre, page]);
+
+  function update(next) {
+    const merged = { q, genre, ...next };
+    const clean = {};
+    if (merged.q) clean.q = merged.q;
+    if (merged.genre) clean.genre = merged.genre;
+    if (merged.page && merged.page > 1) clean.page = String(merged.page);
+    setParams(clean);
+  }
 
   function handleSearch(e) {
     e.preventDefault();
-    const value = input.trim();
-    if (value) setParams({ q: value });
+    update({ q: input.trim(), page: 1 });
+  }
+
+  function toggleGenre(g) {
+    update({ genre: genre === g ? '' : g, page: 1 });
   }
 
   function goToPage(p) {
-    setParams({ q, page: String(p) });
+    update({ page: p });
     const lenis = getLenis();
     if (lenis) lenis.scrollTo(0);
     else window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  const hasQuery = Boolean(q || genre);
+
   return (
     <div className="wrap page-pad">
       <div className="page-title">
-        <p className="kicker">Catalogue</p>
+        <p className="kicker">Catalogue · press / to search</p>
         <h1 className="h1">Search</h1>
       </div>
       <form className="search-bar" onSubmit={handleSearch}>
@@ -72,17 +88,25 @@ export default function Search() {
           onChange={(e) => setInput(e.target.value)}
           placeholder="Search by title, e.g. Fullmetal Alchemist"
           aria-label="Search anime"
-          autoFocus={!q}
+          autoFocus={!hasQuery}
         />
         <button type="submit">Search</button>
       </form>
 
+      <div className="genre-row" role="group" aria-label="Filter by genre">
+        {GENRES.map((g) => (
+          <button key={g} className={`chip ${genre === g ? 'on' : ''}`} aria-pressed={genre === g} onClick={() => toggleGenre(g)}>
+            {g}
+          </button>
+        ))}
+      </div>
+
       {loading && <SkeletonGrid count={10} />}
       {!loading && error && <div className="empty-state">{error}</div>}
-      {!loading && !error && q && results.length === 0 && (
-        <div className="empty-state">Nothing matched “{q}”. Try another spelling.</div>
+      {!loading && !error && hasQuery && results.length === 0 && (
+        <div className="empty-state">Nothing matched. Try another spelling or genre.</div>
       )}
-      {!loading && !q && <div className="empty-state">Type a title above to get started.</div>}
+      {!loading && !hasQuery && <div className="empty-state">Type a title above or pick a genre to get started.</div>}
 
       {!loading && results.length > 0 && (
         <>

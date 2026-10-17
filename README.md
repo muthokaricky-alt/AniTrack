@@ -48,6 +48,15 @@ npm run dev
 
 App runs on `http://localhost:5173` and proxies `/api` calls to the backend.
 
+## Features
+
+- Anime catalogue: search with genre filters, seasonal and top-rated lists, a weekly airing schedule, and a live countdown to the next episode
+- Manga as its own section: trending and top-rated browse, search, detail pages and a separate list
+- Personal lists with status, score, progress and private notes, for both anime and manga
+- "Can't decide?" picker that chooses from your Plan-to list, plus a stats panel (status split, score spread, favourite genres, time watched)
+- Export a list as JSON or CSV, and import a JSON export back in
+- Backend: login rate limiting, security headers, input validation, one shared list router for anime and manga
+
 ## Front-end stack
 
 React 18 + Vite, with Lenis (smooth scroll), GSAP + ScrollTrigger (animation, pinned scroll sections), and Vanta.js on three.js (interactive dot-field hero, lazy-loaded on desktop only). `three` is pinned to 0.134.0 because Vanta targets that release.
