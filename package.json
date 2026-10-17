@@ -1,0 +1,13 @@
+{
+  "name": "anitrack",
+  "version": "1.1.0",
+  "private": true,
+  "description": "AniTrack: anime watchlist tracker (React + Express + SQLite)",
+  "scripts": {
+    "build": "npm install --prefix frontend && npm run build --prefix frontend && npm install --prefix backend",
+    "start": "node backend/src/server.js",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend"
+  },
+  "engines": { "node": ">=20" }
+}

@@ -4,11 +4,12 @@
 # Build output
 frontend/dist/
 
-# Database temporary files
-backend/*.db-shm
-backend/*.db-wal
+# Local database (contains user emails + password hashes. Never commit it)
+*.db
+*.db-shm
+*.db-wal
 
-# Environment files
+# Environment files (secrets)
 **/.env
 **/.env.local
 

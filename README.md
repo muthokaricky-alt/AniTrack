@@ -10,11 +10,11 @@ anime catalog, log what you're watching, rate and review, and see your stats.
 - **Frontend**: React 18 + Vite, React Router, plain CSS (no framework)
 - **Backend**: Express + better-sqlite3
 - **Auth**: JWT + bcrypt
-- **Anime data**: [Jikan API](https://docs.api.jikan.moe/) (unofficial MyAnimeList REST API) — no key required
+- **Anime data**: [AniList GraphQL API](https://anilist.gitbook.io/anilist-apiv2-docs/) — no key required
 
 Your own database only stores accounts and each user's list entries
 (status, score, progress, reviews). Anime metadata (titles, covers,
-synopses) is fetched live from Jikan and cached briefly on the server.
+synopses) is fetched live from AniList and cached briefly on the server.
 
 ## Project structure
 
@@ -47,6 +47,20 @@ npm run dev
 ```
 
 App runs on `http://localhost:5173` and proxies `/api` calls to the backend.
+
+## Deploying (free)
+
+The Express server also serves the built React app, so one web service runs everything.
+
+1. Push the repo to GitHub.
+2. On [Render](https://render.com): **New + > Blueprint**, pick this repo (it reads `render.yaml`).
+   Or **New + > Web Service** with build command `npm run build`, start command `npm start`,
+   and env vars `NODE_ENV=production` and a long random `JWT_SECRET`.
+3. Open the URL Render gives you.
+
+> **Heads up:** Render's free tier has an ephemeral filesystem and sleeps after 15 minutes idle,
+> so the SQLite file is wiped when it restarts. Fine for a demo; for real data, move to a hosted
+> database or a paid instance with a persistent disk (set `DB_PATH` to the disk path).
 
 ## API overview
 

@@ -6,7 +6,9 @@ import db from '../db.js';
 const router = Router();
 
 router.post('/register', async (req, res) => {
-  const { username, email, password } = req.body;
+  const username = String(req.body.username || '').trim();
+  const email = String(req.body.email || '').trim().toLowerCase();
+  const password = String(req.body.password || '');
   if (!username || !email || !password) {
     return res.status(400).json({ error: 'username, email and password are required' });
   }
@@ -14,7 +16,16 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ error: 'Password must be at least 6 characters' });
   }
 
-  const existing = db.prepare('SELECT id FROM users WHERE email = ? OR username = ?').get(email, username);
+  if (!/^\S+@\S+\.\S+$/.test(email)) {
+    return res.status(400).json({ error: 'Please enter a valid email address' });
+  }
+  if (username.length < 2 || username.length > 30) {
+    return res.status(400).json({ error: 'Username must be 2-30 characters' });
+  }
+
+  const existing = db
+    .prepare('SELECT id FROM users WHERE lower(email) = ? OR lower(username) = lower(?)')
+    .get(email, username);
   if (existing) {
     return res.status(409).json({ error: 'Username or email already in use' });
   }
@@ -29,12 +40,13 @@ router.post('/register', async (req, res) => {
 });
 
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+  const email = String(req.body.email || '').trim().toLowerCase();
+  const password = String(req.body.password || '');
   if (!email || !password) {
     return res.status(400).json({ error: 'email and password are required' });
   }
 
-  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+  const user = db.prepare('SELECT * FROM users WHERE lower(email) = ?').get(email);
   if (!user) {
     return res.status(401).json({ error: 'Invalid email or password' });
   }

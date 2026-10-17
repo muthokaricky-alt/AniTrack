@@ -1,4 +1,6 @@
-const BASE = '/api';
+// In dev, Vite proxies /api to the backend. In production the backend serves the app,
+// so /api is same-origin. Set VITE_API_URL only if the API lives on a different host.
+const BASE = `${(import.meta.env.VITE_API_URL || '').replace(/\/$/, '')}/api`;
 
 function authHeaders() {
   const token = localStorage.getItem('anitrack_token');
@@ -6,16 +8,27 @@ function authHeaders() {
 }
 
 async function request(path, options = {}) {
-  const res = await fetch(`${BASE}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...authHeaders(),
-      ...(options.headers || {})
-    }
-  });
+  let res;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders(),
+        ...(options.headers || {})
+      }
+    });
+  } catch {
+    throw new Error('Could not reach the server. Check your connection and try again.');
+  }
+
   if (res.status === 204) return null;
   const data = await res.json().catch(() => ({}));
+
+  if (res.status === 401 && !path.startsWith('/auth') && localStorage.getItem('anitrack_token')) {
+    // Token expired or invalid: sign the user out everywhere
+    window.dispatchEvent(new Event('anitrack:unauthorized'));
+  }
   if (!res.ok) throw new Error(data.error || 'Request failed');
   return data;
 }
@@ -30,7 +43,6 @@ export const api = {
   animeDetail: (id) => request(`/anime/${id}`),
 
   getList: () => request('/list'),
-  getStats: () => request('/list/stats'),
   addToList: (body) => request('/list', { method: 'POST', body: JSON.stringify(body) }),
   updateEntry: (id, body) => request(`/list/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   removeEntry: (id) => request(`/list/${id}`, { method: 'DELETE' })

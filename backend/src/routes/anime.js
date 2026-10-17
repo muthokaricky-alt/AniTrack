@@ -26,7 +26,10 @@ async function anilistQuery(query, variables, cacheKey) {
   if (json.errors) {
     throw new Error(json.errors.map((e) => e.message).join('; '));
   }
-  if (cacheKey) cache.set(cacheKey, { data: json.data, time: Date.now() });
+  if (cacheKey) {
+    if (cache.size > 500) cache.delete(cache.keys().next().value); // keep memory bounded
+    cache.set(cacheKey, { data: json.data, time: Date.now() });
+  }
   return json.data;
 }
 
@@ -45,10 +48,13 @@ function toJikanShape(media) {
     episodes: media.episodes,
     score: media.averageScore != null ? Math.round(media.averageScore) / 10 : null,
     status: media.status,
+    year: media.seasonYear || null,
+    genres: media.genres || [],
+    banner: media.bannerImage || null,
     synopsis: stripHtml(media.description),
     images: {
       jpg: {
-        image_url: media.coverImage?.large || media.coverImage?.medium || null
+        image_url: media.coverImage?.extraLarge || media.coverImage?.large || media.coverImage?.medium || null
       }
     }
   };
@@ -61,8 +67,11 @@ const MEDIA_FIELDS = `
   episodes
   averageScore
   status
+  seasonYear
+  genres
+  bannerImage
   description(asHtml: false)
-  coverImage { large medium }
+  coverImage { extraLarge large medium }
 `;
 
 const PAGE_QUERY = `
@@ -84,6 +93,9 @@ const DETAIL_QUERY = `
   }
 `;
 
+// AniList entries without a MyAnimeList id can't be linked or saved, so skip them
+const mapList = (media) => media.filter((m) => m.idMal).map(toJikanShape);
+
 function currentSeason() {
   const month = new Date().getMonth() + 1;
   const year = new Date().getFullYear();
@@ -104,7 +116,7 @@ router.get('/search', async (req, res) => {
       `search:${q}:${page}`
     );
     res.json({
-      data: data.Page.media.map(toJikanShape),
+      data: mapList(data.Page.media),
       pagination: { has_next_page: data.Page.pageInfo.hasNextPage }
     });
   } catch (err) {
@@ -122,7 +134,7 @@ router.get('/top', async (req, res) => {
       `top:${page}`
     );
     res.json({
-      data: data.Page.media.map(toJikanShape),
+      data: mapList(data.Page.media),
       pagination: { has_next_page: data.Page.pageInfo.hasNextPage }
     });
   } catch (err) {
@@ -140,7 +152,7 @@ router.get('/season/now', async (req, res) => {
       `season:${season}:${seasonYear}`
     );
     res.json({
-      data: data.Page.media.map(toJikanShape),
+      data: mapList(data.Page.media),
       pagination: { has_next_page: data.Page.pageInfo.hasNextPage }
     });
   } catch (err) {
@@ -150,6 +162,7 @@ router.get('/season/now', async (req, res) => {
 
 // GET /api/anime/:id  (id = MyAnimeList id, kept for compatibility with stored list entries)
 router.get('/:id', async (req, res) => {
+  if (!Number.isInteger(Number(req.params.id))) return res.status(400).json({ error: 'Invalid anime id' });
   try {
     const data = await anilistQuery(DETAIL_QUERY, { idMal: Number(req.params.id) }, `detail:${req.params.id}`);
     if (!data.Media) return res.status(404).json({ error: 'Anime not found' });

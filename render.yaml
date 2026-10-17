@@ -1,0 +1,14 @@
+# Render Blueprint: "New +" > "Blueprint" and pick this repo.
+services:
+  - type: web
+    name: anitrack
+    runtime: node
+    plan: free
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true

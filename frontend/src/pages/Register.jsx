@@ -9,38 +9,41 @@ export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
+    setBusy(true);
     try {
       await register(username, email, password);
-      navigate('/');
+      navigate('/', { replace: true });
     } catch (err) {
       setError(err.message);
+      setBusy(false);
     }
   }
 
   return (
     <form className="auth-form" onSubmit={handleSubmit}>
-      <h2>Create account</h2>
+      <h2>Create your account</h2>
+      <p className="muted">Free, and it takes ten seconds.</p>
       <div className="field">
-        <label>Username</label>
-        <input value={username} onChange={(e) => setUsername(e.target.value)} required />
+        <label htmlFor="username">Username</label>
+        <input id="username" autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} minLength={2} maxLength={30} required />
       </div>
       <div className="field">
-        <label>Email</label>
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <label htmlFor="email">Email</label>
+        <input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
       </div>
       <div className="field">
-        <label>Password</label>
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required />
+        <label htmlFor="password">Password</label>
+        <input id="password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required />
+        <small className="muted">At least 6 characters.</small>
       </div>
-      <button className="btn-primary" type="submit">Register</button>
+      <button className="btn btn-primary btn-block" type="submit" disabled={busy}>{busy ? 'Creating…' : 'Create account'}</button>
       {error && <p className="error-text">{error}</p>}
-      <p style={{ marginTop: 16, fontSize: 14 }}>
-        Already have an account? <Link to="/login" style={{ borderBottom: '1px solid var(--stamp)' }}>Log in</Link>
-      </p>
+      <p className="auth-switch">Already have an account? <Link to="/login">Log in</Link></p>
     </form>
   );
 }

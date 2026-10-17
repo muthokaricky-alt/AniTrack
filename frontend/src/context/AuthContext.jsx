@@ -1,13 +1,19 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { api } from '../api/client.js';
 
 const AuthContext = createContext(null);
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
+function readStoredUser() {
+  try {
     const stored = localStorage.getItem('anitrack_user');
-    return stored ? JSON.parse(stored) : null;
-  });
+    return stored && localStorage.getItem('anitrack_token') ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(readStoredUser);
 
   const persist = (token, userObj) => {
     localStorage.setItem('anitrack_token', token);
@@ -30,6 +36,12 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('anitrack_user');
     setUser(null);
   }, []);
+
+  // The API client fires this when the server says our token is no longer valid
+  useEffect(() => {
+    window.addEventListener('anitrack:unauthorized', logout);
+    return () => window.removeEventListener('anitrack:unauthorized', logout);
+  }, [logout]);
 
   return (
     <AuthContext.Provider value={{ user, login, register, logout }}>
