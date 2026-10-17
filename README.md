@@ -48,6 +48,10 @@ npm run dev
 
 App runs on `http://localhost:5173` and proxies `/api` calls to the backend.
 
+## Front-end stack
+
+React 18 + Vite, with Lenis (smooth scroll), GSAP + ScrollTrigger (animation, pinned scroll sections), and Vanta.js on three.js (interactive dot-field hero, lazy-loaded on desktop only). `three` is pinned to 0.134.0 because Vanta targets that release.
+
 ## Deploying (free)
 
 The Express server also serves the built React app, so one web service runs everything.

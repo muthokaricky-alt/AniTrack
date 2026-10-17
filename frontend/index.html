@@ -4,20 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="AniTrack: search anime, track what you're watching, rate and review." />
-    <meta name="theme-color" content="#0c0a14" />
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop stop-color='%238b5cf6'/><stop offset='1' stop-color='%23ec4899'/></linearGradient></defs><rect width='64' height='64' rx='16' fill='url(%23g)'/><path d='M20 46 32 16l12 30M25 37h14' stroke='white' stroke-width='5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='12' fill='%230a0a0a'/><defs><mask id='m'><rect width='64' height='64' fill='white'/><polygon points='4,44 8,44 60,22 56,22' fill='black'/></mask></defs><g transform='skewX(-12) translate(10,0)' mask='url(%23m)'><path fill='%23ff4b1f' fill-rule='evenodd' d='M32 6 L56 58 H41.5 L38.6 50.5 H25.4 L22.5 58 H8 Z M32 24 L27.8 40 H36.2 Z'/></g></svg>" />
     <title>AniTrack · Your anime watchlist</title>
-    <script>
-      (function () {
-        var saved = localStorage.getItem('anitrack_theme');
-        if (saved === 'light' || saved === 'dark') {
-          document.documentElement.setAttribute('data-theme', saved);
-        }
-      })();
-    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
   </head>
   <body>
     <div id="root"></div>

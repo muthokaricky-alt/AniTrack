@@ -39,21 +39,23 @@ export default function MyList() {
     }
   }
 
-  if (loading && entries.length === 0) return <p className="muted">Loading your list…</p>;
+  if (loading && entries.length === 0) return <div className="wrap page-pad"><p className="muted">Loading your list…</p></div>;
   if (error && entries.length === 0) {
     return (
-      <div className="empty-state">
-        <p>{error}</p>
-        <button className="btn btn-ghost" onClick={reload}>Try again</button>
+      <div className="wrap page-pad">
+        <div className="empty-state">
+          <p>{error}</p>
+          <button className="btn btn-line" onClick={reload}>Try again</button>
+        </div>
       </div>
     );
   }
 
   return (
-    <>
+    <div className="wrap page-pad">
       <div className="page-title">
-        <h1>My list</h1>
-        <p>Everything you're tracking, in one place.</p>
+        <p className="kicker">Your list</p>
+        <h1 className="h1">My list</h1>
       </div>
 
       <div className="stats-strip">
@@ -98,7 +100,7 @@ export default function MyList() {
               </div>
               <div className="list-controls">
                 <button
-                  className="icon-btn small"
+                  className="step-btn"
                   title="Watched one more episode"
                   aria-label="Add one watched episode"
                   disabled={total ? watched >= total : false}
@@ -115,12 +117,12 @@ export default function MyList() {
                   <option value="">Score</option>
                   {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{n} ★</option>)}
                 </select>
-                <button className="btn btn-danger-ghost btn-sm" onClick={() => remove(entry)}>Remove</button>
+                <button className="btn btn-quiet btn-sm" onClick={() => remove(entry)}>Remove</button>
               </div>
             </div>
           );
         })}
       </div>
-    </>
+    </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../api/client.js';
+import { getLenis } from '../components/SmoothScroll.jsx';
 import AnimeCard from '../components/AnimeCard.jsx';
 import SkeletonGrid from '../components/SkeletonGrid.jsx';
 
@@ -54,14 +55,16 @@ export default function Search() {
 
   function goToPage(p) {
     setParams({ q, page: String(p) });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const lenis = getLenis();
+    if (lenis) lenis.scrollTo(0);
+    else window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   return (
-    <>
+    <div className="wrap page-pad">
       <div className="page-title">
-        <h1>Search</h1>
-        <p>Find any title in the AniList catalog.</p>
+        <p className="kicker">Catalogue</p>
+        <h1 className="h1">Search</h1>
       </div>
       <form className="search-bar" onSubmit={handleSearch}>
         <input
@@ -93,6 +96,6 @@ export default function Search() {
           </div>
         </>
       )}
-    </>
+    </div>
   );
 }

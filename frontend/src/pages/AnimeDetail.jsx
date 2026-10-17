@@ -1,14 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useList } from '../context/ListContext.jsx';
 import { STATUSES } from '../constants.js';
+import { gsap, ScrollTrigger, useGSAP } from '../lib/gsap.js';
 
 export default function AnimeDetail() {
   const { id } = useParams();
   const { user } = useAuth();
   const { byMalId, addToList, updateEntry, removeEntry } = useList();
+  const root = useRef(null);
   const [anime, setAnime] = useState(null);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -27,11 +29,31 @@ export default function AnimeDetail() {
     return () => { cancelled = true; };
   }, [id]);
 
+  // Intro stagger + slow parallax on the banner
+  useGSAP(
+    () => {
+      if (!anime) return;
+      const mm = gsap.matchMedia();
+      mm.add('(prefers-reduced-motion: no-preference)', () => {
+        gsap.from('.d-in', { y: 36, opacity: 0, duration: 1, ease: 'power3.out', stagger: 0.08 });
+        gsap.to('.d-banner-img', {
+          yPercent: 16,
+          ease: 'none',
+          scrollTrigger: { trigger: root.current, start: 'top top', end: 'bottom top', scrub: true }
+        });
+        ScrollTrigger.refresh();
+      });
+    },
+    { scope: root, dependencies: [anime?.mal_id] }
+  );
+
   if (error) {
     return (
-      <div className="empty-state">
-        <p>{error === 'Anime not found' ? 'We couldn\'t find that anime.' : error}</p>
-        <Link to="/search" className="btn btn-ghost">Back to search</Link>
+      <div className="wrap page-pad">
+        <div className="empty-state">
+          <p>{error === 'Anime not found' ? "We couldn't find that anime." : error}</p>
+          <Link to="/search" className="btn btn-line">Back to search</Link>
+        </div>
       </div>
     );
   }
@@ -54,44 +76,46 @@ export default function AnimeDetail() {
     }
   }
 
-  const setStatus = (status) => run(() => addToList(anime, status));
-
   return (
-    <article className="detail">
-      <div className="detail-banner" style={{ backgroundImage: `url(${anime.banner || image || ''})` }} />
-      <div className="detail-hero">
-        {image && <img src={image} alt={anime.title} />}
-        <div className="detail-info">
-          <h1>{anime.title}</h1>
-          <div className="chips">
-            <span className="chip chip-strong">★ {anime.score ?? '—'}</span>
-            <span className="chip">{anime.type}</span>
-            <span className="chip">{anime.episodes ?? '?'} episodes</span>
-            {anime.year && <span className="chip">{anime.year}</span>}
-            <span className="chip">{(anime.status || '').replaceAll('_', ' ').toLowerCase()}</span>
+    <article className="detail" ref={root}>
+      <div className="d-banner" aria-hidden="true">
+        <img className={`d-banner-img ${anime.banner ? '' : 'is-poster'}`} src={anime.banner || image} alt="" />
+        <div className="d-banner-shade" />
+      </div>
+
+      <div className="wrap d-body">
+        <div className="d-poster d-in">{image && <img src={image} alt={anime.title} />}</div>
+        <div className="d-info">
+          <p className="kicker d-in">
+            {anime.type}{anime.year ? ` · ${anime.year}` : ''} · {(anime.status || '').replaceAll('_', ' ').toLowerCase()}
+          </p>
+          <h1 className="d-title d-in">{anime.title}</h1>
+
+          <dl className="d-facts d-in">
+            <div><dt>Score</dt><dd>{anime.score ?? '—'}</dd></div>
+            <div><dt>Episodes</dt><dd>{anime.episodes ?? '?'}</dd></div>
+            {anime.genres?.length > 0 && <div className="d-genres"><dt>Genres</dt><dd>{anime.genres.join(' / ')}</dd></div>}
+          </dl>
+
+          <div className="d-in">
+            <p className={`d-syn ${long && !expanded ? 'clamped' : ''}`}>{synopsis}</p>
+            {long && (
+              <button className="text-link" onClick={() => setExpanded((v) => !v)}>
+                {expanded ? 'Show less' : 'Read more'}
+              </button>
+            )}
           </div>
-          {anime.genres?.length > 0 && (
-            <div className="chips">
-              {anime.genres.map((g) => <span key={g} className="chip chip-outline">{g}</span>)}
-            </div>
-          )}
-          <p className={`synopsis ${long && !expanded ? 'clamped' : ''}`}>{synopsis}</p>
-          {long && (
-            <button className="link-btn" onClick={() => setExpanded((v) => !v)}>
-              {expanded ? 'Show less' : 'Read more'}
-            </button>
-          )}
 
           {user ? (
-            <div className="tracker">
-              <div className="tracker-label">Your list</div>
+            <div className="tracker d-in">
+              <p className="kicker">Your list</p>
               <div className="status-picker">
                 {STATUSES.map((s) => (
                   <button
                     key={s.key}
                     className={entry?.status === s.key ? 'active' : ''}
                     disabled={saving}
-                    onClick={() => setStatus(s.key)}
+                    onClick={() => run(() => addToList(anime, s.key))}
                   >
                     {s.label}
                   </button>
@@ -103,9 +127,7 @@ export default function AnimeDetail() {
                     Score
                     <select
                       value={entry.score ?? ''}
-                      onChange={(e) =>
-                        run(() => updateEntry(entry.id, { score: e.target.value === '' ? null : Number(e.target.value) }))
-                      }
+                      onChange={(e) => run(() => updateEntry(entry.id, { score: e.target.value === '' ? null : Number(e.target.value) }))}
                     >
                       <option value="">Not rated</option>
                       {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{n}</option>)}
@@ -125,7 +147,7 @@ export default function AnimeDetail() {
                       }}
                     />
                   </label>
-                  <button className="btn btn-danger-ghost" disabled={saving} onClick={() => run(() => removeEntry(entry.id))}>
+                  <button className="btn btn-quiet" disabled={saving} onClick={() => run(() => removeEntry(entry.id))}>
                     Remove
                   </button>
                 </div>
@@ -133,9 +155,7 @@ export default function AnimeDetail() {
               {actionError && <p className="error-text">{actionError}</p>}
             </div>
           ) : (
-            <p className="login-hint">
-              <Link to="/login">Log in</Link> to add this to your list.
-            </p>
+            <p className="login-hint d-in"><Link to="/login">Log in</Link> to add this to your list.</p>
           )}
         </div>
       </div>
