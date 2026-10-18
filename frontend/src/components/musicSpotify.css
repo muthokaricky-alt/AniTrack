@@ -1,0 +1,21 @@
+/* Spotify source for the background music widget */
+.music-source { display: inline-flex; flex: none; border: 1px solid var(--line-strong); }
+.music-source button { padding: 7px 10px; font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.music-source button:hover { color: var(--text); }
+.music-source button.on { background: var(--signal); color: var(--ink); }
+
+.music-spot-ctl { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+.music-chip { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.music-chip:hover { color: var(--text); }
+
+/* Compact by default (just the current song and its controls); "Track list" opens the full playlist.
+   The player pops up above the widget. */
+.music-spotify { position: absolute; left: 0; bottom: 58px; width: min(340px, calc(100vw - 24px)); padding: 8px; background: var(--ink-2); border: 1px solid var(--line-strong); box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55); }
+.music-spotify iframe { display: block; width: 100%; height: 152px; border: 0; border-radius: 12px; }
+.music-spotify.is-expanded iframe { height: min(352px, calc(100vh - 260px)); min-height: 152px; }
+/* collapsed, or on the Built-in tab: kept mounted but off-screen, so a song that is already playing carries on */
+.music-spotify.is-hidden { left: -9999px; }
+
+@media (max-width: 700px) {
+  .music-panel { flex-wrap: wrap; gap: 8px 12px; }
+}

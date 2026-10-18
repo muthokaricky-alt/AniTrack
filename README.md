@@ -54,7 +54,12 @@ App runs on `http://localhost:5173` and proxies `/api` calls to the backend.
 - Manga as its own section: trending and top-rated browse, search, detail pages and a separate list
 - Personal lists with status, score, progress and private notes, for both anime and manga
 - "Can't decide?" picker that chooses from your Plan-to list, plus a stats panel (status split, score spread, favourite genres, time watched)
-- Export a list as JSON or CSV, and import a JSON export back in
+- Ratings in 0.5 steps, plus optional detailed ratings (story, characters, visuals/art, music/pacing, enjoyment) next to the overall score
+- Profile with photo, bio, public page, and favourites: a top 3 and a separate top 15 for anime, manga and characters
+- Export a list as JSON or CSV, or both lists as one Excel workbook (an Anime sheet and a Manga sheet)
+- Import from Excel (.xlsx), Word (.docx), CSV or JSON. Titles without an ID are matched against the catalogue, and you review the matches before anything is saved. Word files can use headings like "Completed" or "Plan to watch" to set statuses
+- Background music player (three original loops, pause/skip/volume, remembers your choice). Swap in your own tracks in `frontend/public/music/playlist.json`
+- Profile pages use a type mix: Fraunces for the name, bio and section titles, Archivo for numbers, JetBrains Mono for labels
 - Backend: login rate limiting, security headers, input validation, one shared list router for anime and manga
 
 ## Front-end stack
@@ -88,6 +93,7 @@ The Express server also serves the built React app, so one web service runs ever
 | GET    | /api/list           | JWT  | Your list entries                    |
 | GET    | /api/list/stats     | JWT  | Episode/score stats                  |
 | POST   | /api/list           | JWT  | Add/update an entry                  |
+| POST   | /api/list/resolve   | JWT  | Match up to 25 titles to catalogue IDs (same under /api/manga-list) |
 | PATCH  | /api/list/:id       | JWT  | Update status/score/progress/review  |
 | DELETE | /api/list/:id       | JWT  | Remove an entry                      |
 

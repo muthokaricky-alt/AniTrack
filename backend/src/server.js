@@ -9,6 +9,8 @@ import listRoutes, { mangaListRoutes } from './routes/lists.js';
 import animeRoutes from './routes/anime.js';
 import mangaRoutes from './routes/manga.js';
 import profileRoutes, { usersRoutes } from './routes/profile.js';
+import favoritesRoutes from './routes/favorites.js';
+import characterRoutes from './routes/characters.js';
 import { rateLimit } from './middleware/rateLimit.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -55,6 +57,8 @@ app.use('/api/manga', mangaRoutes);
 app.use('/api/profile/password', rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: 'Too many attempts. Try again in a few minutes.' }));
 app.use('/api/profile', profileRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/favorites', favoritesRoutes);
+app.use('/api/characters', characterRoutes);
 app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
 
 // In production the Express server also serves the built React app,

@@ -15,11 +15,20 @@ export default function Insights({ entries, kind }) {
     const byStatus = {};
     const scores = Array(10).fill(0);
     const genres = {};
+    const catSum = {};
+    const catN = {};
     let withGenres = 0;
     let units = 0;
     for (const e of entries) {
       byStatus[e.status] = (byStatus[e.status] || 0) + 1;
-      if (e.score >= 1 && e.score <= 10) scores[e.score - 1] += 1;
+      if (e.score != null && e.score > 0) scores[Math.min(10, Math.max(1, Math.round(e.score))) - 1] += 1;
+      for (const c of cfg.ratings) {
+        const v = e.ratings?.[c.key];
+        if (typeof v === 'number') {
+          catSum[c.key] = (catSum[c.key] || 0) + v;
+          catN[c.key] = (catN[c.key] || 0) + 1;
+        }
+      }
       units += e[cfg.progress] || 0;
       if (Array.isArray(e.genres) && e.genres.length) {
         withGenres += 1;
@@ -27,7 +36,8 @@ export default function Insights({ entries, kind }) {
       }
     }
     const topGenres = Object.entries(genres).sort((a, b) => b[1] - a[1]).slice(0, 8);
-    return { byStatus, scores, topGenres, withGenres, units };
+    const categories = cfg.ratings.filter((c) => catN[c.key]).map((c) => ({ ...c, avg: catSum[c.key] / catN[c.key], n: catN[c.key] }));
+    return { byStatus, scores, topGenres, withGenres, units, categories };
   }, [entries, cfg]);
 
   if (entries.length === 0) return null;
@@ -58,7 +68,7 @@ export default function Insights({ entries, kind }) {
 
       <div className="insight-cols">
         <div>
-          <h3 className="mini-h">Scores you give</h3>
+          <h3 className="mini-h">Scores you give (rounded)</h3>
           <div className="score-bars" role="img" aria-label="Score distribution">
             {data.scores.map((n, i) => (
               <div className="score-col" key={i} title={`${i + 1}: ${n}`}>
@@ -89,6 +99,22 @@ export default function Insights({ entries, kind }) {
           )}
         </div>
       </div>
+
+      {data.categories.length > 0 && (
+        <div className="cat-block">
+          <h3 className="mini-h">Where you score highest</h3>
+          <ul className="genre-bars">
+            {[...data.categories].sort((a, b) => b.avg - a.avg).map((c) => (
+              <li key={c.key}>
+                <span>{c.label}</span>
+                <div><i style={{ width: `${c.avg * 10}%` }} /></div>
+                <b>{c.avg.toFixed(1)}</b>
+              </li>
+            ))}
+          </ul>
+          <p className="muted note">From the detailed ratings you've filled in.</p>
+        </div>
+      )}
 
       {kind === 'anime' && data.units > 0 && (
         <p className="time-line">

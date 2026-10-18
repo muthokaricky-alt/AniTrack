@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client.js';
 import Avatar from '../components/Avatar.jsx';
+import FavoritesShowcase from '../components/FavoritesShowcase.jsx';
 
 function Favorites({ title, items, base }) {
   if (!items.length) return null;
@@ -37,6 +38,7 @@ function Block({ label, data, unit }) {
 
 export default function PublicProfile() {
   const { username } = useParams();
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
 
@@ -81,8 +83,10 @@ export default function PublicProfile() {
         <Block label="Manga" data={data.manga} unit="Chapters" />
       </div>
 
-      <Favorites title="Top-rated anime" items={data.anime.favorites} base="/anime" />
-      <Favorites title="Top-rated manga" items={data.manga.favorites} base="/manga" />
+      <FavoritesShowcase favorites={data.favorites} navigate={navigate} />
+
+      <Favorites title="Highest-rated anime" items={data.anime.favorites} base="/anime" />
+      <Favorites title="Highest-rated manga" items={data.manga.favorites} base="/manga" />
     </div>
   );
 }

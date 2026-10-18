@@ -62,6 +62,10 @@ export const api = {
   changePassword: (body) => request('/profile/password', { method: 'PATCH', body: JSON.stringify(body) }),
   publicProfile: (username) => request(`/users/${encodeURIComponent(username)}`),
 
+  favorites: () => request('/favorites'),
+  saveFavorites: (kind, list, items) => request(`/favorites/${kind}/${list}`, { method: 'PUT', body: JSON.stringify({ items }) }),
+  searchCharacters: (q) => request(`/characters/search?q=${encodeURIComponent(q)}`),
+
   searchManga: (q, page = 1, genre = '') => {
     const params = new URLSearchParams({ page: String(page) });
     if (q) params.set('q', q);
@@ -80,7 +84,8 @@ export const api = {
       add: (body) => request(base, { method: 'POST', body: JSON.stringify(body) }),
       update: (id, body) => request(`${base}/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
       remove: (id) => request(`${base}/${id}`, { method: 'DELETE' }),
-      import: (entries) => request(`${base}/import`, { method: 'POST', body: JSON.stringify({ entries }) })
+      import: (entries) => request(`${base}/import`, { method: 'POST', body: JSON.stringify({ entries }) }),
+      resolve: (titles) => request(`${base}/resolve`, { method: 'POST', body: JSON.stringify({ titles }) })
     };
   }
 };

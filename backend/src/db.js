@@ -50,6 +50,20 @@ db.exec(`
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE(user_id, mal_id)
   );
+
+  CREATE TABLE IF NOT EXISTS favorites (
+    user_id INTEGER NOT NULL,
+    kind TEXT NOT NULL,
+    list TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    item_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    image_url TEXT,
+    sub TEXT,
+    PRIMARY KEY (user_id, kind, list, position),
+    UNIQUE (user_id, kind, list, item_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
 `);
 
 // Profile fields were added after launch; upgrade older databases in place
@@ -61,5 +75,12 @@ for (const [col, ddl] of [['avatar', 'TEXT'], ['bio', 'TEXT'], ['is_public', 'IN
 // Older databases predate the genres column (used for the stats page)
 const hasGenres = db.prepare("PRAGMA table_info(list_entries)").all().some((c) => c.name === 'genres');
 if (!hasGenres) db.exec('ALTER TABLE list_entries ADD COLUMN genres TEXT');
+
+// Optional per-category ratings (story, visuals, music...) stored as JSON next to the overall score.
+// Scores themselves need no migration: SQLite keeps a value like 7.5 as a real number in the score column.
+for (const table of ['list_entries', 'manga_entries']) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name);
+  if (!cols.includes('ratings')) db.exec(`ALTER TABLE ${table} ADD COLUMN ratings TEXT`);
+}
 
 export default db;

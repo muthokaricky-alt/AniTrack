@@ -31,7 +31,14 @@ export const KINDS = {
     totalProp: 'episodes', // field on a catalogue item
     unit: 'Episodes',
     unitShort: 'EP',
-    progressLabel: 'Episodes watched'
+    progressLabel: 'Episodes watched',
+    ratings: [
+      { key: 'story', label: 'Story' },
+      { key: 'characters', label: 'Characters' },
+      { key: 'visuals', label: 'Visuals' },
+      { key: 'music', label: 'Music' },
+      { key: 'enjoyment', label: 'Enjoyment' }
+    ]
   },
   manga: {
     key: 'manga',
@@ -46,9 +53,19 @@ export const KINDS = {
     totalProp: 'chapters',
     unit: 'Chapters',
     unitShort: 'CH',
-    progressLabel: 'Chapters read'
+    progressLabel: 'Chapters read',
+    ratings: [
+      { key: 'story', label: 'Story' },
+      { key: 'characters', label: 'Characters' },
+      { key: 'art', label: 'Art' },
+      { key: 'pacing', label: 'Pacing' },
+      { key: 'enjoyment', label: 'Enjoyment' }
+    ]
   }
 };
+
+// 10, 9.5, 9 ... 0.5
+export const SCORE_OPTIONS = Array.from({ length: 20 }, (_, i) => 10 - i * 0.5);
 
 export const GENRES = [
   'Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Horror', 'Mahou Shoujo', 'Mecha', 'Music',

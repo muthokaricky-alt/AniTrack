@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { parseAvatar, publicUser } from '../userUtil.js';
+import { loadFavorites } from './favorites.js';
 
 const router = Router();
 
@@ -88,7 +89,8 @@ usersRoutes.get('/:username', (req, res) => {
   res.json({
     user: { username: u.username, avatar: u.avatar || null, bio: u.bio || '', joined: u.created_at },
     anime: summary('list_entries', 'episodes_watched', u.id),
-    manga: summary('manga_entries', 'chapters_read', u.id)
+    manga: summary('manga_entries', 'chapters_read', u.id),
+    favorites: loadFavorites(u.id)
   });
 });
 

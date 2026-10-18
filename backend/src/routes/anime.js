@@ -2,28 +2,37 @@ import { Router } from 'express';
 import fetch from 'node-fetch';
 
 const router = Router();
-const ANILIST_URL = 'https://graphql.anilist.co';
+const ANILIST_URL = process.env.ANILIST_URL || 'https://graphql.anilist.co';
 
 // Simple in-memory cache — AniList's rate limit is generous but this
 // keeps repeat requests (e.g. revisiting the same anime) instant.
 const cache = new Map();
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
-export async function anilistQuery(query, variables, cacheKey) {
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// retries: how many times to wait and try again when AniList says "slow down" (429) or has a hiccup (5xx)
+export async function anilistQuery(query, variables, cacheKey, { tolerateErrors = false, retries = 0 } = {}) {
   if (cacheKey) {
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.time < CACHE_TTL_MS) return cached.data;
   }
-  const response = await fetch(ANILIST_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({ query, variables })
-  });
+  let response;
+  for (let attempt = 0; ; attempt += 1) {
+    response = await fetch(ANILIST_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ query, variables })
+    });
+    if (response.ok || attempt >= retries || !(response.status === 429 || response.status >= 500)) break;
+    const wait = Number(response.headers.get('retry-after'));
+    await sleep(Math.min(Number.isFinite(wait) && wait > 0 ? wait * 1000 : 3000, 10000));
+  }
   if (!response.ok) {
     throw new Error(`AniList request failed: ${response.status}`);
   }
   const json = await response.json();
-  if (json.errors) {
+  if (json.errors && !(tolerateErrors && json.data)) {
     throw new Error(json.errors.map((e) => e.message).join('; '));
   }
   if (cacheKey) {

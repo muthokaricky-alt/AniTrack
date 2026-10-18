@@ -2,12 +2,66 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useList } from '../context/ListContext.jsx';
+import { useMangaList } from '../context/MangaListContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import Avatar from '../components/Avatar.jsx';
 import AvatarPicker from '../components/AvatarPicker.jsx';
+import FavoritesEditor from '../components/FavoritesEditor.jsx';
 
 const fromUser = (u) => ({ username: u.username, bio: u.bio || '', avatar: u.avatar || null, is_public: Boolean(u.is_public) });
+const EMPTY = { top3: [], top15: [] };
+const FAV_KINDS = [
+  { key: 'anime', label: 'Anime' },
+  { key: 'manga', label: 'Manga' },
+  { key: 'character', label: 'Characters' }
+];
 
-export default function Profile() {
+function Favorites() {
+  const toast = useToast();
+  const [kind, setKind] = useState('anime');
+  const [favs, setFavs] = useState(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    api.favorites().then(setFavs).catch((e) => setError(e.message));
+  }, []);
+
+  async function change(k, list, next) {
+    const before = favs;
+    setFavs((f) => ({ ...f, [k]: { ...f[k], [list]: next } })); // show it immediately, undo if the save fails
+    try {
+      const saved = await api.saveFavorites(k, list, next);
+      setFavs((f) => ({ ...f, [k]: { ...f[k], [list]: saved.items } }));
+    } catch (e) {
+      setFavs(before);
+      toast(e.message, 'error');
+    }
+  }
+
+  if (error) return <div className="empty-state">{error}</div>;
+  if (!favs) return <p className="muted">Loading your favourites…</p>;
+  const group = favs[kind] || EMPTY;
+
+  return (
+    <>
+      <p className="muted pf-note">Pick the titles you'd recommend to anyone. They appear on your public profile, in this order.</p>
+      <div className="kind-switch" role="tablist" aria-label="Favourites type">
+        {FAV_KINDS.map((k) => (
+          <button key={k.key} role="tab" aria-selected={kind === k.key} className={kind === k.key ? 'on' : ''} onClick={() => setKind(k.key)}>
+            {k.label}
+          </button>
+        ))}
+      </div>
+      <div className="fe-grid">
+        <FavoritesEditor kind={kind} list="top3" items={group.top3} onChange={(next) => change(kind, 'top3', next)} />
+        <FavoritesEditor kind={kind} list="top15" items={group.top15} onChange={(next) => change(kind, 'top15', next)} />
+      </div>
+    </>
+  );
+}
+
+function Settings() {
   const { user, updateUser } = useAuth();
   const toast = useToast();
   const [form, setForm] = useState(() => fromUser(user));
@@ -64,12 +118,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="wrap page-pad">
-      <div className="page-title">
-        <p className="kicker">Account</p>
-        <h1 className="h1">Your profile</h1>
-      </div>
-
+    <>
       <form className="pf" onSubmit={save}>
         <div className="pf-section">
           <h2 className="mini-h">Photo</h2>
@@ -99,7 +148,7 @@ export default function Profile() {
             <input type="checkbox" checked={form.is_public} onChange={(e) => setForm((f) => ({ ...f, is_public: e.target.checked }))} />
             <span>Let anyone with my link see my profile</span>
           </label>
-          <p className="muted">They'll see your username, photo, bio, stats and top-rated titles. Your email and full list stay private. It's off by default.</p>
+          <p className="muted">They'll see your username, photo, bio, stats, favourites and top-rated titles. Your email and full list stay private. It's off by default.</p>
           {user.is_public && !dirty && (
             <div className="share-line">
               <Link to={`/u/${encodeURIComponent(user.username)}`}>{link}</Link>
@@ -127,6 +176,46 @@ export default function Profile() {
         </div>
         <button className="btn btn-line" type="submit" disabled={pwBusy}>{pwBusy ? 'Updating…' : 'Update password'}</button>
       </form>
+    </>
+  );
+}
+
+export default function Profile() {
+  const { user } = useAuth();
+  const anime = useList();
+  const manga = useMangaList();
+  const [tab, setTab] = useState('favorites');
+
+  return (
+    <div className="wrap page-pad">
+      <header className="pf-head">
+        <Avatar user={user} size={104} />
+        <div className="pf-head-main">
+          <p className="kicker">Your profile</p>
+          <h1 className="h1">{user.username}</h1>
+          <p className="pf-bio">{user.bio || 'No bio yet. Add one in Settings.'}</p>
+          <ul className="pf-chips">
+            <li><b>{anime.stats.total}</b> anime</li>
+            <li><b>{manga.stats.total}</b> manga</li>
+            {anime.stats.mean && <li>mean <b>{anime.stats.mean}</b></li>}
+            <li className={user.is_public ? 'is-public' : ''}>{user.is_public ? 'Public' : 'Private'}</li>
+          </ul>
+        </div>
+        <div className="pf-head-actions">
+          {user.is_public ? (
+            <Link className="btn btn-line btn-sm" to={`/u/${encodeURIComponent(user.username)}`}>View public page</Link>
+          ) : (
+            <button className="btn btn-line btn-sm" onClick={() => setTab('settings')}>Make public</button>
+          )}
+        </div>
+      </header>
+
+      <div className="kind-switch pf-tabs" role="tablist" aria-label="Profile sections">
+        <button role="tab" aria-selected={tab === 'favorites'} className={tab === 'favorites' ? 'on' : ''} onClick={() => setTab('favorites')}>Favourites</button>
+        <button role="tab" aria-selected={tab === 'settings'} className={tab === 'settings' ? 'on' : ''} onClick={() => setTab('settings')}>Settings</button>
+      </div>
+
+      {tab === 'favorites' ? <Favorites /> : <Settings />}
     </div>
   );
 }

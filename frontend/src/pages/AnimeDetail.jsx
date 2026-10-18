@@ -8,6 +8,7 @@ import { useToast } from '../context/ToastContext.jsx';
 import { KINDS } from '../constants.js';
 import { gsap, ScrollTrigger, useGSAP } from '../lib/gsap.js';
 import AnimeCard from '../components/AnimeCard.jsx';
+import ScoreInput from '../components/ScoreInput.jsx';
 
 // "Episode 7 airs in 2d 4h 10m", refreshed every 30 seconds
 function Countdown({ at, episode }) {
@@ -90,6 +91,8 @@ export default function AnimeDetail({ kind = 'anime' }) {
   const synopsis = anime.synopsis || 'No synopsis available.';
   const long = synopsis.length > 420;
   const total = anime[cfg.totalProp];
+  const given = entry ? Object.values(entry.ratings || {}).filter((v) => typeof v === 'number') : [];
+  const avg = given.length >= 2 ? Math.round((given.reduce((a, b) => a + b, 0) / given.length) * 2) / 2 : null;
 
   async function run(action, success) {
     setSaving(true);
@@ -154,17 +157,14 @@ export default function AnimeDetail({ kind = 'anime' }) {
               </div>
               {entry && (
                 <>
+                  <div className="tracker-score">
+                    <ScoreInput
+                      label="Overall score"
+                      value={entry.score ?? null}
+                      onCommit={(v) => run(() => updateEntry(entry.id, { score: v }))}
+                    />
+                  </div>
                   <div className="tracker-fields">
-                    <label>
-                      Score
-                      <select
-                        value={entry.score ?? ''}
-                        onChange={(e) => run(() => updateEntry(entry.id, { score: e.target.value === '' ? null : Number(e.target.value) }))}
-                      >
-                        <option value="">Not rated</option>
-                        {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{n}</option>)}
-                      </select>
-                    </label>
                     <label>
                       {cfg.progressLabel}
                       <input
@@ -183,6 +183,29 @@ export default function AnimeDetail({ kind = 'anime' }) {
                       Remove
                     </button>
                   </div>
+                  <details className="rate-detail" open={Object.keys(entry.ratings || {}).length > 0}>
+                    <summary>Rate in detail <em>(optional)</em></summary>
+                    <div className="rate-grid">
+                      {cfg.ratings.map((c) => (
+                        <ScoreInput
+                          key={c.key}
+                          label={c.label}
+                          value={entry.ratings?.[c.key] ?? null}
+                          onCommit={(v) => run(() => updateEntry(entry.id, { ratings: { ...(entry.ratings || {}), [c.key]: v } }))}
+                        />
+                      ))}
+                    </div>
+                    {avg != null && (
+                      <p className="rate-avg">
+                        Average of your detailed ratings: <strong>{avg}</strong>
+                        {entry.score !== avg && (
+                          <button type="button" className="text-link" onClick={() => run(() => updateEntry(entry.id, { score: avg }))}>
+                            Use as overall
+                          </button>
+                        )}
+                      </p>
+                    )}
+                  </details>
                   <label className="notes">
                     Private notes
                     <textarea

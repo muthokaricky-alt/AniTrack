@@ -4,9 +4,11 @@ import { api } from '../api/client.js';
 import { useList } from '../context/ListContext.jsx';
 import { useMangaList } from '../context/MangaListContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
-import { KINDS } from '../constants.js';
+import { KINDS, SCORE_OPTIONS } from '../constants.js';
 import Insights from '../components/Insights.jsx';
 import Roulette from '../components/Roulette.jsx';
+import ImportDialog from '../components/ImportDialog.jsx';
+import { parseFile } from '../lib/importParse.js';
 
 function download(filename, text, type) {
   const url = URL.createObjectURL(new Blob([text], { type }));
@@ -29,6 +31,8 @@ export default function MyList() {
   const fileInput = useRef(null);
   const [tab, setTab] = useState('all');
   const [rowError, setRowError] = useState('');
+  const [importSections, setImportSections] = useState(null);
+  const [busy, setBusy] = useState(false);
 
   const tabs = useMemo(() => [{ key: 'all', label: 'All' }, ...cfg.statuses], [cfg]);
   const visible = useMemo(() => (tab === 'all' ? entries : entries.filter((e) => e.status === tab)), [entries, tab]);
@@ -71,30 +75,39 @@ export default function MyList() {
   }
 
   function exportCsv() {
-    const head = ['title', 'mal_id', 'status', 'score', cfg.progress, cfg.total, 'genres', 'notes'];
+    const head = ['title', 'mal_id', 'status', 'score', cfg.progress, cfg.total, 'genres', 'detailed_ratings', 'notes'];
     const rows = entries.map((e) =>
-      [e.title, e.mal_id, e.status, e.score, e[cfg.progress], e[cfg.total], (e.genres || []).join('; '), e.review].map(csvCell).join(',')
+      [e.title, e.mal_id, e.status, e.score, e[cfg.progress], e[cfg.total], (e.genres || []).join('; '), Object.entries(e.ratings || {}).map(([k, v]) => `${k}=${v}`).join('; '), e.review].map(csvCell).join(',')
     );
     download(`anitrack-${kind}-list.csv`, [head.join(','), ...rows].join('\n'), 'text/csv');
+  }
+
+  // One workbook with an Anime sheet and a Manga sheet. Built in the browser from the lists already loaded.
+  async function exportExcel() {
+    setBusy(true);
+    try {
+      const { exportXlsxBuffer } = await import('../lib/exportXlsx.js');
+      const buffer = await exportXlsxBuffer({ anime: animeList.entries, manga: mangaList.entries });
+      download('anitrack-lists.xlsx', buffer, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    } catch (err) {
+      toast('Could not build the Excel file. Try again.', 'error');
+      console.error(err);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function importFile(e) {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
+    setBusy(true);
     try {
-      const data = JSON.parse(await file.text());
-      if (data.kind && data.kind !== kind) {
-        toast(`That file is a ${data.kind} export. Switch to the ${data.kind} list to import it.`, 'error');
-        return;
-      }
-      const list = Array.isArray(data) ? data : data.entries;
-      if (!Array.isArray(list)) throw new Error('No entries found in that file');
-      const result = await api.list(kind).import(list);
-      await reload();
-      toast(`Imported ${result.imported} title${result.imported === 1 ? '' : 's'}${result.skipped ? `, skipped ${result.skipped}` : ''}`);
+      setImportSections(await parseFile(file));
     } catch (err) {
       toast(err instanceof SyntaxError ? 'That file is not valid JSON' : err.message, 'error');
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -121,8 +134,9 @@ export default function MyList() {
           <span className="tools-gap" />
           <button className="btn btn-quiet btn-sm" onClick={exportJson} disabled={entries.length === 0}>Export JSON</button>
           <button className="btn btn-quiet btn-sm" onClick={exportCsv} disabled={entries.length === 0}>Export CSV</button>
-          <button className="btn btn-quiet btn-sm" onClick={() => fileInput.current?.click()}>Import</button>
-          <input ref={fileInput} type="file" accept="application/json,.json" onChange={importFile} hidden />
+          <button className="btn btn-quiet btn-sm" onClick={exportExcel} disabled={busy || (animeList.entries.length === 0 && mangaList.entries.length === 0)} title="Both lists, one sheet each">Export Excel</button>
+          <button className="btn btn-quiet btn-sm" onClick={() => fileInput.current?.click()} disabled={busy} title="Excel, Word, CSV or JSON">Import</button>
+          <input ref={fileInput} type="file" accept=".xlsx,.docx,.csv,.json,.txt" onChange={importFile} hidden />
         </div>
 
         <div className="status-tabs" role="tablist">
@@ -176,7 +190,7 @@ export default function MyList() {
                     aria-label="Your score"
                   >
                     <option value="">Score</option>
-                    {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{n} ★</option>)}
+                    {SCORE_OPTIONS.map((n) => <option key={n} value={n}>{n} ★</option>)}
                   </select>
                   <button className="btn btn-quiet btn-sm" onClick={() => remove(entry)}>Remove</button>
                 </div>
@@ -204,6 +218,7 @@ export default function MyList() {
         </div>
       </div>
       {body()}
+      {importSections && <ImportDialog sections={importSections} defaultKind={kind} onClose={() => setImportSections(null)} />}
     </div>
   );
 }

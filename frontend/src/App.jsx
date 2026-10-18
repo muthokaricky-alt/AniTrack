@@ -6,6 +6,7 @@ import { MangaListProvider } from './context/MangaListContext.jsx';
 import { ToastProvider } from './context/ToastContext.jsx';
 import SmoothScroll from './components/SmoothScroll.jsx';
 import Navbar from './components/Navbar.jsx';
+import MusicPlayer from './components/MusicPlayer.jsx';
 import Home from './pages/Home.jsx';
 import Search from './pages/Search.jsx';
 import AnimeDetail from './pages/AnimeDetail.jsx';
@@ -93,6 +94,7 @@ function Shell() {
         </ErrorBoundary>
       </main>
       <Footer />
+      <MusicPlayer />
     </>
   );
 }
