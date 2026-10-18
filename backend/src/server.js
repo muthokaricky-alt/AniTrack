@@ -8,6 +8,7 @@ import authRoutes from './routes/auth.js';
 import listRoutes, { mangaListRoutes } from './routes/lists.js';
 import animeRoutes from './routes/anime.js';
 import mangaRoutes from './routes/manga.js';
+import profileRoutes, { usersRoutes } from './routes/profile.js';
 import { rateLimit } from './middleware/rateLimit.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -36,6 +37,8 @@ app.use((req, res, next) => {
 });
 app.use(cors({ origin: process.env.CORS_ORIGIN || true }));
 app.use(['/api/list/import', '/api/manga-list/import'], express.json({ limit: '2mb' })); // list backups can be large
+// profile photos (data URLs) need a little more room than ordinary JSON bodies
+app.use(['/api/auth/register', '/api/profile'], express.json({ limit: '200kb' }));
 app.use(express.json({ limit: '100kb' }));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
@@ -49,6 +52,9 @@ app.use('/api/list', listRoutes);
 app.use('/api/manga-list', mangaListRoutes);
 app.use('/api/anime', animeRoutes);
 app.use('/api/manga', mangaRoutes);
+app.use('/api/profile/password', rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: 'Too many attempts. Try again in a few minutes.' }));
+app.use('/api/profile', profileRoutes);
+app.use('/api/users', usersRoutes);
 app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
 
 // In production the Express server also serves the built React app,

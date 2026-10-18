@@ -52,6 +52,12 @@ db.exec(`
   );
 `);
 
+// Profile fields were added after launch; upgrade older databases in place
+const userCols = db.prepare('PRAGMA table_info(users)').all().map((c) => c.name);
+for (const [col, ddl] of [['avatar', 'TEXT'], ['bio', 'TEXT'], ['is_public', 'INTEGER NOT NULL DEFAULT 0']]) {
+  if (!userCols.includes(col)) db.exec(`ALTER TABLE users ADD COLUMN ${col} ${ddl}`);
+}
+
 // Older databases predate the genres column (used for the stats page)
 const hasGenres = db.prepare("PRAGMA table_info(list_entries)").all().some((c) => c.name === 'genres');
 if (!hasGenres) db.exec('ALTER TABLE list_entries ADD COLUMN genres TEXT');

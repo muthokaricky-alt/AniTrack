@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import AvatarPicker from '../components/AvatarPicker.jsx';
 import Logo from '../components/Logo.jsx';
 
 export default function Register() {
@@ -9,6 +10,7 @@ export default function Register() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [avatar, setAvatar] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -17,7 +19,7 @@ export default function Register() {
     setError('');
     setBusy(true);
     try {
-      await register(username, email, password);
+      await register(username, email, password, avatar);
       navigate('/', { replace: true });
     } catch (err) {
       setError(err.message);
@@ -34,6 +36,10 @@ export default function Register() {
       <form className="auth-form" onSubmit={handleSubmit}>
         <p className="kicker">Register</p>
         <h1 className="h1">Create your account</h1>
+        <div className="field">
+          <label>Profile photo <span className="optional">(optional)</span></label>
+          <AvatarPicker value={avatar} username={username} onChange={setAvatar} />
+        </div>
         <div className="field">
           <label htmlFor="username">Username</label>
           <input id="username" autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} minLength={2} maxLength={30} required />

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import Logo from './Logo.jsx';
+import Avatar from './Avatar.jsx';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -50,10 +51,13 @@ export default function Navbar() {
       </nav>
       <div className="nav-end">
         {user ? (
-          <button className="nav-user" onClick={() => { logout(); navigate('/'); }} title="Log out">
-            <span className="nav-initial">{user.username.slice(0, 1).toUpperCase()}</span>
-            <span className="nav-out">Log out</span>
-          </button>
+          <div className="nav-user">
+            <Link to="/profile" className="nav-profile" title="Your profile">
+              <Avatar user={user} size={34} />
+              <span className="nav-name">{user.username}</span>
+            </Link>
+            <button className="nav-out" onClick={() => { logout(); navigate('/'); }}>Log out</button>
+          </div>
         ) : (
           <Link to="/login" className="btn btn-line btn-sm">Log in</Link>
         )}

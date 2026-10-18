@@ -57,6 +57,11 @@ export const api = {
   removeEntry: (id) => request(`/list/${id}`, { method: 'DELETE' }),
   importList: (entries) => request('/list/import', { method: 'POST', body: JSON.stringify({ entries }) }),
 
+  me: () => request('/profile'),
+  updateProfile: (body) => request('/profile', { method: 'PATCH', body: JSON.stringify(body) }),
+  changePassword: (body) => request('/profile/password', { method: 'PATCH', body: JSON.stringify(body) }),
+  publicProfile: (username) => request(`/users/${encodeURIComponent(username)}`),
+
   searchManga: (q, page = 1, genre = '') => {
     const params = new URLSearchParams({ page: String(page) });
     if (q) params.set('q', q);

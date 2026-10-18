@@ -2,6 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import db from '../db.js';
+import { parseAvatar, publicUser } from '../userUtil.js';
 
 const router = Router();
 
@@ -30,13 +31,16 @@ router.post('/register', async (req, res) => {
     return res.status(409).json({ error: 'Username or email already in use' });
   }
 
+  const avatar = parseAvatar(req.body.avatar);
+  if (!avatar.valid) return res.status(400).json({ error: 'Profile photo must be a JPEG, PNG or WebP image' });
+
   const passwordHash = await bcrypt.hash(password, 10);
   const info = db
-    .prepare('INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)')
-    .run(username, email, passwordHash);
+    .prepare('INSERT INTO users (username, email, password_hash, avatar) VALUES (?, ?, ?, ?)')
+    .run(username, email, passwordHash, avatar.value);
 
   const token = jwt.sign({ userId: info.lastInsertRowid }, process.env.JWT_SECRET, { expiresIn: '7d' });
-  res.status(201).json({ token, user: { id: info.lastInsertRowid, username, email } });
+  res.status(201).json({ token, user: publicUser(db.prepare('SELECT * FROM users WHERE id = ?').get(info.lastInsertRowid)) });
 });
 
 router.post('/login', async (req, res) => {
@@ -57,7 +61,7 @@ router.post('/login', async (req, res) => {
   }
 
   const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-  res.json({ token, user: { id: user.id, username: user.username, email: user.email } });
+  res.json({ token, user: publicUser(user) });
 });
 
 export default router;

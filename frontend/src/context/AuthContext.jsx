@@ -26,8 +26,8 @@ export function AuthProvider({ children }) {
     persist(data.token, data.user);
   }, []);
 
-  const register = useCallback(async (username, email, password) => {
-    const data = await api.register({ username, email, password });
+  const register = useCallback(async (username, email, password, avatar = null) => {
+    const data = await api.register({ username, email, password, ...(avatar ? { avatar } : {}) });
     persist(data.token, data.user);
   }, []);
 
@@ -37,6 +37,26 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
+  // Merge fresh profile fields (after an edit, or a refresh from the server) into state and storage
+  const updateUser = useCallback((partial) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...partial };
+      try {
+        localStorage.setItem('anitrack_user', JSON.stringify(next));
+      } catch {
+        /* storage full or blocked: the in-memory copy still works */
+      }
+      return next;
+    });
+  }, []);
+
+  // Pick up changes made on another device (new photo, new username) once per page load
+  useEffect(() => {
+    if (!localStorage.getItem('anitrack_token')) return;
+    api.me().then((res) => updateUser(res.user)).catch(() => {});
+  }, [updateUser]);
+
   // The API client fires this when the server says our token is no longer valid
   useEffect(() => {
     window.addEventListener('anitrack:unauthorized', logout);
@@ -44,7 +64,7 @@ export function AuthProvider({ children }) {
   }, [logout]);
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
