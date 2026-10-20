@@ -37,7 +37,7 @@ export default function AnimeDetail({ kind = 'anime' }) {
   const { user } = useAuth();
   const animeList = useList();
   const mangaList = useMangaList();
-  const { byMalId, addToList, updateEntry, removeEntry } = kind === 'manga' ? mangaList : animeList;
+  const { byMalId, addToList, updateEntry, removeEntry, restoreEntries } = kind === 'manga' ? mangaList : animeList;
   const toast = useToast();
   const root = useRef(null);
   const [anime, setAnime] = useState(null);
@@ -45,12 +45,14 @@ export default function AnimeDetail({ kind = 'anime' }) {
   const [saving, setSaving] = useState(false);
   const [actionError, setActionError] = useState('');
   const [expanded, setExpanded] = useState(false);
+  const [showTrailer, setShowTrailer] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setAnime(null);
     setError('');
     setExpanded(false);
+    setShowTrailer(false);
     (kind === 'manga' ? api.mangaDetail(id) : api.animeDetail(id))
       .then((res) => !cancelled && setAnime(res.data))
       .catch((e) => !cancelled && setError(e.message));
@@ -132,6 +134,7 @@ export default function AnimeDetail({ kind = 'anime' }) {
             <div><dt>Score</dt><dd>{anime.score ?? '—'}</dd></div>
             <div><dt>{cfg.unit}</dt><dd>{total ?? '?'}</dd></div>
             {kind === 'manga' && anime.volumes && <div><dt>Volumes</dt><dd>{anime.volumes}</dd></div>}
+            {anime.studio && <div><dt>Studio</dt><dd>{anime.studio}</dd></div>}
             {kind === 'anime' && anime.next_airing && <Countdown at={anime.next_airing.airing_at} episode={anime.next_airing.episode} />}
             {anime.genres?.length > 0 && <div className="d-genres"><dt>Genres</dt><dd>{anime.genres.join(' / ')}</dd></div>}
           </dl>
@@ -144,6 +147,21 @@ export default function AnimeDetail({ kind = 'anime' }) {
               </button>
             )}
           </div>
+
+          {anime.trailer && (
+            <div className="d-trailer d-in">
+              {showTrailer ? (
+                <iframe
+                  title={`${anime.title} trailer`}
+                  src={`https://www.youtube-nocookie.com/embed/${anime.trailer}?autoplay=1&rel=0`}
+                  allow="autoplay; encrypted-media; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <button type="button" className="btn btn-line btn-sm" onClick={() => setShowTrailer(true)}>▶ Watch trailer</button>
+              )}
+            </div>
+          )}
 
           {user ? (
             <div className="tracker d-in">
@@ -184,7 +202,7 @@ export default function AnimeDetail({ kind = 'anime' }) {
                         }}
                       />
                     </label>
-                    <button className="btn btn-quiet" disabled={saving} onClick={() => run(() => removeEntry(entry.id), 'Removed from your list')}>
+                    <button className="btn btn-quiet" disabled={saving} onClick={() => run(async () => { const copy = entry; await removeEntry(copy.id); toast('Removed from your list', 'info', { action: { label: 'Undo', onClick: () => restoreEntries([copy]).catch((e) => toast(e.message, 'error')) } }); })}>
                       Remove
                     </button>
                   </div>
@@ -234,6 +252,21 @@ export default function AnimeDetail({ kind = 'anime' }) {
           )}
         </div>
       </div>
+
+      {anime.relations?.length > 0 && (
+        <div className="wrap recs">
+          <p className="kicker">Same story</p>
+          <h2 className="h2">Seasons and related</h2>
+          <div className="anime-grid recs-grid rel-grid">
+            {anime.relations.map((r) => (
+              <div key={`${r.relation}${r.mal_id}`} className="rel-item">
+                <span className="rel-tag">{r.relation}</span>
+                <AnimeCard anime={r} kind="anime" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {anime.recommendations?.length > 0 && (
         <div className="wrap recs">

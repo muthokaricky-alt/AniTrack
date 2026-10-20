@@ -8,7 +8,7 @@ anime catalog, log what you're watching, rate and review, and see your stats.
 ## Stack
 
 - **Frontend**: React 18 + Vite, React Router, plain CSS (no framework)
-- **Backend**: Express + better-sqlite3
+- **Backend**: Express + PostgreSQL (Neon)
 - **Auth**: JWT + bcrypt
 - **Anime data**: [AniList GraphQL API](https://anilist.gitbook.io/anilist-apiv2-docs/) — no key required
 
@@ -20,7 +20,7 @@ synopses) is fetched live from AniList and cached briefly on the server.
 
 ```
 anitrack/
-  backend/     Express API (auth, list, anime proxy) + SQLite
+  backend/     Express API (auth, list, anime proxy) + Postgres
   frontend/    React app (Vite)
 ```
 
@@ -31,12 +31,18 @@ anitrack/
 ```
 cd backend
 npm install
-cp .env.example .env   # then edit JWT_SECRET
+cp .env.example .env   # then set JWT_SECRET and DATABASE_URL (your Neon connection string)
 npm run dev
 ```
 
-API runs on `http://localhost:5000`. SQLite file `anitrack.db` is created
-automatically on first run.
+API runs on `http://localhost:5000`. The tables are created automatically on first run.
+
+Moving an old SQLite database over (one time):
+
+```
+npm install --no-save better-sqlite3
+node scripts/migrate-sqlite-to-postgres.js path/to/anitrack.db
+```
 
 ### 2. Frontend
 
@@ -76,9 +82,11 @@ The Express server also serves the built React app, so one web service runs ever
    and env vars `NODE_ENV=production` and a long random `JWT_SECRET`.
 3. Open the URL Render gives you.
 
-> **Heads up:** Render's free tier has an ephemeral filesystem and sleeps after 15 minutes idle,
-> so the SQLite file is wiped when it restarts. Fine for a demo; for real data, move to a hosted
-> database or a paid instance with a persistent disk (set `DB_PATH` to the disk path).
+4. Add a `DATABASE_URL` environment variable (your Neon connection string). The data lives in Neon, so it
+   survives Render restarts and deploys.
+
+> **Heads up:** Render's free tier sleeps after 15 minutes idle, so the first request after a nap is slow.
+> Neon also pauses an idle database and wakes it on the next request.
 
 ## API overview
 

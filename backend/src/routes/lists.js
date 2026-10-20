@@ -6,6 +6,7 @@ import { anilistQuery } from './anime.js';
 // One router factory serves both lists. Table and column names come from these constants, never from user input.
 const KINDS = {
   anime: {
+    kind: 'anime',
     table: 'list_entries',
     statuses: ['watching', 'completed', 'on_hold', 'dropped', 'plan_to_watch'],
     defaultStatus: 'plan_to_watch',
@@ -16,6 +17,7 @@ const KINDS = {
     ratingKeys: ['story', 'characters', 'visuals', 'music', 'enjoyment']
   },
   manga: {
+    kind: 'manga',
     table: 'manga_entries',
     statuses: ['reading', 'completed', 'on_hold', 'dropped', 'plan_to_read'],
     defaultStatus: 'plan_to_read',
@@ -69,6 +71,22 @@ function packGenres(value) {
   return list.length ? JSON.stringify(list) : null;
 }
 
+// Up to 8 short tags per title, lower-case duplicates dropped
+function packTags(value) {
+  if (!Array.isArray(value)) return false;
+  const seen = new Set();
+  const out = [];
+  for (const raw of value) {
+    if (typeof raw !== 'string') continue;
+    const tag = raw.trim().replace(/\s+/g, ' ').slice(0, 24);
+    if (!tag || seen.has(tag.toLowerCase())) continue;
+    seen.add(tag.toLowerCase());
+    out.push(tag);
+    if (out.length >= 8) break;
+  }
+  return out.length ? JSON.stringify(out) : null;
+}
+
 function parseJson(text, fallback) {
   try {
     return text ? JSON.parse(text) : fallback;
@@ -79,7 +97,7 @@ function parseJson(text, fallback) {
 
 function unpack(row) {
   if (!row) return row;
-  return { ...row, genres: parseJson(row.genres, []), ratings: parseJson(row.ratings, {}) };
+  return { ...row, genres: parseJson(row.genres, []), ratings: parseJson(row.ratings, {}), tags: parseJson(row.tags, []) };
 }
 
 function makeRouter(cfg) {
@@ -87,13 +105,13 @@ function makeRouter(cfg) {
   const router = Router();
   router.use(requireAuth);
 
-  router.get('/', (req, res) => {
-    const rows = db.prepare(`SELECT * FROM ${t} WHERE user_id = ? ORDER BY updated_at DESC, id DESC`).all(req.userId);
+  router.get('/', async (req, res) => {
+    const rows = await db.all(`SELECT * FROM ${t} WHERE user_id = ? ORDER BY updated_at DESC, id DESC`, [req.userId]);
     res.json(rows.map(unpack));
   });
 
-  router.get('/stats', (req, res) => {
-    const rows = db.prepare(`SELECT status, ${progress} AS progress, score FROM ${t} WHERE user_id = ?`).all(req.userId);
+  router.get('/stats', async (req, res) => {
+    const rows = await db.all(`SELECT status, ${progress} AS progress, score FROM ${t} WHERE user_id = ?`, [req.userId]);
     const scored = rows.filter((r) => r.score != null);
     res.json({
       totalEntries: rows.length,
@@ -105,7 +123,7 @@ function makeRouter(cfg) {
 
   // Add an entry, or change the status of an existing one.
   // keep_existing: true adds only when missing (quick-add), so a completed title is never reset.
-  router.post('/', (req, res) => {
+  router.post('/', async (req, res) => {
     const { mal_id, title, image_url = null, status = defaultStatus, keep_existing = false } = req.body;
     if (!Number.isInteger(Number(mal_id)) || !title) return res.status(400).json({ error: 'mal_id and title are required' });
     if (!statuses.includes(status)) return res.status(400).json({ error: `status must be one of ${statuses.join(', ')}` });
@@ -113,28 +131,26 @@ function makeRouter(cfg) {
     const totalVal = intField(req.body[total], { min: 0, max: 100000 });
     const malId = Number(mal_id);
     const genres = packGenres(req.body.genres);
-    const existing = db.prepare(`SELECT * FROM ${t} WHERE user_id = ? AND mal_id = ?`).get(req.userId, malId);
+    const existing = await db.get(`SELECT * FROM ${t} WHERE user_id = ? AND mal_id = ?`, [req.userId, malId]);
 
     if (existing && keep_existing) return res.status(200).json(unpack(existing));
 
     const totalClean = Number.isNaN(totalVal) ? null : totalVal ?? null;
     if (existing) {
       const done = status === 'completed' && totalClean ? totalClean : existing[progress];
-      db.prepare(`
-        UPDATE ${t} SET status = @status, ${total} = COALESCE(@total, ${total}), ${progress} = @done,
-          genres = COALESCE(@genres, genres), updated_at = CURRENT_TIMESTAMP
-        WHERE id = @id
-      `).run({ status, total: totalClean, done, genres, id: existing.id });
+      await db.run(
+        `UPDATE ${t} SET status = ?, ${total} = COALESCE(?, ${total}), ${progress} = ?,
+          genres = COALESCE(?, genres), updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [status, totalClean, done, genres, existing.id]
+      );
     } else {
-      db.prepare(`
-        INSERT INTO ${t} (user_id, mal_id, title, image_url, status, ${total}, ${progress}, genres)
-        VALUES (@userId, @malId, @title, @image_url, @status, @total, @done, @genres)
-      `).run({
-        userId: req.userId, malId, title: String(title).slice(0, 300), image_url, status,
-        total: totalClean, done: status === 'completed' && totalClean ? totalClean : 0, genres
-      });
+      await db.run(
+        `INSERT INTO ${t} (user_id, mal_id, title, image_url, status, ${total}, ${progress}, genres) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT (user_id, mal_id) DO NOTHING`,
+        [req.userId, malId, String(title).slice(0, 300), image_url, status, totalClean, status === 'completed' && totalClean ? totalClean : 0, genres]
+      );
     }
-    const entry = db.prepare(`SELECT * FROM ${t} WHERE user_id = ? AND mal_id = ?`).get(req.userId, malId);
+    const entry = await db.get(`SELECT * FROM ${t} WHERE user_id = ? AND mal_id = ?`, [req.userId, malId]);
     res.status(existing ? 200 : 201).json(unpack(entry));
   });
 
@@ -200,7 +216,7 @@ function makeRouter(cfg) {
   });
 
   // Bulk upsert from an AniTrack export (overwrites entries with the same mal_id)
-  router.post('/import', (req, res) => {
+  router.post('/import', async (req, res) => {
     const list = Array.isArray(req.body?.entries) ? req.body.entries : null;
     if (!list) return res.status(400).json({ error: 'entries must be an array' });
     if (list.length > 3000) return res.status(400).json({ error: 'Too many entries (max 3000)' });
@@ -223,28 +239,34 @@ function makeRouter(cfg) {
         done, total: tot,
         review: typeof e.review === 'string' ? e.review.slice(0, 5000) || null : null,
         genres: packGenres(e.genres),
-        ratings: ratings === false ? null : ratings
+        ratings: ratings === false ? null : ratings,
+        tags: e.tags === undefined ? null : packTags(e.tags) || null
       });
     }
 
-    const stmt = db.prepare(`
-      INSERT INTO ${t} (user_id, mal_id, title, image_url, status, score, ${progress}, ${total}, review, genres, ratings)
-      VALUES (@userId, @malId, @title, @image_url, @status, @score, @done, @total, @review, @genres, @ratings)
-      ON CONFLICT(user_id, mal_id) DO UPDATE SET
-        title = excluded.title, image_url = excluded.image_url, status = excluded.status, score = excluded.score,
-        ${progress} = excluded.${progress}, ${total} = excluded.${total}, review = excluded.review,
-        genres = COALESCE(excluded.genres, ${t}.genres), ratings = COALESCE(excluded.ratings, ${t}.ratings),
-        updated_at = CURRENT_TIMESTAMP
-    `);
-    db.transaction((batch) => {
-      for (const r of batch) stmt.run({ ...r, userId: req.userId });
-    })(rows);
+    // one row per title (the last one wins), sent to the database as parallel arrays in a single statement
+    const byId = new Map(rows.map((r) => [r.malId, r]));
+    const uniq = [...byId.values()];
+    const col = (k) => uniq.map((r) => r[k]);
+    if (uniq.length) {
+      await db.run(
+        `INSERT INTO ${t} (user_id, mal_id, title, image_url, status, score, ${progress}, ${total}, review, genres, ratings, tags)
+         SELECT ?::int, * FROM unnest(?::int[], ?::text[], ?::text[], ?::text[], ?::float8[], ?::int[], ?::int[], ?::text[], ?::text[], ?::text[], ?::text[])
+         ON CONFLICT (user_id, mal_id) DO UPDATE SET
+           title = excluded.title, image_url = excluded.image_url, status = excluded.status, score = excluded.score,
+           ${progress} = excluded.${progress}, ${total} = excluded.${total}, review = excluded.review,
+           genres = COALESCE(excluded.genres, ${t}.genres), ratings = COALESCE(excluded.ratings, ${t}.ratings), tags = COALESCE(excluded.tags, ${t}.tags),
+           updated_at = CURRENT_TIMESTAMP`,
+        [req.userId, col('malId'), col('title'), col('image_url'), col('status'), col('score'), col('done'), col('total'), col('review'), col('genres'), col('ratings'), col('tags')]
+      );
+    }
     res.json({ imported: rows.length, skipped: list.length - rows.length });
   });
 
   // Update status, overall score (0.5 steps), category ratings, progress, notes. Score, ratings and notes can be cleared with null.
-  router.patch('/:id', (req, res) => {
-    const entry = db.prepare(`SELECT * FROM ${t} WHERE id = ? AND user_id = ?`).get(req.params.id, req.userId);
+  router.patch('/:id', async (req, res) => {
+    if (!/^\d+$/.test(req.params.id)) return res.status(404).json({ error: 'Entry not found' });
+    const entry = await db.get(`SELECT * FROM ${t} WHERE id = ? AND user_id = ?`, [req.params.id, req.userId]);
     if (!entry) return res.status(404).json({ error: 'Entry not found' });
 
     const body = req.body || {};
@@ -263,24 +285,36 @@ function makeRouter(cfg) {
       if (ratings === false) return res.status(400).json({ error: `ratings may only use: ${ratingKeys.join(', ')} (0.5 to 10, in steps of 0.5)` });
     }
 
-    db.prepare(`
-      UPDATE ${t} SET status = @status, score = @score, ${progress} = @done, review = @review, ratings = @ratings,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = @id AND user_id = @userId
-    `).run({
-      status: body.status ?? entry.status,
-      score: score === undefined ? entry.score : score,
-      done: done === undefined ? entry[progress] : done,
-      review: body.review === undefined ? entry.review : String(body.review).slice(0, 5000) || null,
-      ratings,
-      id: entry.id,
-      userId: req.userId
-    });
-    res.json(unpack(db.prepare(`SELECT * FROM ${t} WHERE id = ?`).get(entry.id)));
+    let tags = entry.tags;
+    if (body.tags !== undefined) {
+      tags = packTags(body.tags);
+      if (tags === false) return res.status(400).json({ error: 'tags must be a list of short words' });
+    }
+
+    const newDone = done === undefined ? entry[progress] : done;
+    await db.run(
+      `UPDATE ${t} SET status = ?, score = ?, ${progress} = ?, review = ?, ratings = ?, tags = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ? AND user_id = ?`,
+      [
+        body.status ?? entry.status,
+        score === undefined ? entry.score : score,
+        newDone,
+        body.review === undefined ? entry.review : String(body.review).slice(0, 5000) || null,
+        ratings,
+        tags,
+        entry.id,
+        req.userId
+      ]
+    );
+    if (done !== undefined && done > (entry[progress] || 0)) {
+      await db.run('INSERT INTO activity (user_id, kind, mal_id, delta) VALUES (?, ?, ?, ?)', [req.userId, cfg.kind, entry.mal_id, done - (entry[progress] || 0)]);
+    }
+    res.json(unpack(await db.get(`SELECT * FROM ${t} WHERE id = ?`, [entry.id])));
   });
 
-  router.delete('/:id', (req, res) => {
-    const result = db.prepare(`DELETE FROM ${t} WHERE id = ? AND user_id = ?`).run(req.params.id, req.userId);
+  router.delete('/:id', async (req, res) => {
+    if (!/^\d+$/.test(req.params.id)) return res.status(404).json({ error: 'Entry not found' });
+    const result = await db.run(`DELETE FROM ${t} WHERE id = ? AND user_id = ?`, [req.params.id, req.userId]);
     if (result.changes === 0) return res.status(404).json({ error: 'Entry not found' });
     res.status(204).send();
   });

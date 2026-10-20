@@ -24,9 +24,7 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ error: 'Username must be 2-30 characters' });
   }
 
-  const existing = db
-    .prepare('SELECT id FROM users WHERE lower(email) = ? OR lower(username) = lower(?)')
-    .get(email, username);
+  const existing = await db.get('SELECT id FROM users WHERE lower(email) = ? OR lower(username) = lower(?)', [email, username]);
   if (existing) {
     return res.status(409).json({ error: 'Username or email already in use' });
   }
@@ -35,12 +33,16 @@ router.post('/register', async (req, res) => {
   if (!avatar.valid) return res.status(400).json({ error: 'Profile photo must be a JPEG, PNG or WebP image' });
 
   const passwordHash = await bcrypt.hash(password, 10);
-  const info = db
-    .prepare('INSERT INTO users (username, email, password_hash, avatar) VALUES (?, ?, ?, ?)')
-    .run(username, email, passwordHash, avatar.value);
+  let created;
+  try {
+    created = await db.get('INSERT INTO users (username, email, password_hash, avatar) VALUES (?, ?, ?, ?) RETURNING *', [username, email, passwordHash, avatar.value]);
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'Username or email already in use' }); // two sign-ups raced
+    throw err;
+  }
 
-  const token = jwt.sign({ userId: info.lastInsertRowid }, process.env.JWT_SECRET, { expiresIn: '7d' });
-  res.status(201).json({ token, user: publicUser(db.prepare('SELECT * FROM users WHERE id = ?').get(info.lastInsertRowid)) });
+  const token = jwt.sign({ userId: created.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  res.status(201).json({ token, user: publicUser(created) });
 });
 
 router.post('/login', async (req, res) => {
@@ -50,7 +52,7 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ error: 'email and password are required' });
   }
 
-  const user = db.prepare('SELECT * FROM users WHERE lower(email) = ?').get(email);
+  const user = await db.get('SELECT * FROM users WHERE lower(email) = ?', [email]);
   if (!user) {
     return res.status(401).json({ error: 'Invalid email or password' });
   }

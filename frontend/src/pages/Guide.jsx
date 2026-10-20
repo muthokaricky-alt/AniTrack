@@ -27,6 +27,61 @@ const GUIDES = [
     to: '/my-list', cta: 'Open My List', auth: true
   },
   {
+    id: 'details', group: 'Your list', title: 'Add notes, a score and tags to a title',
+    words: 'notes score tags rewatch comfort details panel review label',
+    steps: [
+      'On My List, press Details on a row. A panel opens under it with your score, private notes and tags.',
+      'Type a tag such as Rewatch or Comfort and press Enter. Tap a tag on a row to filter the list by it.',
+      'Use the tag menu in the filter bar to see only one tag.'
+    ],
+    to: '/my-list', cta: 'Open My List', auth: true
+  },
+  {
+    id: 'undo', group: 'Your list', title: 'Undo a removal or a bulk move',
+    words: 'undo restore removed deleted mistake',
+    steps: [
+      'After you remove a title, or move or remove several, a message appears in the corner with an Undo button.',
+      'Press Undo within about 7 seconds and the titles come back with their score, notes and tags.'
+    ]
+  },
+  {
+    id: 'streak', group: 'Discover', title: 'Streaks and your weekly goal',
+    words: 'streak goal weekly week progress momentum',
+    steps: [
+      'The strip at the top of My List shows how many episodes (or chapters) you logged this week and your day streak.',
+      'Press the goal number to change it. The week resets every Monday.',
+      'Every +1 counts, so log as you go.'
+    ],
+    to: '/my-list', cta: 'Open My List', auth: true
+  },
+  {
+    id: 'bell', group: 'Discover', title: 'Get told about new episodes',
+    words: 'bell notification new episode airing behind alert',
+    steps: [
+      'The bell in the top bar shows a dot when a show you are watching, or plan to watch, has aired episodes you have not logged.',
+      'Press it to see which shows, then tap one to open it. Logging the episode clears it.'
+    ]
+  },
+  {
+    id: 'wrapped', group: 'Favourites and sharing', title: 'See your Wrapped',
+    words: 'wrapped recap year summary stats card hours genres',
+    steps: [
+      'On My List press Wrapped, or press ' + K + ' and type Wrapped.',
+      'Switch between Anime and Manga to see episodes or chapters, hours, top genres and your highest rated.',
+      'Press Download card for an image you can post. Month and streak fill in as you keep logging.'
+    ],
+    to: '/wrapped', cta: 'Open Wrapped', auth: true
+  },
+  {
+    id: 'install', group: 'Tips', title: 'Install AniTrack on your phone or computer',
+    words: 'install app home screen pwa add offline phone',
+    steps: [
+      'On Android Chrome: open the menu and choose Install app (or Add to Home screen). On iPhone Safari: press Share, then Add to Home Screen.',
+      'On a computer in Chrome or Edge, use the install icon at the right of the address bar.',
+      'The app opens full screen and loads faster. If the server is asleep, My List still shows your last saved copy.'
+    ]
+  },
+  {
     id: 'organise', group: 'Your list', title: 'Sort, filter and change the view of My List',
     words: 'sort filter search genre view grid compact list',
     steps: [

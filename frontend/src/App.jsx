@@ -15,6 +15,7 @@ import Search from './pages/Search.jsx';
 import AnimeDetail from './pages/AnimeDetail.jsx';
 import MyList from './pages/MyList.jsx';
 import Schedule from './pages/Schedule.jsx';
+import Wrapped from './pages/Wrapped.jsx';
 import Guide from './pages/Guide.jsx';
 import Manga from './pages/Manga.jsx';
 import Profile from './pages/Profile.jsx';
@@ -93,6 +94,7 @@ function Shell() {
           <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
           <Route path="/u/:username" element={<PublicProfile />} />
           <Route path="/manga/:id" element={<AnimeDetail kind="manga" />} />
+          <Route path="/wrapped" element={<PrivateRoute><Wrapped /></PrivateRoute>} />
           <Route path="/guide" element={<Guide />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />

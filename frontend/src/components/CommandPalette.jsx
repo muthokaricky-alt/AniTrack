@@ -18,6 +18,7 @@ const PAGES = [
   { label: 'Manga', to: '/manga', hint: 'Browse manga', words: 'manga read' },
   { label: 'My list', to: '/my-list', hint: 'Your anime and manga', words: 'list my watchlist', auth: true },
   { label: 'Profile', to: '/profile', hint: 'Favourites, settings and share card', words: 'profile settings favourites share card account', auth: true },
+  { label: 'Wrapped', to: '/wrapped', hint: 'Your year in anime and manga', words: 'wrapped recap year stats', auth: true },
   { label: 'Guide', to: '/guide', hint: 'How to export, import, share and more', words: 'guide help tutorial how to export import top 15 download' },
   { label: 'Log in', to: '/login', hint: '', words: 'login sign in', guest: true },
   { label: 'Create account', to: '/register', hint: '', words: 'register sign up account', guest: true }

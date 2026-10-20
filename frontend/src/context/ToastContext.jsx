@@ -9,10 +9,10 @@ export function ToastProvider({ children }) {
 
   const dismiss = useCallback((id) => setItems((list) => list.filter((t) => t.id !== id)), []);
   const toast = useCallback(
-    (message, type = 'info') => {
+    (message, type = 'info', { action, duration } = {}) => {
       const id = ++idRef.current;
-      setItems((list) => [...list.slice(-3), { id, message, type }]);
-      setTimeout(() => dismiss(id), type === 'error' ? 5200 : 3200);
+      setItems((list) => [...list.slice(-3), { id, message, type, action }]);
+      setTimeout(() => dismiss(id), duration || (action ? 7000 : type === 'error' ? 5200 : 3200));
     },
     [dismiss]
   );
@@ -24,6 +24,7 @@ export function ToastProvider({ children }) {
         {items.map((t) => (
           <div key={t.id} className={`toast toast-${t.type}`}>
             <span>{t.message}</span>
+            {t.action && <button className="toast-action" onClick={() => { dismiss(t.id); t.action.onClick(); }}>{t.action.label}</button>}
             <button onClick={() => dismiss(t.id)} aria-label="Dismiss">×</button>
           </div>
         ))}

@@ -9,15 +9,15 @@
     "dev": "node --watch src/server.js"
   },
   "dependencies": {
-    "better-sqlite3": "^11.3.0",
+    "@neondatabase/serverless": "^1.2.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
+    "express-async-errors": "^3.1.1",
     "jsonwebtoken": "^9.0.2",
-    "node-fetch": "^3.3.2"
-  },
-  "allowScripts": {
-    "better-sqlite3@11.10.0": true
+    "node-fetch": "^3.3.2",
+    "pg": "^8.23.1",
+    "ws": "^8.22.0"
   }
 }

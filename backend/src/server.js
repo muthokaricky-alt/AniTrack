@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import 'express-async-errors'; // lets async route handlers pass errors to the error middleware below
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -6,12 +7,14 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.js';
 import listRoutes, { mangaListRoutes } from './routes/lists.js';
+import activityRoutes from './routes/activity.js';
 import animeRoutes from './routes/anime.js';
 import mangaRoutes from './routes/manga.js';
 import profileRoutes, { usersRoutes } from './routes/profile.js';
 import favoritesRoutes from './routes/favorites.js';
 import characterRoutes from './routes/characters.js';
 import imgRoutes from './routes/img.js';
+import db from './db.js';
 import { rateLimit } from './middleware/rateLimit.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -52,6 +55,7 @@ app.use(
   authRoutes
 );
 app.use('/api/list', listRoutes);
+app.use('/api/activity', activityRoutes);
 app.use('/api/manga-list', mangaListRoutes);
 app.use('/api/anime', animeRoutes);
 app.use('/api/manga', mangaRoutes);
@@ -79,4 +83,16 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
+try {
+  await db.init();
+} catch (err) {
+  const parts = [err.message, err.code, ...(err.errors || []).map((e) => `${e.code || ''} ${e.address || ''}:${e.port || ''} ${e.message || ''}`.trim())].filter(Boolean);
+  console.error('Could not set up the database:', parts.join(' | ') || err);
+  if (!parts.length || parts.some((x) => /ECONNREFUSED|ETIMEDOUT|ENETUNREACH|ENOTFOUND|EAI_AGAIN|timeout/i.test(x))) {
+    console.error('The server could not reach Neon. Check DATABASE_URL, your internet connection, and whether this network blocks port 5432 (try a phone hotspot).');
+  } else if (/password|authentication/i.test(parts.join(' '))) {
+    console.error('Neon refused the login. Copy the connection string again (after resetting the password) into backend/.env.');
+  }
+  process.exit(1);
+}
 app.listen(PORT, () => console.log(`AniTrack listening on port ${PORT}`));

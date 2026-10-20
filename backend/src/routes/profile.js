@@ -7,18 +7,18 @@ import { loadFavorites } from './favorites.js';
 
 const router = Router();
 
-const getUser = (id) => db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+const getUser = (id) => db.get('SELECT * FROM users WHERE id = ?', [id]);
 
 // GET /api/profile -> the logged-in user's own profile
-router.get('/', requireAuth, (req, res) => {
-  const user = getUser(req.userId);
+router.get('/', requireAuth, async (req, res) => {
+  const user = await getUser(req.userId);
   if (!user) return res.status(401).json({ error: 'Account not found' });
   res.json({ user: publicUser(user) });
 });
 
 // PATCH /api/profile -> any of username, bio, avatar (null removes it), is_public
-router.patch('/', requireAuth, (req, res) => {
-  const user = getUser(req.userId);
+router.patch('/', requireAuth, async (req, res) => {
+  const user = await getUser(req.userId);
   if (!user) return res.status(401).json({ error: 'Account not found' });
   const body = req.body || {};
   const next = { username: user.username, bio: user.bio, avatar: user.avatar, is_public: user.is_public };
@@ -26,7 +26,7 @@ router.patch('/', requireAuth, (req, res) => {
   if (body.username !== undefined) {
     const name = String(body.username).trim();
     if (name.length < 2 || name.length > 30) return res.status(400).json({ error: 'Username must be 2-30 characters' });
-    const taken = db.prepare('SELECT id FROM users WHERE lower(username) = lower(?) AND id != ?').get(name, user.id);
+    const taken = await db.get('SELECT id FROM users WHERE lower(username) = lower(?) AND id != ?', [name, user.id]);
     if (taken) return res.status(409).json({ error: 'That username is already taken' });
     next.username = name;
   }
@@ -42,35 +42,35 @@ router.patch('/', requireAuth, (req, res) => {
   }
   if (body.is_public !== undefined) next.is_public = body.is_public ? 1 : 0;
 
-  db.prepare('UPDATE users SET username = @username, bio = @bio, avatar = @avatar, is_public = @is_public WHERE id = @id').run({
-    ...next,
-    id: user.id
-  });
-  res.json({ user: publicUser(getUser(user.id)) });
+  try {
+    await db.run('UPDATE users SET username = ?, bio = ?, avatar = ?, is_public = ? WHERE id = ?', [next.username, next.bio, next.avatar, next.is_public, user.id]);
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'That username is already taken' });
+    throw err;
+  }
+  res.json({ user: publicUser(await getUser(user.id)) });
 });
 
 // PATCH /api/profile/password
 router.patch('/password', requireAuth, async (req, res) => {
-  const user = getUser(req.userId);
+  const user = await getUser(req.userId);
   if (!user) return res.status(401).json({ error: 'Account not found' });
   const current = String(req.body?.current_password || '');
   const next = String(req.body?.new_password || '');
   if (next.length < 6) return res.status(400).json({ error: 'New password must be at least 6 characters' });
   // 400 rather than 401 so a typo doesn't sign the user out
   if (!(await bcrypt.compare(current, user.password_hash))) return res.status(400).json({ error: 'Current password is incorrect' });
-  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(await bcrypt.hash(next, 10), user.id);
+  await db.run('UPDATE users SET password_hash = ? WHERE id = ?', [await bcrypt.hash(next, 10), user.id]);
   res.json({ ok: true });
 });
 
 // ----- Public profiles: opt-in only, and only non-sensitive fields -----
 export const usersRoutes = Router();
 
-function summary(table, progress, userId) {
-  const rows = db.prepare(`SELECT status, score, ${progress} AS progress FROM ${table} WHERE user_id = ?`).all(userId);
+async function summary(table, progress, userId) {
+  const rows = await db.all(`SELECT status, score, ${progress} AS progress FROM ${table} WHERE user_id = ?`, [userId]);
   const scored = rows.filter((r) => r.score != null);
-  const favorites = db
-    .prepare(`SELECT mal_id, title, image_url, score FROM ${table} WHERE user_id = ? AND score IS NOT NULL ORDER BY score DESC, updated_at DESC LIMIT 8`)
-    .all(userId);
+  const favorites = await db.all(`SELECT mal_id, title, image_url, score FROM ${table} WHERE user_id = ? AND score IS NOT NULL ORDER BY score DESC, updated_at DESC LIMIT 8`, [userId]);
   return {
     total: rows.length,
     completed: rows.filter((r) => r.status === 'completed').length,
@@ -81,16 +81,14 @@ function summary(table, progress, userId) {
 }
 
 // GET /api/users/:username
-usersRoutes.get('/:username', (req, res) => {
-  const u = db
-    .prepare('SELECT id, username, avatar, bio, is_public, created_at FROM users WHERE lower(username) = lower(?)')
-    .get(String(req.params.username).slice(0, 60));
+usersRoutes.get('/:username', async (req, res) => {
+  const u = await db.get('SELECT id, username, avatar, bio, is_public, created_at FROM users WHERE lower(username) = lower(?)', [String(req.params.username).slice(0, 60)]);
   if (!u || !u.is_public) return res.status(404).json({ error: 'This profile is private or does not exist' });
   res.json({
     user: { username: u.username, avatar: u.avatar || null, bio: u.bio || '', joined: u.created_at },
-    anime: summary('list_entries', 'episodes_watched', u.id),
-    manga: summary('manga_entries', 'chapters_read', u.id),
-    favorites: loadFavorites(u.id)
+    anime: await summary('list_entries', 'episodes_watched', u.id),
+    manga: await summary('manga_entries', 'chapters_read', u.id),
+    favorites: await loadFavorites(u.id)
   });
 });
 
@@ -98,10 +96,10 @@ usersRoutes.get('/:username', (req, res) => {
 const clamp01 = (x) => Math.max(0, Math.min(1, x));
 const parseGenres = (text) => { try { const g = JSON.parse(text || '[]'); return Array.isArray(g) ? g : []; } catch { return []; } };
 
-function loadTaste(userId) {
+async function loadTaste(userId) {
   const out = [];
   for (const [kind, table] of [['anime', 'list_entries'], ['manga', 'manga_entries']]) {
-    for (const r of db.prepare(`SELECT mal_id, title, image_url, score, genres FROM ${table} WHERE user_id = ?`).all(userId)) {
+    for (const r of await db.all(`SELECT mal_id, title, image_url, score, genres FROM ${table} WHERE user_id = ?`, [userId])) {
       out.push({ kind, mal_id: r.mal_id, title: r.title, image_url: r.image_url, score: r.score, genres: parseGenres(r.genres) });
     }
   }
@@ -167,12 +165,12 @@ export function compareTaste(mine, theirs) {
 }
 
 // GET /api/users/:username/match -> compare the logged-in user with a public profile
-usersRoutes.get('/:username/match', requireAuth, (req, res) => {
-  const them = db.prepare('SELECT id, username, is_public FROM users WHERE lower(username) = lower(?)').get(String(req.params.username).slice(0, 60));
+usersRoutes.get('/:username/match', requireAuth, async (req, res) => {
+  const them = await db.get('SELECT id, username, is_public FROM users WHERE lower(username) = lower(?)', [String(req.params.username).slice(0, 60)]);
   if (!them || !them.is_public) return res.status(404).json({ error: 'This profile is private or does not exist' });
   if (them.id === req.userId) return res.status(400).json({ error: "That's your own profile" });
-  const mine = loadTaste(req.userId);
-  const theirs = loadTaste(them.id);
+  const mine = await loadTaste(req.userId);
+  const theirs = await loadTaste(them.id);
   if (!mine.length) return res.status(400).json({ error: 'Add some titles to your list first, then come back to compare' });
   if (!theirs.length) return res.status(400).json({ error: `${them.username} has no titles on their list yet` });
   res.json({ username: them.username, ...compareTaste(mine, theirs) });

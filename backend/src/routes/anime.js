@@ -81,6 +81,16 @@ export function toJikanShape(media) {
             : null
         }
       : {}),
+    ...(media.trailer?.site === 'youtube' && /^[\w-]{6,20}$/.test(media.trailer.id || '') ? { trailer: media.trailer.id } : {}),
+    ...(media.studios?.nodes?.[0]?.name ? { studio: media.studios.nodes[0].name } : {}),
+    ...(media.relations
+      ? {
+          relations: (media.relations.edges || [])
+            .filter((e) => e.node?.idMal && e.node.type === 'ANIME' && ['SEQUEL', 'PREQUEL', 'PARENT', 'SIDE_STORY', 'SPIN_OFF', 'ALTERNATIVE'].includes(e.relationType))
+            .slice(0, 8)
+            .map((e) => ({ relation: e.relationType.replace('_', ' ').toLowerCase(), ...toJikanShape(e.node) }))
+        }
+      : {}),
     ...(media.recommendations
       ? {
           recommendations: (media.recommendations.nodes || [])
@@ -127,6 +137,14 @@ const DETAIL_QUERY = `
     Media(idMal: $idMal, type: ANIME) {
       ${MEDIA_FIELDS}
       nextAiringEpisode { airingAt episode }
+      trailer { id site }
+      studios(isMain: true) { nodes { name } }
+      relations {
+        edges {
+          relationType
+          node { idMal type format title { romaji english } episodes averageScore seasonYear coverImage { extraLarge large medium color } }
+        }
+      }
       recommendations(perPage: 8, sort: RATING_DESC) {
         nodes {
           mediaRecommendation {
@@ -276,9 +294,7 @@ const REC_CARD = `
 
 // GET /api/anime/airing -> your Watching and Plan-to-watch titles that are still airing, soonest episode first
 router.get('/airing', requireAuth, async (req, res) => {
-  const rows = db
-    .prepare("SELECT mal_id, status, episodes_watched FROM list_entries WHERE user_id = ? AND status IN ('watching', 'plan_to_watch') ORDER BY updated_at DESC LIMIT 60")
-    .all(req.userId);
+  const rows = await db.all("SELECT mal_id, status, episodes_watched FROM list_entries WHERE user_id = ? AND status IN ('watching', 'plan_to_watch') ORDER BY updated_at DESC LIMIT 60", [req.userId]);
   if (!rows.length) return res.json({ data: [] });
   const mine = new Map(rows.map((r) => [r.mal_id, r]));
   const ids = [...mine.keys()].sort((a, b) => a - b);
@@ -325,16 +341,14 @@ router.get('/airing', requireAuth, async (req, res) => {
 // GET /api/anime/for-you -> "Because you loved X": AniList's recommendations for a few of your top-scored titles,
 // minus anything already on your list. The seeds rotate daily so the row isn't the same every visit.
 router.get('/for-you', requireAuth, async (req, res) => {
-  const top = db
-    .prepare('SELECT mal_id, title, score FROM list_entries WHERE user_id = ? AND score IS NOT NULL ORDER BY score DESC, updated_at DESC LIMIT 40')
-    .all(req.userId);
+  const top = await db.all('SELECT mal_id, title, score FROM list_entries WHERE user_id = ? AND score IS NOT NULL ORDER BY score DESC, updated_at DESC LIMIT 40', [req.userId]);
   if (!top.length) return res.json({ rows: [] });
   const loved = top.filter((t) => t.score >= 9);
   const pool = (loved.length >= 3 ? loved : top.slice(0, 8)).slice(0, 14);
   const day = Math.floor(Date.now() / 86400000);
   const seeds = Array.from({ length: Math.min(4, pool.length) }, (_, i) => pool[(day + i * 3) % pool.length]);
   const uniqueSeeds = [...new Map(seeds.map((s) => [s.mal_id, s])).values()];
-  const owned = new Set(db.prepare('SELECT mal_id FROM list_entries WHERE user_id = ?').pluck().all(req.userId));
+  const owned = new Set((await db.all('SELECT mal_id FROM list_entries WHERE user_id = ?', [req.userId])).map((r) => r.mal_id));
 
   const vars = {};
   const defs = uniqueSeeds.map((s, n) => { vars[`i${n}`] = s.mal_id; return `$i${n}: Int`; }).join(', ');

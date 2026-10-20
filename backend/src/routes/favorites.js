@@ -8,11 +8,9 @@ export const LISTS = { top3: 3, top15: 15 };
 const empty = () => Object.fromEntries(KINDS.map((k) => [k, Object.fromEntries(Object.keys(LISTS).map((l) => [l, []]))]));
 
 // Everything a user has picked, grouped as { anime: { top3: [...], top15: [...] }, manga: {...}, character: {...} }
-export function loadFavorites(userId) {
+export async function loadFavorites(userId) {
   const out = empty();
-  const rows = db
-    .prepare('SELECT kind, list, item_id, title, image_url, sub FROM favorites WHERE user_id = ? ORDER BY kind, list, position')
-    .all(userId);
+  const rows = await db.all('SELECT kind, list, item_id, title, image_url, sub FROM favorites WHERE user_id = ? ORDER BY kind, list, position', [userId]);
   for (const r of rows) out[r.kind]?.[r.list]?.push({ item_id: r.item_id, title: r.title, image_url: r.image_url, sub: r.sub });
   return out;
 }
@@ -20,10 +18,10 @@ export function loadFavorites(userId) {
 const router = Router();
 router.use(requireAuth);
 
-router.get('/', (req, res) => res.json(loadFavorites(req.userId)));
+router.get('/', async (req, res) => res.json(await loadFavorites(req.userId)));
 
 // Replace one whole list in order. PUT /api/favorites/anime/top3  { items: [{ item_id, title, image_url, sub }] }
-router.put('/:kind/:list', (req, res) => {
+router.put('/:kind/:list', async (req, res) => {
   const { kind, list } = req.params;
   if (!KINDS.includes(kind) || !(list in LISTS)) return res.status(404).json({ error: 'Unknown favourites list' });
   const items = req.body?.items;
@@ -46,14 +44,16 @@ router.put('/:kind/:list', (req, res) => {
     });
   }
 
-  const insert = db.prepare(
-    'INSERT INTO favorites (user_id, kind, list, position, item_id, title, image_url, sub) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-  );
-  db.transaction(() => {
-    db.prepare('DELETE FROM favorites WHERE user_id = ? AND kind = ? AND list = ?').run(req.userId, kind, list);
-    clean.forEach((c, i) => insert.run(req.userId, kind, list, i, c.id, c.title, c.image_url, c.sub));
-  })();
-  res.json({ items: loadFavorites(req.userId)[kind][list] });
+  await db.tx(async (t) => {
+    await t.run('DELETE FROM favorites WHERE user_id = ? AND kind = ? AND list = ?', [req.userId, kind, list]);
+    for (const [i, c] of clean.entries()) {
+      await t.run(
+        'INSERT INTO favorites (user_id, kind, list, position, item_id, title, image_url, sub) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [req.userId, kind, list, i, c.id, c.title, c.image_url, c.sub]
+      );
+    }
+  });
+  res.json({ items: (await loadFavorites(req.userId))[kind][list] });
 });
 
 export default router;

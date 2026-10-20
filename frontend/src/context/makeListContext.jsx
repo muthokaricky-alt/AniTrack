@@ -14,24 +14,39 @@ export function makeListContext(kind) {
     const [entries, setEntries] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [savedAt, setSavedAt] = useState(null); // set when the list on screen is an offline copy
     const entriesRef = useRef(entries);
     entriesRef.current = entries;
 
+    const cacheKey = user ? `anitrack:list:${kind}:${user.username}` : null;
     const load = useCallback(async () => {
       setLoading(true);
       setError('');
       try {
-        setEntries(await ops.get());
+        const fresh = await ops.get();
+        setEntries(fresh);
+        setSavedAt(null);
+        if (cacheKey) {
+          try { localStorage.setItem(cacheKey, JSON.stringify({ at: Date.now(), entries: fresh })); } catch { /* storage full or blocked */ }
+        }
       } catch (e) {
-        setError(e.message);
+        // server asleep or catalogue down: fall back to the last copy this browser saw
+        let copy = null;
+        try { copy = cacheKey ? JSON.parse(localStorage.getItem(cacheKey) || 'null') : null; } catch { /* ignore */ }
+        if (copy?.entries?.length) {
+          setEntries(copy.entries);
+          setSavedAt(copy.at);
+        } else {
+          setError(e.message);
+        }
       } finally {
         setLoading(false);
       }
-    }, []);
+    }, [cacheKey]);
 
     useEffect(() => {
       if (user) load();
-      else setEntries([]);
+      else { setEntries([]); setSavedAt(null); }
     }, [user, load]);
 
     const upsert = useCallback((entry) => {
@@ -75,6 +90,12 @@ export function makeListContext(kind) {
       [upsert]
     );
 
+    // put back titles that were just removed (the Undo button), with their old status, score, notes and tags
+    const restoreEntries = useCallback(async (list) => {
+      await ops.import(list);
+      await load();
+    }, [load]);
+
     const removeEntry = useCallback(async (id) => {
       await ops.remove(id);
       setEntries((prev) => prev.filter((e) => e.id !== id));
@@ -92,7 +113,7 @@ export function makeListContext(kind) {
       };
     }, [entries]);
 
-    const value = { entries, byMalId, stats, loading, error, reload: load, addToList, updateEntry, removeEntry };
+    const value = { entries, byMalId, stats, loading, error, savedAt, reload: load, addToList, updateEntry, removeEntry, restoreEntries };
     return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
   }
 

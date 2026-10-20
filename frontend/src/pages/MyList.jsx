@@ -10,6 +10,9 @@ import Roulette from '../components/Roulette.jsx';
 import ImportDialog from '../components/ImportDialog.jsx';
 import AiringWeek from '../components/AiringWeek.jsx';
 import CountUp from '../components/CountUp.jsx';
+import RowPanel from '../components/RowPanel.jsx';
+import Momentum from '../components/Momentum.jsx';
+import Welcome from '../components/Welcome.jsx';
 import ListSkeleton from '../components/ListSkeleton.jsx';
 import ErrorState from '../components/ErrorState.jsx';
 import { parseFile } from '../lib/importParse.js';
@@ -43,25 +46,32 @@ export default function MyList() {
   const cfg = KINDS[kind];
   const animeList = useList();
   const mangaList = useMangaList();
-  const { entries, stats, loading, error, reload, updateEntry, removeEntry } = kind === 'manga' ? mangaList : animeList;
+  const { entries, stats, loading, error, savedAt, reload, updateEntry, removeEntry, restoreEntries } = kind === 'manga' ? mangaList : animeList;
   const toast = useToast();
   const fileInput = useRef(null);
-  const [tab, setTab] = useState('all');
+  const saved = useMemo(() => { try { return JSON.parse(sessionStorage.getItem('anitrack:listfilters') || '{}'); } catch { return {}; } }, []);
+  const [tab, setTab] = useState(saved.tab || 'all');
   const [rowError, setRowError] = useState('');
   const [importSections, setImportSections] = useState(null);
   const [busy, setBusy] = useState(false);
   const [prefs, setPrefs] = useState(loadPrefs);
-  const [q, setQ] = useState('');
-  const [genre, setGenre] = useState('');
+  const [q, setQ] = useState(saved.q || '');
+  const [genre, setGenre] = useState(saved.genre || '');
+  const [tag, setTag] = useState(saved.tag || '');
+  const [openRows, setOpenRows] = useState(() => new Set());
   const [selecting, setSelecting] = useState(false);
   const [picked, setPicked] = useState(() => new Set());
 
+  useEffect(() => {
+    try { sessionStorage.setItem('anitrack:listfilters', JSON.stringify({ tab, q, genre, tag })); } catch { /* private mode */ }
+  }, [tab, q, genre, tag]);
   useEffect(() => {
     try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch { /* private mode */ }
   }, [prefs]);
   const setPref = (k, v) => setPrefs((p) => ({ ...p, [k]: v }));
 
   const tabs = useMemo(() => [{ key: 'all', label: 'All' }, ...cfg.statuses], [cfg]);
+  const allTags = useMemo(() => [...new Set(entries.flatMap((e) => e.tags || []))].sort((a, b) => a.localeCompare(b)), [entries]);
   const genres = useMemo(() => [...new Set(entries.flatMap((e) => e.genres || []))].sort(), [entries]);
   const visible = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -69,7 +79,8 @@ export default function MyList() {
     const out = entries.filter((e) =>
       (tab === 'all' || e.status === tab) &&
       (!term || e.title.toLowerCase().includes(term)) &&
-      (!genre || (e.genres || []).includes(genre))
+      (!genre || (e.genres || []).includes(genre)) &&
+      (!tag || (e.tags || []).includes(tag))
     );
     const by = {
       title: (a, b) => a.title.localeCompare(b.title),
@@ -78,7 +89,7 @@ export default function MyList() {
       added: (a, b) => a.id - b.id
     }[prefs.sort];
     return by ? [...out].sort(by) : out; // 'recent' keeps the server order
-  }, [entries, tab, q, genre, prefs.sort, cfg]);
+  }, [entries, tab, q, genre, tag, prefs.sort, cfg]);
   const pool = useMemo(() => entries.filter((e) => e.status === cfg.defaultStatus), [entries, cfg]);
 
   function switchKind(next) {
@@ -87,6 +98,8 @@ export default function MyList() {
     setRowError('');
     setQ('');
     setGenre('');
+    setTag('');
+    setOpenRows(new Set());
     exitSelect();
   }
 
@@ -98,23 +111,29 @@ export default function MyList() {
     if (!status || picked.size === 0) return;
     setBusy(true);
     const targets = entries.filter((e) => picked.has(e.id));
+    const before = targets.map((e) => ({ id: e.id, status: e.status, [cfg.progress]: e[cfg.progress] }));
     const res = await Promise.allSettled(targets.map((e) => {
       const patch = { status };
       if (status === 'completed' && e[cfg.total]) patch[cfg.progress] = e[cfg.total];
       return updateEntry(e.id, patch);
     }));
     const failed = res.filter((r) => r.status === 'rejected').length;
-    toast(failed ? `Updated ${targets.length - failed}, ${failed} failed` : `Updated ${targets.length} titles`, failed ? 'error' : undefined);
+    toast(failed ? `Updated ${targets.length - failed}, ${failed} failed` : `Moved ${targets.length} title${targets.length === 1 ? '' : 's'}`, failed ? 'error' : 'info', {
+      action: failed ? undefined : { label: 'Undo', onClick: () => Promise.allSettled(before.map(({ id, ...patch }) => updateEntry(id, patch))) }
+    });
     setBusy(false);
     exitSelect();
   }
   async function bulkRemove() {
-    if (picked.size === 0 || !window.confirm(`Remove ${picked.size} title${picked.size === 1 ? '' : 's'} from your list?`)) return;
+    if (picked.size === 0) return;
     setBusy(true);
     const targets = entries.filter((e) => picked.has(e.id));
     const res = await Promise.allSettled(targets.map((e) => removeEntry(e.id)));
-    const failed = res.filter((r) => r.status === 'rejected').length;
-    toast(failed ? `Removed ${targets.length - failed}, ${failed} failed` : `Removed ${targets.length} titles`, failed ? 'error' : undefined);
+    const gone = targets.filter((_, i) => res[i].status === 'fulfilled');
+    const failed = targets.length - gone.length;
+    toast(failed ? `Removed ${gone.length}, ${failed} failed` : `Removed ${gone.length} title${gone.length === 1 ? '' : 's'}`, failed ? 'error' : 'info', {
+      action: gone.length ? { label: 'Undo', onClick: () => restoreEntries(gone).catch((e) => toast(e.message, 'error')) } : undefined
+    });
     setBusy(false);
     exitSelect();
   }
@@ -135,10 +154,9 @@ export default function MyList() {
   }
 
   async function remove(entry) {
-    if (!window.confirm(`Remove “${entry.title}” from your list?`)) return;
     try {
       await removeEntry(entry.id);
-      toast('Removed from your list');
+      toast(`Removed “${entry.title}”`, 'info', { action: { label: 'Undo', onClick: () => restoreEntries([entry]).catch((e) => toast(e.message, 'error')) } });
     } catch (e) {
       setRowError(e.message);
     }
@@ -150,9 +168,9 @@ export default function MyList() {
   }
 
   function exportCsv() {
-    const head = ['title', 'mal_id', 'status', 'score', cfg.progress, cfg.total, 'genres', 'detailed_ratings', 'notes'];
+    const head = ['title', 'mal_id', 'status', 'score', cfg.progress, cfg.total, 'genres', 'tags', 'detailed_ratings', 'notes'];
     const rows = entries.map((e) =>
-      [e.title, e.mal_id, e.status, e.score, e[cfg.progress], e[cfg.total], (e.genres || []).join('; '), Object.entries(e.ratings || {}).map(([k, v]) => `${k}=${v}`).join('; '), e.review].map(csvCell).join(',')
+      [e.title, e.mal_id, e.status, e.score, e[cfg.progress], e[cfg.total], (e.genres || []).join('; '), (e.tags || []).join('; '), Object.entries(e.ratings || {}).map(([k, v]) => `${k}=${v}`).join('; '), e.review].map(csvCell).join(',')
     );
     download(`anitrack-${kind}-list.csv`, [head.join(','), ...rows].join('\n'), 'text/csv');
   }
@@ -191,16 +209,25 @@ export default function MyList() {
     if (error && entries.length === 0) return <ErrorState message={error} onRetry={reload} />;
     return (
       <>
+        {savedAt && (
+          <div className="offline-bar" role="status">
+            <span>The server did not answer, so this is the copy saved on {new Date(savedAt).toLocaleString()}. Changes will not save until it is back.</span>
+            <button type="button" className="btn btn-line btn-sm" onClick={reload}>Try again</button>
+          </div>
+        )}
+        <Welcome />
         <div className="stats-strip">
           <div className="stat"><strong><CountUp value={stats.total} /></strong><span>Titles</span></div>
           <div className="stat"><strong><CountUp value={stats.progress} /></strong><span>{cfg.unit}</span></div>
           <div className="stat"><strong><CountUp value={stats.mean} /></strong><span>Mean score</span></div>
         </div>
 
+        <Momentum kind={kind} />
         {kind === 'anime' && <AiringWeek />}
 
         <div className="list-tools">
           <Roulette pool={pool} kind={kind} onStart={(entry) => save(entry.id, { status: cfg.activeStatus })} />
+          <Link className="btn btn-line btn-sm" to="/wrapped">Wrapped</Link>
           <span className="tools-gap" />
           <button className="btn btn-line btn-sm" onClick={exportJson} disabled={entries.length === 0}>Export JSON</button>
           <button className="btn btn-line btn-sm" onClick={exportCsv} disabled={entries.length === 0}>Export CSV</button>
@@ -224,6 +251,12 @@ export default function MyList() {
             <option value="">All genres</option>
             {genres.map((g) => <option key={g} value={g}>{g}</option>)}
           </select>
+          {allTags.length > 0 && (
+            <select value={tag} onChange={(e) => setTag(e.target.value)} aria-label="Filter by tag">
+              <option value="">All tags</option>
+              {allTags.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          )}
           <select value={prefs.sort} onChange={(e) => setPref('sort', e.target.value)} aria-label="Sort by">
             {SORTS.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
           </select>
@@ -237,7 +270,7 @@ export default function MyList() {
           </button>
         </div>
         <p className="muted lf-count" aria-live="polite">
-          Showing {visible.length} of {entries.length}{(q || genre) && <> · <button type="button" className="lf-clear" onClick={() => { setQ(''); setGenre(''); }}>Clear filters</button></>}
+          Showing {visible.length} of {entries.length}{(q || genre || tag) && <> · <button type="button" className="lf-clear" onClick={() => { setQ(''); setGenre(''); setTag(''); }}>Clear filters</button></>}
         </p>
 
         {selecting && (
@@ -257,7 +290,7 @@ export default function MyList() {
 
         {visible.length === 0 && (
           <div className="empty-state">
-            {entries.length > 0 && (q || genre || tab !== 'all') ? 'No titles match these filters.' : <>Nothing here yet. <Link to={kind === 'manga' ? '/manga' : '/search'}>Find something to add</Link>.</>}
+            {entries.length > 0 && (q || genre || tag || tab !== 'all') ? <><p className="es-title">Nothing matches</p><p>Try fewer filters, or clear them.</p></> : <><p className="es-title">Your {kind} list is empty</p><p>Add your first title and it will show up here.</p><Link className="btn btn-signal" to={kind === 'manga' ? '/manga' : '/search'}>Find something to add</Link></>}
           </div>
         )}
 
@@ -278,6 +311,7 @@ export default function MyList() {
                   <div className="meta">
                     {done} {total ? `of ${total}` : ''} {cfg.unit.toLowerCase()}{total ? ` · ${pct}%` : ''}
                   </div>
+                  {(entry.tags || []).length > 0 && <div className="row-tags">{entry.tags.map((t) => <button key={t} type="button" className="tag" onClick={(e) => { e.stopPropagation(); setTag(t); }}>{t}</button>)}</div>}
                 </div>
                 <div className="list-controls">
                   <button
@@ -298,8 +332,12 @@ export default function MyList() {
                     <option value="">Score</option>
                     {SCORE_OPTIONS.map((n) => <option key={n} value={n}>{n} ★</option>)}
                   </select>
-                  <button className="btn btn-quiet btn-sm" onClick={() => remove(entry)}>Remove</button>
+                  <button type="button" className="btn btn-quiet btn-sm" aria-expanded={openRows.has(entry.id)} onClick={(e) => { e.stopPropagation(); setOpenRows((prev) => { const n = new Set(prev); if (n.has(entry.id)) n.delete(entry.id); else n.add(entry.id); return n; }); }}>
+                    {openRows.has(entry.id) ? 'Close' : 'Details'}
+                  </button>
+                  <button className="btn btn-quiet btn-sm" onClick={(e) => { e.stopPropagation(); remove(entry); }}>Remove</button>
                 </div>
+                {openRows.has(entry.id) && <RowPanel entry={entry} allTags={allTags} onSave={(patch) => save(entry.id, patch)} />}
               </div>
             );
           })}

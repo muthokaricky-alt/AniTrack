@@ -66,6 +66,7 @@ export const api = {
   publicProfile: (username) => request(`/users/${encodeURIComponent(username)}`),
   tasteMatch: (username) => request(`/users/${encodeURIComponent(username)}/match`),
   airing: () => request('/anime/airing'),
+  activity: () => request('/activity'),
   forYou: () => request('/anime/for-you'),
 
   favorites: () => request('/favorites'),
