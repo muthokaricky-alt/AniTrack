@@ -15,6 +15,7 @@ import Search from './pages/Search.jsx';
 import AnimeDetail from './pages/AnimeDetail.jsx';
 import MyList from './pages/MyList.jsx';
 import Schedule from './pages/Schedule.jsx';
+import Guide from './pages/Guide.jsx';
 import Manga from './pages/Manga.jsx';
 import Profile from './pages/Profile.jsx';
 import PublicProfile from './pages/PublicProfile.jsx';
@@ -66,7 +67,7 @@ function Footer() {
     <footer className="footer">
       <div className="wrap footer-row">
         <p>Anime data from <a href="https://anilist.co" target="_blank" rel="noreferrer">AniList</a>. Not affiliated with any streaming service.</p>
-        <p>Made for people who finish series.</p>
+        <p><Link to="/guide">How to use AniTrack</Link> · Made for people who finish series.</p>
       </div>
       <div className="footer-word" aria-hidden="true">ANITRACK</div>
     </footer>
@@ -92,6 +93,7 @@ function Shell() {
           <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
           <Route path="/u/:username" element={<PublicProfile />} />
           <Route path="/manga/:id" element={<AnimeDetail kind="manga" />} />
+          <Route path="/guide" element={<Guide />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/my-list" element={<PrivateRoute><MyList /></PrivateRoute>} />

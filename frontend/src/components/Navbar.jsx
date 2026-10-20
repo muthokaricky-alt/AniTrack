@@ -50,6 +50,7 @@ export default function Navbar() {
         <NavLink to="/schedule">Schedule</NavLink>
         <NavLink to="/manga">Manga</NavLink>
         {user && <NavLink to="/my-list">My List</NavLink>}
+        <NavLink to="/guide">Guide</NavLink>
       </nav>
       <div className="nav-end">
         <button className="nav-k" onClick={() => window.dispatchEvent(new Event(OPEN_EVENT))} aria-label="Open search and shortcuts" title="Search and jump (Ctrl K)">

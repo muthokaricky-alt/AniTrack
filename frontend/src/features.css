@@ -148,3 +148,20 @@
 }
 
 .t15 { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+
+/* guide page */
+.guide-lead { margin-top: 12px; max-width: 52ch; }
+.guide-search { width: 100%; max-width: 560px; margin: 8px 0 36px; padding: 14px 16px; background: var(--ink); border: 1px solid var(--line-strong); border-radius: 0; font-family: var(--mono); font-size: 14px; outline: 0; color: var(--text); }
+.guide-search:focus { border-color: var(--signal); }
+.guide-group { margin-bottom: 40px; max-width: 760px; }
+.guide-group .mini-h { margin-bottom: 8px; }
+.guide-item { border-bottom: 1px solid var(--line); }
+.guide-item summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 16px; padding: 18px 0; font-size: clamp(18px, 2.2vw, 24px); font-weight: 800; letter-spacing: -0.02em; }
+.guide-item summary::-webkit-details-marker { display: none; }
+.guide-item summary::after { content: '+'; font-family: var(--mono); color: var(--signal); transition: transform .25s var(--ease); }
+.guide-item[open] summary::after { transform: rotate(45deg); }
+.guide-item summary:hover { color: var(--signal); }
+.guide-item ol { margin: 0 0 14px; padding-left: 22px; display: grid; gap: 10px; line-height: 1.55; }
+.guide-item ol li::marker { color: var(--signal); font-family: var(--mono); font-weight: 700; }
+.guide-note { margin: 0 0 14px; }
+.guide-item .btn { margin-bottom: 22px; }
