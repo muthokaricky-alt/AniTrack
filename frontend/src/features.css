@@ -165,3 +165,41 @@
 .guide-item ol li::marker { color: var(--signal); font-family: var(--mono); font-weight: 700; }
 .guide-note { margin: 0 0 14px; }
 .guide-item .btn { margin-bottom: 22px; }
+
+
+/* ---- Followers / following ---- */
+.fol { margin: 28px 0 0; }
+.fol-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 28px; }
+.fol-counts { display: flex; flex-wrap: wrap; gap: 8px 26px; }
+.fol-counts button { font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); transition: color 0.2s; }
+.fol-counts button b { margin-right: 8px; font-size: 17px; font-weight: 800; color: var(--text); }
+.fol-counts button:hover, .fol-counts button.on { color: var(--signal); }
+.fol-panel { margin-top: 22px; padding: 22px 24px; border: 1px solid var(--line); background: var(--ink-2); }
+.fol-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px 20px; }
+.fol-list a, .fol-private { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.fol-list a span, .fol-private span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+.fol-list a:hover span { color: var(--signal); }
+.fol-private { color: var(--muted); }
+.fol-private small { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+.fol-friends-body { margin-top: 28px; max-width: 760px; }
+.fol-matches { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.fol-matches a { display: grid; grid-template-columns: 44px 1fr auto; grid-template-rows: auto auto; align-items: center; column-gap: 16px; row-gap: 10px; padding: 14px 18px; border: 1px solid var(--line); background: var(--ink-2); transition: border-color 0.2s; }
+.fol-matches a:hover { border-color: var(--signal); }
+.fol-m-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.fol-m-main b { font-size: 16px; }
+.fol-m-main .muted { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fol-m-pct { font-family: var(--mono); font-size: 22px; font-weight: 800; color: var(--signal); }
+.fol-m-bar { grid-column: 1 / -1; height: 4px; background: var(--line); }
+.fol-m-bar i { display: block; height: 100%; background: var(--signal); }
+
+@media (max-width: 700px) {
+  .fol-panel { padding: 18px; }
+  .fol-matches a { padding: 12px 14px; }
+}
+
+/* four profile tabs now: let them share the row on a phone */
+@media (max-width: 620px) {
+  .pf-tabs { display: flex; width: 100%; }
+  .pf-tabs button { flex: 1; padding: 11px 6px; letter-spacing: 0.06em; font-size: 11px; }
+}

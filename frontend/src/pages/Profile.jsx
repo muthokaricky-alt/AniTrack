@@ -11,6 +11,7 @@ import FavoritesEditor from '../components/FavoritesEditor.jsx';
 import Top15Download from '../components/Top15Download.jsx';
 import ShareCard from '../components/ShareCard.jsx';
 import CountUp from '../components/CountUp.jsx';
+import Friends from '../components/Friends.jsx';
 
 const fromUser = (u) => ({ username: u.username, bio: u.bio || '', avatar: u.avatar || null, is_public: Boolean(u.is_public) });
 const EMPTY = { top3: [], top15: [] };
@@ -76,7 +77,7 @@ function Compare() {
         if (name.trim()) navigate(`/u/${encodeURIComponent(name.trim())}`);
       }}
     >
-      <p className="muted pf-note">Type a friend's username to see how your tastes line up. Their profile has to be public, and you both need some titles on your lists.</p>
+      <p className="muted pf-note">Type a friend's username to see how your tastes line up. Their profile has to be public, and you both need some titles on your lists. Press Follow on their profile to keep them in your Friends tab.</p>
       <div className="field">
         <label htmlFor="cmp-name">Their username</label>
         <input id="cmp-name" value={name} maxLength={30} autoComplete="off" onChange={(e) => setName(e.target.value)} />
@@ -240,10 +241,11 @@ export default function Profile() {
       <div className="kind-switch pf-tabs" role="tablist" aria-label="Profile sections">
         <button role="tab" aria-selected={tab === 'favorites'} className={tab === 'favorites' ? 'on' : ''} onClick={() => setTab('favorites')}>Favourites</button>
         <button role="tab" aria-selected={tab === 'compare'} className={tab === 'compare' ? 'on' : ''} onClick={() => setTab('compare')}>Compare</button>
+        <button role="tab" aria-selected={tab === 'friends'} className={tab === 'friends' ? 'on' : ''} onClick={() => setTab('friends')}>Friends</button>
         <button role="tab" aria-selected={tab === 'settings'} className={tab === 'settings' ? 'on' : ''} onClick={() => setTab('settings')}>Settings</button>
       </div>
 
-      {tab === 'favorites' ? <Favorites /> : tab === 'compare' ? <Compare /> : <Settings />}
+      {tab === 'favorites' ? <Favorites /> : tab === 'compare' ? <Compare /> : tab === 'friends' ? <Friends /> : <Settings />}
       {card && <ShareCard onClose={() => setCard(false)} />}
     </div>
   );

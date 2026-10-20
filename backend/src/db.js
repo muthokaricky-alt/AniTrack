@@ -140,6 +140,15 @@ const db = {
         created_at TIMESTAMPTZ DEFAULT now()
       );
       CREATE INDEX IF NOT EXISTS activity_user_time ON activity (user_id, created_at);
+
+      CREATE TABLE IF NOT EXISTS follows (
+        follower_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        followee_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMPTZ DEFAULT now(),
+        PRIMARY KEY (follower_id, followee_id),
+        CHECK (follower_id <> followee_id)
+      );
+      CREATE INDEX IF NOT EXISTS follows_followee ON follows (followee_id);
     `);
   }
 };

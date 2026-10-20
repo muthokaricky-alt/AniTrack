@@ -96,7 +96,7 @@ usersRoutes.get('/:username', async (req, res) => {
 const clamp01 = (x) => Math.max(0, Math.min(1, x));
 const parseGenres = (text) => { try { const g = JSON.parse(text || '[]'); return Array.isArray(g) ? g : []; } catch { return []; } };
 
-async function loadTaste(userId) {
+export async function loadTaste(userId) {
   const out = [];
   for (const [kind, table] of [['anime', 'list_entries'], ['manga', 'manga_entries']]) {
     for (const r of await db.all(`SELECT mal_id, title, image_url, score, genres FROM ${table} WHERE user_id = ?`, [userId])) {

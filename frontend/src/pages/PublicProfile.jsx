@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import Avatar from '../components/Avatar.jsx';
 import CountUp from '../components/CountUp.jsx';
 import TasteMatch from '../components/TasteMatch.jsx';
+import FollowBar from '../components/FollowBar.jsx';
 import FavoritesShowcase from '../components/FavoritesShowcase.jsx';
 
 function Favorites({ title, items, base }) {
@@ -81,6 +82,8 @@ export default function PublicProfile() {
           {data.user.bio && <p className="pub-bio">{data.user.bio}</p>}
         </div>
       </header>
+
+      <FollowBar username={data.user.username} viewer={viewer} />
 
       <div className="pub-blocks">
         <Block label="Anime" data={data.anime} unit="Episodes" />
