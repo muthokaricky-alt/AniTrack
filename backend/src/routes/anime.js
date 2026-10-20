@@ -14,34 +14,40 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // retries: how many times to wait and try again when AniList says "slow down" (429) or has a hiccup (5xx)
-export async function anilistQuery(query, variables, cacheKey, { tolerateErrors = false, retries = 0 } = {}) {
-  if (cacheKey) {
-    const cached = cache.get(cacheKey);
-    if (cached && Date.now() - cached.time < CACHE_TTL_MS) return cached.data;
+export async function anilistQuery(query, variables, cacheKey, { tolerateErrors = false, retries = 2 } = {}) {
+  const cached = cacheKey ? cache.get(cacheKey) : null;
+  if (cached && Date.now() - cached.time < CACHE_TTL_MS) return cached.data;
+  try {
+    let response;
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        response = await fetch(ANILIST_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ query, variables }),
+          signal: AbortSignal.timeout(12000)
+        });
+      } catch (netErr) {
+        if (attempt >= retries) throw netErr; // timeout or dropped connection: try again, shared hosts hiccup
+        await sleep(1500 * (attempt + 1));
+        continue;
+      }
+      if (response.ok || attempt >= retries || !(response.status === 429 || response.status >= 500)) break;
+      const wait = Number(response.headers.get('retry-after'));
+      await sleep(Math.min(Number.isFinite(wait) && wait > 0 ? wait * 1000 : 2000 * (attempt + 1), 8000));
+    }
+    if (!response.ok) throw new Error(`AniList request failed: ${response.status}`);
+    const json = await response.json();
+    if (json.errors && !(tolerateErrors && json.data)) throw new Error(json.errors.map((e) => e.message).join('; '));
+    if (cacheKey) {
+      if (cache.size > 500) cache.delete(cache.keys().next().value); // keep memory bounded
+      cache.set(cacheKey, { data: json.data, time: Date.now() });
+    }
+    return json.data;
+  } catch (err) {
+    if (cached) return cached.data; // better a slightly old answer than an error page
+    throw err;
   }
-  let response;
-  for (let attempt = 0; ; attempt += 1) {
-    response = await fetch(ANILIST_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ query, variables })
-    });
-    if (response.ok || attempt >= retries || !(response.status === 429 || response.status >= 500)) break;
-    const wait = Number(response.headers.get('retry-after'));
-    await sleep(Math.min(Number.isFinite(wait) && wait > 0 ? wait * 1000 : 3000, 10000));
-  }
-  if (!response.ok) {
-    throw new Error(`AniList request failed: ${response.status}`);
-  }
-  const json = await response.json();
-  if (json.errors && !(tolerateErrors && json.data)) {
-    throw new Error(json.errors.map((e) => e.message).join('; '));
-  }
-  if (cacheKey) {
-    if (cache.size > 500) cache.delete(cache.keys().next().value); // keep memory bounded
-    cache.set(cacheKey, { data: json.data, time: Date.now() });
-  }
-  return json.data;
 }
 
 export function stripHtml(html) {
