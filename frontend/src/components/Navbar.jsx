@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import Logo from './Logo.jsx';
+import ThemeMenu from './ThemeMenu.jsx';
 import Avatar from './Avatar.jsx';
+import { OPEN_EVENT, isMac } from './CommandPalette.jsx';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -50,6 +52,11 @@ export default function Navbar() {
         {user && <NavLink to="/my-list">My List</NavLink>}
       </nav>
       <div className="nav-end">
+        <button className="nav-k" onClick={() => window.dispatchEvent(new Event(OPEN_EVENT))} aria-label="Open search and shortcuts" title="Search and jump (Ctrl K)">
+          <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M13 13l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+          <kbd>{isMac ? '⌘ K' : 'Ctrl K'}</kbd>
+        </button>
+        <ThemeMenu />
         {user ? (
           <div className="nav-user">
             <Link to="/profile" className="nav-profile" title="Your profile">

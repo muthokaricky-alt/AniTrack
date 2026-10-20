@@ -7,6 +7,7 @@ import { useMangaList } from '../context/MangaListContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { KINDS } from '../constants.js';
 import { gsap, ScrollTrigger, useGSAP } from '../lib/gsap.js';
+import { useAccent } from '../lib/useAccent.js';
 import AnimeCard from '../components/AnimeCard.jsx';
 import ScoreInput from '../components/ScoreInput.jsx';
 
@@ -74,6 +75,9 @@ export default function AnimeDetail({ kind = 'anime' }) {
     { scope: root, dependencies: [anime?.mal_id, kind] }
   );
 
+  // the whole site takes on this cover's colour while you're here
+  useAccent(anime?.color);
+
   if (error) {
     return (
       <div className="wrap page-pad">
@@ -112,6 +116,7 @@ export default function AnimeDetail({ kind = 'anime' }) {
     <article className="detail" ref={root}>
       <div className="d-banner" aria-hidden="true">
         <img className={`d-banner-img ${anime.banner ? '' : 'is-poster'}`} src={anime.banner || image} alt="" />
+        <div className="d-banner-tint" />
         <div className="d-banner-shade" />
       </div>
 

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { STATUS_LABEL, KINDS } from '../constants.js';
 
 const AVG_EPISODE_MINUTES = 24;
@@ -10,6 +10,16 @@ const STATUS_COLOR = {
 // Taste profile computed from the user's own list: status split, score spread, favourite genres, time spent
 export default function Insights({ entries, kind }) {
   const cfg = KINDS[kind];
+  const root = useRef(null);
+  const [seen, setSeen] = useState(false);
+  useEffect(() => {
+    const el = root.current;
+    if (!el) return undefined; // nothing rendered yet (empty list)
+    if (seen || typeof IntersectionObserver === 'undefined') { setSeen(true); return undefined; }
+    const io = new IntersectionObserver(([e]) => e.isIntersecting && (setSeen(true), io.disconnect()), { threshold: 0.25 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [seen, entries.length]);
 
   const data = useMemo(() => {
     const byStatus = {};
@@ -46,7 +56,7 @@ export default function Insights({ entries, kind }) {
   const days = (data.units * AVG_EPISODE_MINUTES) / 60 / 24;
 
   return (
-    <section className="insights" aria-labelledby="insights-title">
+    <section className={`insights ${seen ? 'is-in' : ''}`} ref={root} aria-labelledby="insights-title">
       <p className="kicker">Your taste</p>
       <h2 id="insights-title" className="h2">By the numbers</h2>
 

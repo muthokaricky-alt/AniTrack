@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import fetch from 'node-fetch';
+import db from '../db.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 const ANILIST_URL = process.env.ANILIST_URL || 'https://graphql.anilist.co';
@@ -47,10 +49,14 @@ export function stripHtml(html) {
   return html.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').trim();
 }
 
+// AniList gives each cover a dominant colour like "#e4a15d". Only a strict 6-digit hex is passed on, since it ends up in CSS.
+export const safeColor = (c) => (typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c) ? c.toLowerCase() : null);
+
 // Reshape an AniList Media object into the shape the frontend already expects
-function toJikanShape(media) {
+export function toJikanShape(media) {
   if (!media) return null;
   return {
+    color: safeColor(media.coverImage?.color),
     mal_id: media.idMal,
     title: media.title?.english || media.title?.romaji || 'Untitled',
     type: media.format || 'TV',
@@ -96,7 +102,7 @@ const MEDIA_FIELDS = `
   genres
   bannerImage
   description(asHtml: false)
-  coverImage { extraLarge large medium }
+  coverImage { extraLarge large medium color }
 `;
 
 const PAGE_QUERY = `
@@ -250,6 +256,102 @@ router.get('/schedule', async (req, res) => {
       .filter((r) => r.media && r.media.idMal && !r.media.isAdult)
       .map((r) => ({ airing_at: r.airingAt, episode: r.episode, anime: toJikanShape(r.media) }));
     res.json({ data });
+  } catch (err) {
+    res.status(502).json({ error: 'Failed to reach anime data source', detail: err.message });
+  }
+});
+
+// ----- Routes that need the logged-in user (must sit above /:id) -----
+
+const REC_CARD = `
+  idMal title { romaji english } format episodes averageScore seasonYear status genres
+  coverImage { extraLarge large medium color }
+`;
+
+// GET /api/anime/airing -> your Watching and Plan-to-watch titles that are still airing, soonest episode first
+router.get('/airing', requireAuth, async (req, res) => {
+  const rows = db
+    .prepare("SELECT mal_id, status, episodes_watched FROM list_entries WHERE user_id = ? AND status IN ('watching', 'plan_to_watch') ORDER BY updated_at DESC LIMIT 60")
+    .all(req.userId);
+  if (!rows.length) return res.json({ data: [] });
+  const mine = new Map(rows.map((r) => [r.mal_id, r]));
+  const ids = [...mine.keys()].sort((a, b) => a - b);
+  try {
+    const data = await anilistQuery(
+      `query ($ids: [Int]) {
+        Page(perPage: 60) {
+          media(idMal_in: $ids, type: ANIME, status: RELEASING) {
+            idMal title { romaji english } episodes
+            nextAiringEpisode { airingAt episode }
+            coverImage { large medium color }
+          }
+        }
+      }`,
+      { ids },
+      `airing:${ids.join(',')}`,
+      { retries: 1 }
+    );
+    const out = (data.Page.media || [])
+      .filter((m) => m.idMal && m.nextAiringEpisode)
+      .map((m) => {
+        const mineRow = mine.get(m.idMal);
+        const aired = m.nextAiringEpisode.episode - 1; // episodes already out
+        return {
+          mal_id: m.idMal,
+          title: m.title?.english || m.title?.romaji || 'Untitled',
+          image_url: m.coverImage?.large || m.coverImage?.medium || null,
+          color: safeColor(m.coverImage?.color),
+          next_episode: m.nextAiringEpisode.episode,
+          airing_at: m.nextAiringEpisode.airingAt,
+          total: m.episodes ?? null,
+          status: mineRow?.status,
+          watched: mineRow?.episodes_watched || 0,
+          behind: Math.max(0, aired - (mineRow?.episodes_watched || 0))
+        };
+      })
+      .sort((a, b) => a.airing_at - b.airing_at);
+    res.json({ data: out });
+  } catch (err) {
+    res.status(502).json({ error: 'Failed to reach anime data source', detail: err.message });
+  }
+});
+
+// GET /api/anime/for-you -> "Because you loved X": AniList's recommendations for a few of your top-scored titles,
+// minus anything already on your list. The seeds rotate daily so the row isn't the same every visit.
+router.get('/for-you', requireAuth, async (req, res) => {
+  const top = db
+    .prepare('SELECT mal_id, title, score FROM list_entries WHERE user_id = ? AND score IS NOT NULL ORDER BY score DESC, updated_at DESC LIMIT 40')
+    .all(req.userId);
+  if (!top.length) return res.json({ rows: [] });
+  const loved = top.filter((t) => t.score >= 9);
+  const pool = (loved.length >= 3 ? loved : top.slice(0, 8)).slice(0, 14);
+  const day = Math.floor(Date.now() / 86400000);
+  const seeds = Array.from({ length: Math.min(4, pool.length) }, (_, i) => pool[(day + i * 3) % pool.length]);
+  const uniqueSeeds = [...new Map(seeds.map((s) => [s.mal_id, s])).values()];
+  const owned = new Set(db.prepare('SELECT mal_id FROM list_entries WHERE user_id = ?').pluck().all(req.userId));
+
+  const vars = {};
+  const defs = uniqueSeeds.map((s, n) => { vars[`i${n}`] = s.mal_id; return `$i${n}: Int`; }).join(', ');
+  const body = uniqueSeeds.map((_, n) => `
+    r${n}: Media(idMal: $i${n}, type: ANIME) {
+      recommendations(perPage: 16, sort: RATING_DESC) { nodes { mediaRecommendation { ${REC_CARD} } } }
+    }`).join('\n');
+  try {
+    const data = await anilistQuery(`query (${defs}) { ${body} }`, vars, `foryou:${uniqueSeeds.map((s) => s.mal_id).join(',')}`, { tolerateErrors: true, retries: 1 });
+    const seen = new Set();
+    const rows = [];
+    uniqueSeeds.forEach((seed, n) => {
+      const items = [];
+      for (const node of data?.[`r${n}`]?.recommendations?.nodes || []) {
+        const m = node.mediaRecommendation;
+        if (!m?.idMal || owned.has(m.idMal) || seen.has(m.idMal)) continue;
+        seen.add(m.idMal);
+        items.push(toJikanShape(m));
+        if (items.length >= 8) break;
+      }
+      if (items.length >= 3) rows.push({ seed: { mal_id: seed.mal_id, title: seed.title }, data: items });
+    });
+    res.json({ rows });
   } catch (err) {
     res.status(502).json({ error: 'Failed to reach anime data source', detail: err.message });
   }

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { anilistQuery, stripHtml, GENRES } from './anime.js';
+import { anilistQuery, stripHtml, GENRES, safeColor } from './anime.js';
 
 const router = Router();
 
@@ -7,6 +7,7 @@ const router = Router();
 function toMangaShape(media) {
   if (!media) return null;
   return {
+    color: safeColor(media.coverImage?.color),
     mal_id: media.idMal,
     title: media.title?.english || media.title?.romaji || 'Untitled',
     type: media.format || 'MANGA',
@@ -42,7 +43,7 @@ const FIELDS = `
   genres
   bannerImage
   description(asHtml: false)
-  coverImage { extraLarge large medium }
+  coverImage { extraLarge large medium color }
 `;
 
 const PAGE_QUERY = `

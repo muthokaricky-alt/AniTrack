@@ -67,6 +67,16 @@ export default function FavoritesEditor({ kind, list, items, onChange }) {
   const max = list === 'top3' ? 3 : 15;
   const title = `${list === 'top3' ? 'Top 3' : 'Top 15'} ${LABEL[kind]}`;
 
+  const [drag, setDrag] = useState(null);
+  const [over, setOver] = useState(null);
+  function drop(to) {
+    if (drag == null || drag === to) return;
+    const next = [...items];
+    const [it] = next.splice(drag, 1);
+    next.splice(to, 0, it);
+    onChange(next);
+  }
+
   function move(i, dir) {
     const next = [...items];
     const j = i + dir;
@@ -85,8 +95,16 @@ export default function FavoritesEditor({ kind, list, items, onChange }) {
       {items.length === 0 && <p className="muted fe-empty">Nothing picked yet.</p>}
       <ol className="fe-list">
         {items.map((it, i) => (
-          <li key={it.item_id}>
-            <span className="fe-n">{i + 1}</span>
+          <li
+            key={it.item_id}
+            draggable
+            className={`${drag === i ? 'is-dragging' : ''} ${over === i && drag !== i ? 'is-over' : ''}`}
+            onDragStart={(e) => { setDrag(i); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(i)); }}
+            onDragOver={(e) => { e.preventDefault(); setOver(i); }}
+            onDrop={(e) => { e.preventDefault(); drop(i); setDrag(null); setOver(null); }}
+            onDragEnd={() => { setDrag(null); setOver(null); }}
+          >
+            <span className="fe-n" title="Drag to reorder">⠿ {i + 1}</span>
             {it.image_url ? <img src={it.image_url} alt="" loading="lazy" /> : <span className="fp-noimg" />}
             <div className="fe-main">
               <strong>{it.title}</strong>

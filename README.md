@@ -89,6 +89,10 @@ The Express server also serves the built React app, so one web service runs ever
 | GET    | /api/anime/search   | —    | Search anime (`?q=`)                 |
 | GET    | /api/anime/top      | —    | Top-rated anime                      |
 | GET    | /api/anime/season/now | —  | Currently airing season              |
+| GET    | /api/anime/airing   | JWT  | Airing episodes for your watching/plan list |
+| GET    | /api/anime/for-you  | JWT  | Recommendations based on your top-rated titles |
+| GET    | /api/users/:username/match | JWT | Taste match with a public profile |
+| GET    | /api/img?url=       | —    | Allowlisted image proxy (share card) |
 | GET    | /api/anime/:id      | —    | Full detail for one title            |
 | GET    | /api/list           | JWT  | Your list entries                    |
 | GET    | /api/list/stats     | JWT  | Episode/score stats                  |

@@ -4,6 +4,7 @@ import { api } from '../api/client.js';
 import { GENRES } from '../constants.js';
 import { getLenis } from '../components/SmoothScroll.jsx';
 import AnimeCard from '../components/AnimeCard.jsx';
+import ErrorState from '../components/ErrorState.jsx';
 import SkeletonGrid from '../components/SkeletonGrid.jsx';
 
 export default function Search() {
@@ -17,6 +18,7 @@ export default function Search() {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => setInput(q), [q]);
 
@@ -47,7 +49,7 @@ export default function Search() {
       })
       .finally(() => !cancelled && setLoading(false));
     return () => { cancelled = true; };
-  }, [q, genre, page]);
+  }, [q, genre, page, attempt]);
 
   function update(next) {
     const merged = { q, genre, ...next };
@@ -102,7 +104,7 @@ export default function Search() {
       </div>
 
       {loading && <SkeletonGrid count={10} />}
-      {!loading && error && <div className="empty-state">{error}</div>}
+      {!loading && error && <ErrorState message={error} onRetry={() => setAttempt((n) => n + 1)} />}
       {!loading && !error && hasQuery && results.length === 0 && (
         <div className="empty-state">Nothing matched. Try another spelling or genre.</div>
       )}

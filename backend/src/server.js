@@ -11,6 +11,7 @@ import mangaRoutes from './routes/manga.js';
 import profileRoutes, { usersRoutes } from './routes/profile.js';
 import favoritesRoutes from './routes/favorites.js';
 import characterRoutes from './routes/characters.js';
+import imgRoutes from './routes/img.js';
 import { rateLimit } from './middleware/rateLimit.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -59,6 +60,7 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/characters', characterRoutes);
+app.use('/api/img', rateLimit({ windowMs: 60 * 1000, max: 90, message: 'Too many image requests. Try again in a minute.' }), imgRoutes);
 app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
 
 // In production the Express server also serves the built React app,

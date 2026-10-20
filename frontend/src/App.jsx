@@ -5,8 +5,11 @@ import { ListProvider } from './context/ListContext.jsx';
 import { MangaListProvider } from './context/MangaListContext.jsx';
 import { ToastProvider } from './context/ToastContext.jsx';
 import SmoothScroll from './components/SmoothScroll.jsx';
+import BottomNav from './components/BottomNav.jsx';
 import Navbar from './components/Navbar.jsx';
 import MusicPlayer from './components/MusicPlayer.jsx';
+import PageTransition from './components/PageTransition.jsx';
+import CommandPalette from './components/CommandPalette.jsx';
 import Home from './pages/Home.jsx';
 import Search from './pages/Search.jsx';
 import AnimeDetail from './pages/AnimeDetail.jsx';
@@ -74,7 +77,10 @@ function Shell() {
   return (
     <>
       <SmoothScroll />
+      <PageTransition />
       <Navbar />
+      <BottomNav />
+      <CommandPalette />
       <main className="page">
         <ErrorBoundary>
         <Routes>

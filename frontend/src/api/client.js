@@ -36,6 +36,9 @@ async function request(path, options = {}) {
   return data;
 }
 
+// Cover pictures for the share card go through our own server so the browser lets us export the canvas
+export const imgSrc = (url) => (/^https?:\/\//.test(url || '') ? `${BASE}/img?url=${encodeURIComponent(url)}` : url || null);
+
 export const api = {
   register: (body) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
   login: (body) => request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
@@ -61,6 +64,9 @@ export const api = {
   updateProfile: (body) => request('/profile', { method: 'PATCH', body: JSON.stringify(body) }),
   changePassword: (body) => request('/profile/password', { method: 'PATCH', body: JSON.stringify(body) }),
   publicProfile: (username) => request(`/users/${encodeURIComponent(username)}`),
+  tasteMatch: (username) => request(`/users/${encodeURIComponent(username)}/match`),
+  airing: () => request('/anime/airing'),
+  forYou: () => request('/anime/for-you'),
 
   favorites: () => request('/favorites'),
   saveFavorites: (kind, list, items) => request(`/favorites/${kind}/${list}`, { method: 'PUT', body: JSON.stringify({ items }) }),

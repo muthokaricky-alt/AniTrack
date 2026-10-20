@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useList } from '../context/ListContext.jsx';
@@ -8,6 +8,9 @@ import { useToast } from '../context/ToastContext.jsx';
 import Avatar from '../components/Avatar.jsx';
 import AvatarPicker from '../components/AvatarPicker.jsx';
 import FavoritesEditor from '../components/FavoritesEditor.jsx';
+import Top15Download from '../components/Top15Download.jsx';
+import ShareCard from '../components/ShareCard.jsx';
+import CountUp from '../components/CountUp.jsx';
 
 const fromUser = (u) => ({ username: u.username, bio: u.bio || '', avatar: u.avatar || null, is_public: Boolean(u.is_public) });
 const EMPTY = { top3: [], top15: [] };
@@ -57,7 +60,29 @@ function Favorites() {
         <FavoritesEditor kind={kind} list="top3" items={group.top3} onChange={(next) => change(kind, 'top3', next)} />
         <FavoritesEditor kind={kind} list="top15" items={group.top15} onChange={(next) => change(kind, 'top15', next)} />
       </div>
+      <Top15Download kind={kind} label={FAV_KINDS.find((k) => k.key === kind).label} items={group.top15} />
     </>
+  );
+}
+
+function Compare() {
+  const navigate = useNavigate();
+  const [name, setName] = useState('');
+  return (
+    <form
+      className="pf"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (name.trim()) navigate(`/u/${encodeURIComponent(name.trim())}`);
+      }}
+    >
+      <p className="muted pf-note">Type a friend's username to see how your tastes line up. Their profile has to be public, and you both need some titles on your lists.</p>
+      <div className="field">
+        <label htmlFor="cmp-name">Their username</label>
+        <input id="cmp-name" value={name} maxLength={30} autoComplete="off" onChange={(e) => setName(e.target.value)} />
+      </div>
+      <button className="btn btn-signal" type="submit" disabled={!name.trim()}>Compare tastes</button>
+    </form>
   );
 }
 
@@ -148,7 +173,7 @@ function Settings() {
             <input type="checkbox" checked={form.is_public} onChange={(e) => setForm((f) => ({ ...f, is_public: e.target.checked }))} />
             <span>Let anyone with my link see my profile</span>
           </label>
-          <p className="muted">They'll see your username, photo, bio, stats, favourites and top-rated titles. Your email and full list stay private. It's off by default.</p>
+          <p className="muted">They'll see your username, photo, bio, stats, favourites and top-rated titles. Logged-in visitors can also compare tastes with you and will see a match percentage and the titles you both have. Your email and the rest of your list stay private. It's off by default.</p>
           {user.is_public && !dirty && (
             <div className="share-line">
               <Link to={`/u/${encodeURIComponent(user.username)}`}>{link}</Link>
@@ -185,6 +210,7 @@ export default function Profile() {
   const anime = useList();
   const manga = useMangaList();
   const [tab, setTab] = useState('favorites');
+  const [card, setCard] = useState(false);
 
   return (
     <div className="wrap page-pad">
@@ -195,13 +221,14 @@ export default function Profile() {
           <h1 className="h1">{user.username}</h1>
           <p className="pf-bio">{user.bio || 'No bio yet. Add one in Settings.'}</p>
           <ul className="pf-chips">
-            <li><b>{anime.stats.total}</b> anime</li>
-            <li><b>{manga.stats.total}</b> manga</li>
-            {anime.stats.mean && <li>mean <b>{anime.stats.mean}</b></li>}
+            <li><b><CountUp value={anime.stats.total} /></b> anime</li>
+            <li><b><CountUp value={manga.stats.total} /></b> manga</li>
+            {anime.stats.mean && <li>mean <b><CountUp value={anime.stats.mean} /></b></li>}
             <li className={user.is_public ? 'is-public' : ''}>{user.is_public ? 'Public' : 'Private'}</li>
           </ul>
         </div>
         <div className="pf-head-actions">
+          <button className="btn btn-signal btn-sm" onClick={() => setCard(true)}>Share card</button>
           {user.is_public ? (
             <Link className="btn btn-line btn-sm" to={`/u/${encodeURIComponent(user.username)}`}>View public page</Link>
           ) : (
@@ -212,10 +239,12 @@ export default function Profile() {
 
       <div className="kind-switch pf-tabs" role="tablist" aria-label="Profile sections">
         <button role="tab" aria-selected={tab === 'favorites'} className={tab === 'favorites' ? 'on' : ''} onClick={() => setTab('favorites')}>Favourites</button>
+        <button role="tab" aria-selected={tab === 'compare'} className={tab === 'compare' ? 'on' : ''} onClick={() => setTab('compare')}>Compare</button>
         <button role="tab" aria-selected={tab === 'settings'} className={tab === 'settings' ? 'on' : ''} onClick={() => setTab('settings')}>Settings</button>
       </div>
 
-      {tab === 'favorites' ? <Favorites /> : <Settings />}
+      {tab === 'favorites' ? <Favorites /> : tab === 'compare' ? <Compare /> : <Settings />}
+      {card && <ShareCard onClose={() => setCard(false)} />}
     </div>
   );
 }

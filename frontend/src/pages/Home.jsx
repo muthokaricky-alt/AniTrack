@@ -15,6 +15,7 @@ import Ticker from '../components/Ticker.jsx';
 import Spotlight from '../components/Spotlight.jsx';
 import PinnedRail from '../components/PinnedRail.jsx';
 import Magnet from '../components/Magnet.jsx';
+import ForYou from '../components/ForYou.jsx';
 
 function seasonLabel() {
   const d = new Date();
@@ -195,6 +196,7 @@ export default function Home() {
 
       {seasonal.length >= 4 && <PinnedRail anime={seasonal.slice(0, 12)} season={season} />}
       {user && watching.length > 0 ? <ContinueWatching entries={watching} /> : !loading && <HowItWorks />}
+      {user && <ForYou />}
       {top.length >= 4 && <TopTen anime={top.slice(0, 10)} />}
 
       {!user && (

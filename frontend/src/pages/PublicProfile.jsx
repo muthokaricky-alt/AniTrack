@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client.js';
+import { useAuth } from '../context/AuthContext.jsx';
 import Avatar from '../components/Avatar.jsx';
+import CountUp from '../components/CountUp.jsx';
+import TasteMatch from '../components/TasteMatch.jsx';
 import FavoritesShowcase from '../components/FavoritesShowcase.jsx';
 
 function Favorites({ title, items, base }) {
@@ -27,10 +30,10 @@ function Block({ label, data, unit }) {
     <div className="pub-block">
       <h2 className="mini-h">{label}</h2>
       <dl>
-        <div><dt>Titles</dt><dd>{data.total}</dd></div>
-        <div><dt>Completed</dt><dd>{data.completed}</dd></div>
-        <div><dt>{unit}</dt><dd>{data.progress}</dd></div>
-        <div><dt>Mean score</dt><dd>{data.mean ?? '—'}</dd></div>
+        <div><dt>Titles</dt><dd><CountUp value={data.total} /></dd></div>
+        <div><dt>Completed</dt><dd><CountUp value={data.completed} /></dd></div>
+        <div><dt>{unit}</dt><dd><CountUp value={data.progress} /></dd></div>
+        <div><dt>Mean score</dt><dd><CountUp value={data.mean} /></dd></div>
       </dl>
     </div>
   );
@@ -39,6 +42,7 @@ function Block({ label, data, unit }) {
 export default function PublicProfile() {
   const { username } = useParams();
   const navigate = useNavigate();
+  const { user: viewer } = useAuth();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
 
@@ -82,6 +86,10 @@ export default function PublicProfile() {
         <Block label="Anime" data={data.anime} unit="Episodes" />
         <Block label="Manga" data={data.manga} unit="Chapters" />
       </div>
+
+      {!(viewer && viewer.username.toLowerCase() === data.user.username.toLowerCase()) && (
+        <TasteMatch username={data.user.username} viewer={viewer} />
+      )}
 
       <FavoritesShowcase favorites={data.favorites} navigate={navigate} />
 
