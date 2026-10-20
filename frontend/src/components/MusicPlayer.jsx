@@ -1,19 +1,39 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import './musicSpotify.css';
 
-// Your Spotify playlist: paste the share link or just the id. It must be a PUBLIC playlist. Set to '' to hide Spotify.
-const SPOTIFY_PLAYLIST = 'https://open.spotify.com/playlist/45fjZqOFqN9OzwLGanc5Cu';
-const SPOTIFY_ID = SPOTIFY_PLAYLIST ? (String(SPOTIFY_PLAYLIST).match(/playlist\/([A-Za-z0-9]+)/) || [null, String(SPOTIFY_PLAYLIST)])[1] : '';
-const SPOTIFY_EMBED = `https://open.spotify.com/embed/playlist/${SPOTIFY_ID}?utm_source=generator&theme=0`;
+// Your SoundCloud playlist (or track) URL. It must be PUBLIC. Set to '' to hide SoundCloud.
+const SC_URL = 'https://soundcloud.com/ricky-242658922/sets/anitrack-osts';
+const HAS_SC = Boolean(SC_URL);
+const SC_EMBED =
+  `https://w.soundcloud.com/player/?url=${encodeURIComponent(SC_URL)}` +
+  '&color=%23ff5500&auto_play=false&hide_related=true&show_comments=false' +
+  '&show_user=true&show_reposts=false&show_teaser=false&visual=false';
 
 const KEY = 'anitrack_music';
+
+// SoundCloud's Widget API lets us control the embedded player (volume). Loaded once, only when the SoundCloud tab is used.
+let scApiPromise = null;
+function loadScApi() {
+  if (typeof window !== 'undefined' && window.SC && window.SC.Widget) return Promise.resolve(window.SC);
+  if (!scApiPromise) {
+    scApiPromise = new Promise((resolve, reject) => {
+      const el = document.createElement('script');
+      el.src = 'https://w.soundcloud.com/player/api.js';
+      el.async = true;
+      el.onload = () => resolve(window.SC);
+      el.onerror = () => { scApiPromise = null; reject(new Error('SoundCloud API failed to load')); };
+      document.head.appendChild(el);
+    });
+  }
+  return scApiPromise;
+}
 
 // localStorage can throw (private windows, blocked storage), so every access is guarded
 function loadPrefs() {
   try {
-    return { on: false, volume: 0.5, track: 0, open: true, source: 'built-in', expanded: false, ...JSON.parse(localStorage.getItem(KEY) || '{}') };
+    return { on: false, volume: 0.5, track: 0, open: true, source: 'built-in', expanded: false, scVolume: 1, ...JSON.parse(localStorage.getItem(KEY) || '{}') };
   } catch {
-    return { on: false, volume: 0.5, track: 0, open: true, source: 'built-in', expanded: false };
+    return { on: false, volume: 0.5, track: 0, open: true, source: 'built-in', expanded: false, scVolume: 1 };
   }
 }
 function savePrefs(p) {
@@ -36,8 +56,10 @@ export default function MusicPlayer() {
   const [tracksLoaded, setTracksLoaded] = useState(false);
   const [prefs, setPrefs] = useState(loadPrefs);
   const [playing, setPlaying] = useState(false);
-  // The Spotify embed loads third-party code, so it is only created once someone picks that tab
-  const [spotifyLoaded, setSpotifyLoaded] = useState(() => Boolean(SPOTIFY_ID) && loadPrefs().source === 'spotify');
+  // The SoundCloud embed loads third-party code, so it is only created once someone picks that tab
+  const [scLoaded, setScLoaded] = useState(() => HAS_SC && loadPrefs().source === 'soundcloud');
+  const scFrame = useRef(null);
+  const scWidget = useRef(null);
   const prefsRef = useRef(prefs);
   prefsRef.current = prefs;
 
@@ -82,6 +104,31 @@ export default function MusicPlayer() {
     // squared so the bottom half of the slider is genuinely quiet (ears hear loudness on a curve)
     if (audio.current) audio.current.volume = prefs.volume ** 2;
   }, [prefs.volume]);
+
+  // Hook up the SoundCloud widget once its iframe exists, so the volume slider can control it.
+  // Volume is re-applied on every PLAY event because the widget can reset it when the song changes.
+  useEffect(() => {
+    if (!scLoaded) {
+      scWidget.current = null;
+      return undefined;
+    }
+    let cancelled = false;
+    loadScApi()
+      .then((SC) => {
+        if (cancelled || !scFrame.current) return;
+        const widget = SC.Widget(scFrame.current);
+        scWidget.current = widget;
+        const apply = () => widget.setVolume(Math.round((prefsRef.current.scVolume ** 2) * 100));
+        widget.bind(SC.Widget.Events.READY, apply);
+        widget.bind(SC.Widget.Events.PLAY, apply);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [scLoaded]);
+
+  useEffect(() => {
+    if (scWidget.current) scWidget.current.setVolume(Math.round((prefs.scVolume ** 2) * 100));
+  }, [prefs.scVolume]);
 
   // Returning visitor who left music on: start at the first interaction the browser accepts
   useEffect(() => {
@@ -130,28 +177,28 @@ export default function MusicPlayer() {
     }
   }
 
-  // Spotify is the only source when there are no built-in tracks (decided once the track list has finished loading)
-  const showSpotify = Boolean(SPOTIFY_ID) && (prefs.source === 'spotify' || (tracksLoaded && tracks.length === 0));
-  const hasBoth = Boolean(SPOTIFY_ID) && tracks.length > 0;
+  // SoundCloud is the only source when there are no built-in tracks (decided once the track list has finished loading)
+  const showSC = HAS_SC && (prefs.source === 'soundcloud' || (tracksLoaded && tracks.length === 0));
+  const hasBoth = HAS_SC && tracks.length > 0;
 
-  // Mount the Spotify player the first time it is needed and keep it mounted, so a song carries on when the widget is collapsed
+  // Mount the SoundCloud player the first time it is needed and keep it mounted, so a song carries on when the widget is collapsed
   useEffect(() => {
-    if (showSpotify) setSpotifyLoaded(true);
-  }, [showSpotify]);
+    if (showSC) setScLoaded(true);
+  }, [showSC]);
 
-  // Only one source plays at a time: entering Spotify pauses the built-in tracks, leaving it removes the Spotify player (which stops it)
+  // Only one source plays at a time: entering SoundCloud pauses the built-in tracks, leaving it removes the SoundCloud player (which stops it)
   function chooseSource(src) {
-    if (src === 'spotify') {
+    if (src === 'soundcloud') {
       audio.current?.pause();
-      update({ source: 'spotify', on: false });
+      update({ source: 'soundcloud', on: false });
     } else {
-      setSpotifyLoaded(false);
+      setScLoaded(false);
       update({ source: 'built-in' });
     }
   }
 
-  if (!tracks.length && !SPOTIFY_ID && tracksLoaded) return null;
-  if (!tracksLoaded && !SPOTIFY_ID) return null;
+  if (!tracks.length && !HAS_SC && tracksLoaded) return null;
+  if (!tracksLoaded && !HAS_SC) return null;
 
   return (
     <div className={`music ${prefs.open ? 'is-open' : ''} ${playing ? 'is-playing' : ''}`} role="region" aria-label="Background music">
@@ -177,15 +224,16 @@ export default function MusicPlayer() {
       >
         <span className="music-bars" aria-hidden="true"><i /><i /><i /></span>
       </button>
-      {spotifyLoaded && (
-        <div className={`music-spotify ${prefs.open && showSpotify ? '' : 'is-hidden'} ${prefs.expanded ? 'is-expanded' : ''}`}>
+      {scLoaded && (
+        <div className={`music-spotify ${prefs.open && showSC ? '' : 'is-hidden'} ${prefs.expanded ? 'is-expanded' : ''}`}>
           <iframe
-            title="Spotify playlist player"
-            src={SPOTIFY_EMBED}
+            ref={scFrame}
+            title="SoundCloud playlist player"
+            src={SC_EMBED}
             width="100%"
-            height={prefs.expanded ? 352 : 152}
+            height={prefs.expanded ? 450 : 166}
             frameBorder="0"
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            allow="autoplay"
             loading="lazy"
           />
         </div>
@@ -194,16 +242,25 @@ export default function MusicPlayer() {
         <div className="music-panel">
           {hasBoth && (
             <div className="music-source" role="group" aria-label="Music source">
-              <button className={!showSpotify ? 'on' : ''} aria-pressed={!showSpotify} onClick={() => chooseSource('built-in')}>Built-in</button>
-              <button className={showSpotify ? 'on' : ''} aria-pressed={showSpotify} onClick={() => chooseSource('spotify')}>Spotify</button>
+              <button className={!showSC ? 'on' : ''} aria-pressed={!showSC} onClick={() => chooseSource('built-in')}>Built-in</button>
+              <button className={showSC ? 'on' : ''} aria-pressed={showSC} onClick={() => chooseSource('soundcloud')}>SoundCloud</button>
             </div>
           )}
-          {showSpotify ? (
+          {showSC ? (
             <div className="music-spot-ctl">
-              <button className="music-chip" onClick={() => update({ expanded: !prefs.expanded })} aria-pressed={prefs.expanded}>
-                {prefs.expanded ? '▾ Hide track list' : '▸ Track list'}
+              <button className="music-chip music-chip-btn" onClick={() => update({ expanded: !prefs.expanded })} aria-pressed={prefs.expanded}>
+                {prefs.expanded ? '▾ Hide playlist' : '▸ Show playlist'}
               </button>
-              <a className="music-chip" href={`https://open.spotify.com/playlist/${SPOTIFY_ID}`} target="_blank" rel="noreferrer">Open in Spotify ↗</a>
+              <div className="music-ctl">
+                <button onClick={() => scWidget.current?.prev()} aria-label="Previous song">‹‹</button>
+                <button onClick={() => scWidget.current?.next()} aria-label="Next song">››</button>
+                <input
+                  type="range" min="0" max="1" step="0.05" value={prefs.scVolume}
+                  onChange={(e) => update({ scVolume: Number(e.target.value) })}
+                  aria-label="SoundCloud volume"
+                />
+              </div>
+              <a className="music-chip" href={SC_URL} target="_blank" rel="noreferrer">Open in SoundCloud ↗</a>
             </div>
           ) : current ? (
             <>
