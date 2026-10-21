@@ -78,7 +78,9 @@ export async function anilistQuery(query, variables, cacheKey, { tolerateErrors 
 
     return json.data;
   } catch (err) {
-    if (cached) return cached.data;
+    // Visitors only see "failed to reach the data source". The real reason (429, 403, timeout, ...) goes to the server log.
+    console.warn('AniList lookup failed:', err.message);
+    if (cached) return cached.data; // better a slightly old answer than an error page
     throw err;
   }
 }
