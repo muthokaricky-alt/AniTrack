@@ -2,8 +2,12 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
+import { signToken } from '../tokens.js';
 import { parseAvatar, publicUser } from '../userUtil.js';
 import { loadFavorites } from './favorites.js';
+import { compareTaste, parseGenres } from '../taste.js';
+
+export { compareTaste }; // follows.js imports it from here
 
 const router = Router();
 
@@ -60,7 +64,26 @@ router.patch('/password', requireAuth, async (req, res) => {
   if (next.length < 6) return res.status(400).json({ error: 'New password must be at least 6 characters' });
   // 400 rather than 401 so a typo doesn't sign the user out
   if (!(await bcrypt.compare(current, user.password_hash))) return res.status(400).json({ error: 'Current password is incorrect' });
-  await db.run('UPDATE users SET password_hash = ? WHERE id = ?', [await bcrypt.hash(next, 10), user.id]);
+  // Bumping token_version signs out every other device. This device gets a fresh token so it stays logged in.
+  const updated = await db.get('UPDATE users SET password_hash = ?, token_version = token_version + 1 WHERE id = ? RETURNING *', [await bcrypt.hash(next, 10), user.id]);
+  res.json({ ok: true, token: signToken(updated) });
+});
+
+// POST /api/profile/logout-all -> sign out every other device (this one stays signed in)
+router.post('/logout-all', requireAuth, async (req, res) => {
+  const updated = await db.get('UPDATE users SET token_version = token_version + 1 WHERE id = ? RETURNING *', [req.userId]);
+  res.json({ ok: true, token: signToken(updated) });
+});
+
+// DELETE /api/profile/account -> permanently delete the account (needs the password).
+// Lists, favourites, activity and follows are removed with it (ON DELETE CASCADE).
+router.delete('/account', requireAuth, async (req, res) => {
+  const user = await getUser(req.userId);
+  if (!user) return res.status(401).json({ error: 'Account not found' });
+  const password = String(req.body?.password || '');
+  // 400 rather than 401 so a typo doesn't sign the user out
+  if (!(await bcrypt.compare(password, user.password_hash))) return res.status(400).json({ error: 'Password is incorrect' });
+  await db.run('DELETE FROM users WHERE id = ?', [user.id]);
   res.json({ ok: true });
 });
 
@@ -93,9 +116,6 @@ usersRoutes.get('/:username', async (req, res) => {
 });
 
 // ----- Taste match -----
-const clamp01 = (x) => Math.max(0, Math.min(1, x));
-const parseGenres = (text) => { try { const g = JSON.parse(text || '[]'); return Array.isArray(g) ? g : []; } catch { return []; } };
-
 export async function loadTaste(userId) {
   const out = [];
   for (const [kind, table] of [['anime', 'list_entries'], ['manga', 'manga_entries']]) {
@@ -104,64 +124,6 @@ export async function loadTaste(userId) {
     }
   }
   return out;
-}
-
-// A genre "taste vector": each title adds weight to its genres, more for high scores (10 counts 6, unscored 1, 4 or less 0.5)
-function genreVector(entries) {
-  const v = new Map();
-  for (const e of entries) {
-    const w = e.score != null ? Math.max(0.5, e.score - 4) : 1;
-    for (const g of e.genres) v.set(g, (v.get(g) || 0) + w);
-  }
-  return v;
-}
-function cosine(a, b) {
-  let dot = 0, na = 0, nb = 0;
-  for (const [, x] of a) na += x * x;
-  for (const [, x] of b) nb += x * x;
-  for (const [g, x] of a) if (b.has(g)) dot += x * b.get(g);
-  return na && nb ? dot / Math.sqrt(na * nb) : null;
-}
-
-// How alike two people's lists are. Three parts, averaged over the parts that can be measured:
-//   genres  (40%): cosine similarity of score-weighted genre vectors, 0.5 or less counts as 0%
-//   scores  (40%): how closely they rate titles they both have (0 points apart = 100%, 3 or more apart = 0%)
-//   overlap (20%): how many titles they share (40% of the smaller list in common = 100%)
-export function compareTaste(mine, theirs) {
-  const theirById = new Map(theirs.map((e) => [`${e.kind}:${e.mal_id}`, e]));
-  const shared = [];
-  for (const e of mine) {
-    const o = theirById.get(`${e.kind}:${e.mal_id}`);
-    if (o) shared.push({ kind: e.kind, mal_id: e.mal_id, title: e.title, image_url: e.image_url || o.image_url, you: e.score, them: o.score });
-  }
-  const both = shared.filter((s) => s.you != null && s.them != null);
-  const meanDiff = both.length >= 3 ? both.reduce((sum, s) => sum + Math.abs(s.you - s.them), 0) / both.length : null;
-  const cos = cosine(genreVector(mine), genreVector(theirs));
-  const overlapRaw = mine.length && theirs.length ? shared.length / Math.min(mine.length, theirs.length) : 0;
-
-  const parts = {
-    genres: cos == null ? null : clamp01((cos - 0.5) / 0.5),
-    scores: meanDiff == null ? null : clamp01(1 - meanDiff / 3),
-    overlap: clamp01(overlapRaw / 0.4)
-  };
-  const weights = { genres: 0.4, scores: 0.4, overlap: 0.2 };
-  let sum = 0, wsum = 0;
-  for (const k of Object.keys(parts)) if (parts[k] != null) { sum += parts[k] * weights[k]; wsum += weights[k]; }
-
-  // genres you both lean towards, by the smaller of the two weights
-  const gm = genreVector(mine), gt = genreVector(theirs);
-  const commonGenres = [...gm.keys()].filter((g) => gt.has(g)).sort((a, b) => Math.min(gt.get(b), gm.get(b)) - Math.min(gt.get(a), gm.get(a))).slice(0, 5);
-
-  const pct = (x) => (x == null ? null : Math.round(x * 100));
-  return {
-    percent: wsum ? Math.round((sum / wsum) * 100) : 0,
-    parts: { genres: pct(parts.genres), scores: pct(parts.scores), overlap: pct(parts.overlap) },
-    shared_count: shared.length,
-    mean_diff: meanDiff == null ? null : Math.round(meanDiff * 10) / 10,
-    both_loved: both.filter((s) => s.you >= 8 && s.them >= 8).sort((a, b) => Math.min(b.you, b.them) - Math.min(a.you, a.them)).slice(0, 6),
-    disagree: both.filter((s) => Math.abs(s.you - s.them) >= 2).sort((a, b) => Math.abs(b.you - b.them) - Math.abs(a.you - a.them)).slice(0, 3),
-    common_genres: commonGenres
-  };
 }
 
 // GET /api/users/:username/match -> compare the logged-in user with a public profile

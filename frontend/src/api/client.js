@@ -63,6 +63,7 @@ export const api = {
   me: () => request('/profile'),
   updateProfile: (body) => request('/profile', { method: 'PATCH', body: JSON.stringify(body) }),
   changePassword: (body) => request('/profile/password', { method: 'PATCH', body: JSON.stringify(body) }),
+  logoutAll: () => request('/profile/logout-all', { method: 'POST' }),
   publicProfile: (username) => request(`/users/${encodeURIComponent(username)}`),
   tasteMatch: (username) => request(`/users/${encodeURIComponent(username)}/match`),
   followInfo: (username) => request(`/users/${encodeURIComponent(username)}/follow`),

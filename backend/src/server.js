@@ -17,12 +17,14 @@ import characterRoutes from './routes/characters.js';
 import imgRoutes from './routes/img.js';
 import db from './db.js';
 import { rateLimit } from './middleware/rateLimit.js';
+import { securityHeaders } from './securityHeaders.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Fail fast: without a real secret, tokens would be signed with a guessable key
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'change_this_to_a_long_random_string') {
-  if (process.env.NODE_ENV === 'production') {
+  // RENDER is set automatically on Render, so a forgotten NODE_ENV can't leave the site running on a public, guessable secret
+  if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
     console.error('JWT_SECRET is missing or still the placeholder. Set a long random value.');
     process.exit(1);
   }
@@ -33,12 +35,14 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'change_this_to_a_long
 const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', 1); // behind Render's proxy, so req.ip is the real client
+const extraHeaders = securityHeaders(process.env);
 app.use((req, res, next) => {
   res.set({
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'SAMEORIGIN',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
-    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+    ...extraHeaders
   });
   next();
 });
@@ -61,6 +65,7 @@ app.use('/api/manga-list', mangaListRoutes);
 app.use('/api/anime', animeRoutes);
 app.use('/api/manga', mangaRoutes);
 app.use('/api/profile/password', rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: 'Too many attempts. Try again in a few minutes.' }));
+app.use('/api/profile/account', rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: 'Too many attempts. Try again in a few minutes.' }));
 app.use('/api/profile', profileRoutes);
 app.use('/api/users', userFollowRoutes);
 app.use('/api/users', usersRoutes);

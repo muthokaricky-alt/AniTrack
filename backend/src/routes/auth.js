@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import db from '../db.js';
 import { parseAvatar, publicUser } from '../userUtil.js';
+import { signToken } from '../tokens.js';
 
 const router = Router();
 
@@ -41,7 +41,7 @@ router.post('/register', async (req, res) => {
     throw err;
   }
 
-  const token = jwt.sign({ userId: created.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  const token = signToken(created);
   res.status(201).json({ token, user: publicUser(created) });
 });
 
@@ -62,7 +62,7 @@ router.post('/login', async (req, res) => {
     return res.status(401).json({ error: 'Invalid email or password' });
   }
 
-  const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  const token = signToken(user);
   res.json({ token, user: publicUser(user) });
 });
 

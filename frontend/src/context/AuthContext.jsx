@@ -12,6 +12,20 @@ function readStoredUser() {
   }
 }
 
+// Everything the app saves in this browser that belongs to the signed-in person: offline copies of their lists,
+// weekly goal, seen episodes, list filters. Wiped on logout so whoever uses this browser next never sees it.
+// Theme, music and layout preferences stay.
+function clearPersonalData() {
+  try {
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('anitrack:list:') || key === 'anitrack:weekgoal' || key === 'anitrack:eps-seen') localStorage.removeItem(key);
+    }
+    sessionStorage.removeItem('anitrack:listfilters');
+  } catch {
+    /* storage blocked: nothing to clear */
+  }
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(readStoredUser);
 
@@ -34,6 +48,7 @@ export function AuthProvider({ children }) {
   const logout = useCallback(() => {
     localStorage.removeItem('anitrack_token');
     localStorage.removeItem('anitrack_user');
+    clearPersonalData();
     setUser(null);
   }, []);
 

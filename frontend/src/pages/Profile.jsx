@@ -124,13 +124,24 @@ function Settings() {
     e.preventDefault();
     setPwBusy(true);
     try {
-      await api.changePassword(pw);
+      const res = await api.changePassword(pw);
+      if (res.token) localStorage.setItem('anitrack_token', res.token); // other devices are signed out; this one gets a fresh login
       setPw({ current_password: '', new_password: '' });
-      toast('Password changed');
+      toast('Password changed. Other devices were signed out.');
     } catch (err) {
       toast(err.message, 'error');
     } finally {
       setPwBusy(false);
+    }
+  }
+
+  async function logoutOthers() {
+    try {
+      const res = await api.logoutAll();
+      if (res.token) localStorage.setItem('anitrack_token', res.token);
+      toast('Signed out of all other devices');
+    } catch (err) {
+      toast(err.message, 'error');
     }
   }
 
@@ -202,6 +213,12 @@ function Settings() {
         </div>
         <button className="btn btn-line" type="submit" disabled={pwBusy}>{pwBusy ? 'Updating…' : 'Update password'}</button>
       </form>
+
+      <div className="pf pf-password">
+        <h2 className="mini-h">Signed in elsewhere?</h2>
+        <p className="muted pf-note">Signs out every other phone or computer that's logged into your account. You stay signed in here.</p>
+        <button className="btn btn-line" type="button" onClick={logoutOthers}>Log out other devices</button>
+      </div>
     </>
   );
 }
