@@ -2,6 +2,7 @@ import { Router } from 'express';
 import fetch from 'node-fetch';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
+import { cleanQuery, clampPage, isId, bucketWindow, errDetail } from '../inputs.js';
 
 const router = Router();
 const ANILIST_URL = process.env.ANILIST_URL || 'https://graphql.anilist.co';
@@ -202,9 +203,9 @@ function currentSeason() {
 
 // GET /api/anime/search?q=naruto&genre=Action&page=1   (q and/or genre)
 router.get('/search', async (req, res) => {
-  const q = String(req.query.q || '').trim();
-  const genre = String(req.query.genre || '').trim();
-  const page = Math.max(1, Number(req.query.page) || 1);
+  const q = cleanQuery(req.query.q);
+  const genre = cleanQuery(req.query.genre, 40);
+  const page = clampPage(req.query.page);
   if (!q && !genre) return res.status(400).json({ error: 'Provide q or genre' });
   if (genre && !GENRES.includes(genre)) return res.status(400).json({ error: 'Unknown genre' });
 
@@ -219,17 +220,17 @@ router.get('/search', async (req, res) => {
       pagination: { has_next_page: data.Page.pageInfo.hasNextPage }
     });
   } catch (err) {
-    res.status(502).json({ error: 'Failed to reach anime data source', detail: err.message });
+    res.status(502).json({ error: 'Failed to reach anime data source', detail: errDetail(err) });
   }
 });
 
 // GET /api/anime/top
 router.get('/top', async (req, res) => {
-  const { page = 1 } = req.query;
+  const page = clampPage(req.query.page);
   try {
     const data = await anilistQuery(
       PAGE_QUERY,
-      { page: Number(page), sort: ['SCORE_DESC'] },
+      { page, sort: ['SCORE_DESC'] },
       `top:${page}`
     );
     res.json({
@@ -237,7 +238,7 @@ router.get('/top', async (req, res) => {
       pagination: { has_next_page: data.Page.pageInfo.hasNextPage }
     });
   } catch (err) {
-    res.status(502).json({ error: 'Failed to reach anime data source', detail: err.message });
+    res.status(502).json({ error: 'Failed to reach anime data source', detail: errDetail(err) });
   }
 });
 
@@ -255,19 +256,21 @@ router.get('/season/now', async (req, res) => {
       pagination: { has_next_page: data.Page.pageInfo.hasNextPage }
     });
   } catch (err) {
-    res.status(502).json({ error: 'Failed to reach anime data source', detail: err.message });
+    res.status(502).json({ error: 'Failed to reach anime data source', detail: errDetail(err) });
   }
 });
 
 // GET /api/anime/schedule?from=<unix>&to=<unix>  -> episodes airing in the window (max 8 days)
 router.get('/schedule', async (req, res) => {
   const now = Math.floor(Date.now() / 1000);
-  const from = req.query.from !== undefined ? Number(req.query.from) : now - 3600;
-  let to = req.query.to !== undefined ? Number(req.query.to) : from + 7 * 86400;
-  if (!Number.isInteger(from) || !Number.isInteger(to) || to <= from) {
+  const fromRaw = req.query.from !== undefined ? Number(req.query.from) : now - 3600;
+  const toRaw = req.query.to !== undefined ? Number(req.query.to) : fromRaw + 7 * 86400;
+  if (!Number.isInteger(fromRaw) || !Number.isInteger(toRaw) || toRaw <= fromRaw) {
     return res.status(400).json({ error: 'from and to must be unix timestamps with to > from' });
   }
-  to = Math.min(to, from + 8 * 86400);
+  if (Math.abs(fromRaw - now) > 90 * 86400) return res.status(400).json({ error: 'That date range is too far from today' });
+  // whole 5-minute steps, so near-identical requests share one cached answer instead of each asking AniList again
+  const [from, to] = bucketWindow(fromRaw, Math.min(toRaw, fromRaw + 8 * 86400));
 
   try {
     const rows = [];
@@ -281,7 +284,7 @@ router.get('/schedule', async (req, res) => {
       .map((r) => ({ airing_at: r.airingAt, episode: r.episode, anime: toJikanShape(r.media) }));
     res.json({ data });
   } catch (err) {
-    res.status(502).json({ error: 'Failed to reach anime data source', detail: err.message });
+    res.status(502).json({ error: 'Failed to reach anime data source', detail: errDetail(err) });
   }
 });
 
@@ -334,7 +337,7 @@ router.get('/airing', requireAuth, async (req, res) => {
       .sort((a, b) => a.airing_at - b.airing_at);
     res.json({ data: out });
   } catch (err) {
-    res.status(502).json({ error: 'Failed to reach anime data source', detail: err.message });
+    res.status(502).json({ error: 'Failed to reach anime data source', detail: errDetail(err) });
   }
 });
 
@@ -373,19 +376,20 @@ router.get('/for-you', requireAuth, async (req, res) => {
     });
     res.json({ rows });
   } catch (err) {
-    res.status(502).json({ error: 'Failed to reach anime data source', detail: err.message });
+    res.status(502).json({ error: 'Failed to reach anime data source', detail: errDetail(err) });
   }
 });
 
 // GET /api/anime/:id  (id = MyAnimeList id, kept for compatibility with stored list entries)
 router.get('/:id', async (req, res) => {
-  if (!Number.isInteger(Number(req.params.id))) return res.status(400).json({ error: 'Invalid anime id' });
+  if (!isId(req.params.id)) return res.status(400).json({ error: 'Invalid anime id' });
+  const id = Number(req.params.id);
   try {
-    const data = await anilistQuery(DETAIL_QUERY, { idMal: Number(req.params.id) }, `detail:${req.params.id}`);
+    const data = await anilistQuery(DETAIL_QUERY, { idMal: id }, `detail:${id}`);
     if (!data.Media) return res.status(404).json({ error: 'Anime not found' });
     res.json({ data: toJikanShape(data.Media) });
   } catch (err) {
-    res.status(502).json({ error: 'Failed to reach anime data source', detail: err.message });
+    res.status(502).json({ error: 'Failed to reach anime data source', detail: errDetail(err) });
   }
 });
 

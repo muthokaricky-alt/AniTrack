@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
+import { cleanImageUrl } from '../imageUrl.js';
 
 export const KINDS = ['anime', 'manga', 'character'];
 export const LISTS = { top3: 3, top15: 15 };
@@ -39,7 +40,7 @@ router.put('/:kind/:list', async (req, res) => {
     clean.push({
       id,
       title,
-      image_url: typeof it.image_url === 'string' && /^https?:\/\//.test(it.image_url) ? it.image_url.slice(0, 500) : null,
+      image_url: cleanImageUrl(it.image_url),
       sub: typeof it.sub === 'string' ? it.sub.trim().slice(0, 200) || null : null
     });
   }

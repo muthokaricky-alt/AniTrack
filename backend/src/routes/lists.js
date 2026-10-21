@@ -2,6 +2,8 @@ import { Router } from 'express';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { anilistQuery } from './anime.js';
+import { cleanImageUrl } from '../imageUrl.js';
+import { errDetail } from '../inputs.js';
 
 // One router factory serves both lists. Table and column names come from these constants, never from user input.
 const KINDS = {
@@ -130,6 +132,7 @@ function makeRouter(cfg) {
 
     const totalVal = intField(req.body[total], { min: 0, max: 100000 });
     const malId = Number(mal_id);
+    const cover = cleanImageUrl(image_url);
     const genres = packGenres(req.body.genres);
     const existing = await db.get(`SELECT * FROM ${t} WHERE user_id = ? AND mal_id = ?`, [req.userId, malId]);
 
@@ -147,7 +150,7 @@ function makeRouter(cfg) {
       await db.run(
         `INSERT INTO ${t} (user_id, mal_id, title, image_url, status, ${total}, ${progress}, genres) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT (user_id, mal_id) DO NOTHING`,
-        [req.userId, malId, String(title).slice(0, 300), image_url, status, totalClean, status === 'completed' && totalClean ? totalClean : 0, genres]
+        [req.userId, malId, String(title).slice(0, 300), cover, status, totalClean, status === 'completed' && totalClean ? totalClean : 0, genres]
       );
     }
     const entry = await db.get(`SELECT * FROM ${t} WHERE user_id = ? AND mal_id = ?`, [req.userId, malId]);
@@ -210,7 +213,7 @@ function makeRouter(cfg) {
     }
     // Nothing at all could be looked up: report it as an error instead of a list of "failed" rows
     if (wanted.length && failures === wanted.length) {
-      return res.status(502).json({ error: 'Could not reach the anime catalogue just now. Try again in a moment.', detail: lastError });
+      return res.status(502).json({ error: 'Could not reach the anime catalogue just now. Try again in a moment.', detail: errDetail(lastError) });
     }
     res.json({ matches });
   });
@@ -233,7 +236,7 @@ function makeRouter(cfg) {
       const ratings = e.ratings === undefined ? null : packRatings(e.ratings, ratingKeys);
       rows.push({
         malId, title,
-        image_url: typeof e.image_url === 'string' && /^https?:\/\//.test(e.image_url) ? e.image_url.slice(0, 500) : null,
+        image_url: cleanImageUrl(e.image_url),
         status: statuses.includes(e.status) ? e.status : defaultStatus,
         score: Number.isNaN(score) ? null : score ?? null,
         done, total: tot,

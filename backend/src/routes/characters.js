@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { anilistQuery } from './anime.js';
+import { cleanQuery, errDetail } from '../inputs.js';
 
 const router = Router();
 
@@ -20,7 +21,7 @@ const QUERY = `
 
 // GET /api/characters/search?q=luffy  (ids are AniList character ids)
 router.get('/search', async (req, res) => {
-  const q = String(req.query.q || '').trim();
+  const q = cleanQuery(req.query.q);
   if (!q) return res.status(400).json({ error: 'Provide q' });
   try {
     const data = await anilistQuery(QUERY, { search: q }, `char:${q.toLowerCase()}`);
@@ -36,7 +37,7 @@ router.get('/search', async (req, res) => {
       })
     });
   } catch (err) {
-    res.status(502).json({ error: 'Failed to reach the character data source', detail: err.message });
+    res.status(502).json({ error: 'Failed to reach the character data source', detail: errDetail(err) });
   }
 });
 

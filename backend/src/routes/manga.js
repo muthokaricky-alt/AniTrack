@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { anilistQuery, stripHtml, GENRES, safeColor } from './anime.js';
+import { cleanQuery, clampPage, isId, errDetail } from '../inputs.js';
 
 const router = Router();
 
@@ -78,7 +79,7 @@ const DETAIL_QUERY = `
 `;
 
 const mapList = (media) => media.filter((m) => m.idMal).map(toMangaShape);
-const fail = (res, err) => res.status(502).json({ error: 'Failed to reach manga data source', detail: err.message });
+const fail = (res, err) => res.status(502).json({ error: 'Failed to reach manga data source', detail: errDetail(err) });
 
 async function pageOf(variables, key, res) {
   try {
@@ -91,9 +92,9 @@ async function pageOf(variables, key, res) {
 
 // GET /api/manga/search?q=berserk&genre=Action&page=1
 router.get('/search', (req, res) => {
-  const q = String(req.query.q || '').trim();
-  const genre = String(req.query.genre || '').trim();
-  const page = Math.max(1, Number(req.query.page) || 1);
+  const q = cleanQuery(req.query.q);
+  const genre = cleanQuery(req.query.genre, 40);
+  const page = clampPage(req.query.page);
   if (!q && !genre) return res.status(400).json({ error: 'Provide q or genre' });
   if (genre && !GENRES.includes(genre)) return res.status(400).json({ error: 'Unknown genre' });
   const variables = { page, sort: [q ? 'SEARCH_MATCH' : 'POPULARITY_DESC'] };
@@ -104,7 +105,7 @@ router.get('/search', (req, res) => {
 
 // GET /api/manga/top
 router.get('/top', (req, res) => {
-  const page = Math.max(1, Number(req.query.page) || 1);
+  const page = clampPage(req.query.page);
   return pageOf({ page, sort: ['SCORE_DESC'] }, `manga:top:${page}`, res);
 });
 
@@ -115,9 +116,10 @@ router.get('/trending', (req, res) =>
 
 // GET /api/manga/:id  (MyAnimeList id)
 router.get('/:id', async (req, res) => {
-  if (!Number.isInteger(Number(req.params.id))) return res.status(400).json({ error: 'Invalid manga id' });
+  if (!isId(req.params.id)) return res.status(400).json({ error: 'Invalid manga id' });
+  const id = Number(req.params.id);
   try {
-    const data = await anilistQuery(DETAIL_QUERY, { idMal: Number(req.params.id) }, `manga:detail:${req.params.id}`);
+    const data = await anilistQuery(DETAIL_QUERY, { idMal: id }, `manga:detail:${id}`);
     if (!data.Media) return res.status(404).json({ error: 'Manga not found' });
     res.json({ data: toMangaShape(data.Media) });
   } catch (err) {

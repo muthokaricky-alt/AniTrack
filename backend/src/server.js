@@ -46,13 +46,25 @@ app.use((req, res, next) => {
   });
   next();
 });
-app.use(cors({ origin: process.env.CORS_ORIGIN || true }));
+// On the live site the app and the API share one address, so no cross-site access is needed unless CORS_ORIGIN says otherwise.
+// (Locally the Vite dev server runs on a different port, which is why it stays open outside production.)
+const onHost = process.env.NODE_ENV === 'production' || Boolean(process.env.RENDER);
+app.use(cors({ origin: process.env.CORS_ORIGIN || !onHost }));
 app.use(['/api/list/import', '/api/manga-list/import'], express.json({ limit: '2mb' })); // list backups can be large
 // profile photos (data URLs) need a little more room than ordinary JSON bodies
 app.use(['/api/auth/register', '/api/profile'], express.json({ limit: '200kb' }));
 app.use(express.json({ limit: '100kb' }));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+
+// Rate limits (per visitor IP). A general ceiling for everything, then tighter ones on the things that cost real money or
+// real quota: AniList lookups (all users share this server's IP, which AniList limits) and database-heavy comparisons.
+const perMinute = (max) => rateLimit({ windowMs: 60 * 1000, max, message: 'Too many requests. Slow down for a minute.' });
+app.use('/api', perMinute(300));
+app.use(['/api/anime/search', '/api/manga/search', '/api/characters/search'], perMinute(30));
+app.use('/api/anime/schedule', perMinute(10));
+app.use(['/api/follows/matches', '/api/users/:username/match'], perMinute(15));
+app.use('/api/users', perMinute(90));
 
 app.use(
   '/api/auth',
@@ -65,7 +77,6 @@ app.use('/api/manga-list', mangaListRoutes);
 app.use('/api/anime', animeRoutes);
 app.use('/api/manga', mangaRoutes);
 app.use('/api/profile/password', rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: 'Too many attempts. Try again in a few minutes.' }));
-app.use('/api/profile/account', rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: 'Too many attempts. Try again in a few minutes.' }));
 app.use('/api/profile', profileRoutes);
 app.use('/api/users', userFollowRoutes);
 app.use('/api/users', usersRoutes);
@@ -86,6 +97,9 @@ if (fs.existsSync(distDir)) {
 }
 
 app.use((err, req, res, next) => {
+  // bad or oversized request bodies are the sender's mistake, not a server fault
+  if (err.type === 'entity.too.large') return res.status(413).json({ error: 'That request is too large' });
+  if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'The request was not valid JSON' });
   console.error(err);
   res.status(500).json({ error: 'Internal server error' });
 });

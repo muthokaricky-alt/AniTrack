@@ -75,18 +75,6 @@ router.post('/logout-all', requireAuth, async (req, res) => {
   res.json({ ok: true, token: signToken(updated) });
 });
 
-// DELETE /api/profile/account -> permanently delete the account (needs the password).
-// Lists, favourites, activity and follows are removed with it (ON DELETE CASCADE).
-router.delete('/account', requireAuth, async (req, res) => {
-  const user = await getUser(req.userId);
-  if (!user) return res.status(401).json({ error: 'Account not found' });
-  const password = String(req.body?.password || '');
-  // 400 rather than 401 so a typo doesn't sign the user out
-  if (!(await bcrypt.compare(password, user.password_hash))) return res.status(400).json({ error: 'Password is incorrect' });
-  await db.run('DELETE FROM users WHERE id = ?', [user.id]);
-  res.json({ ok: true });
-});
-
 // ----- Public profiles: opt-in only, and only non-sensitive fields -----
 export const usersRoutes = Router();
 
