@@ -24,3 +24,9 @@ export function errDetail(err, env = process.env) {
   if (env.NODE_ENV === 'production' || env.RENDER) return undefined;
   return typeof err === 'string' ? err : err?.message;
 }
+
+// What visitors see when the catalogue (AniList) can't be reached and no backup could help.
+export const CATALOG_DOWN = "The catalogue (AniList) isn't answering right now. Please try again in a few minutes.";
+
+// AniList's Cloudflare and Jikan both prefer requests that say who they are. Set ANILIST_USER_AGENT to change it.
+export const USER_AGENT = process.env.ANILIST_USER_AGENT || 'AniTrack/1.0 (+https://anitrack-0pyj.onrender.com)';

@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { anilistQuery, stripHtml, GENRES, safeColor } from './anime.js';
 import { cleanQuery, clampPage, isId, errDetail } from '../inputs.js';
+import { CATALOG_DOWN } from '../inputs.js';
+import { tryBackup, backupTopManga, backupTrendingManga, backupSearchManga, backupManga } from '../jikan.js';
 
 const router = Router();
 
@@ -79,13 +81,16 @@ const DETAIL_QUERY = `
 `;
 
 const mapList = (media) => media.filter((m) => m.idMal).map(toMangaShape);
-const fail = (res, err) => res.status(502).json({ error: 'Failed to reach manga data source', detail: errDetail(err) });
+const fail = (res, err) => res.status(502).json({ error: CATALOG_DOWN, detail: errDetail(err) });
 
-async function pageOf(variables, key, res) {
+// backupFn (optional): how to answer from the backup source if AniList can't
+async function pageOf(variables, key, res, backupFn) {
   try {
     const data = await anilistQuery(PAGE_QUERY, variables, key);
     res.json({ data: mapList(data.Page.media), pagination: { has_next_page: data.Page.pageInfo.hasNextPage } });
   } catch (err) {
+    const backup = backupFn ? await tryBackup(backupFn) : null;
+    if (backup) return res.json(backup);
     fail(res, err);
   }
 }
@@ -100,18 +105,18 @@ router.get('/search', (req, res) => {
   const variables = { page, sort: [q ? 'SEARCH_MATCH' : 'POPULARITY_DESC'] };
   if (q) variables.search = q;
   if (genre) variables.genre = genre;
-  return pageOf(variables, `manga:search:${q}:${genre}:${page}`, res);
+  return pageOf(variables, `manga:search:${q}:${genre}:${page}`, res, genre ? null : () => backupSearchManga(q, page)); // no backup for genre-only searches
 });
 
 // GET /api/manga/top
 router.get('/top', (req, res) => {
   const page = clampPage(req.query.page);
-  return pageOf({ page, sort: ['SCORE_DESC'] }, `manga:top:${page}`, res);
+  return pageOf({ page, sort: ['SCORE_DESC'] }, `manga:top:${page}`, res, () => backupTopManga(page));
 });
 
 // GET /api/manga/trending  (what people are reading right now)
 router.get('/trending', (req, res) =>
-  pageOf({ page: 1, sort: ['TRENDING_DESC'], status: 'RELEASING' }, 'manga:trending', res)
+  pageOf({ page: 1, sort: ['TRENDING_DESC'], status: 'RELEASING' }, 'manga:trending', res, () => backupTrendingManga())
 );
 
 // GET /api/manga/:id  (MyAnimeList id)
@@ -123,6 +128,9 @@ router.get('/:id', async (req, res) => {
     if (!data.Media) return res.status(404).json({ error: 'Manga not found' });
     res.json({ data: toMangaShape(data.Media) });
   } catch (err) {
+    const backup = await tryBackup(() => backupManga(id));
+    if (backup?.notFound) return res.status(404).json({ error: 'Manga not found' });
+    if (backup) return res.json(backup);
     fail(res, err);
   }
 });

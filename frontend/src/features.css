@@ -203,3 +203,12 @@
   .pf-tabs { display: flex; width: 100%; }
   .pf-tabs button { flex: 1; padding: 11px 6px; letter-spacing: 0.06em; font-size: 11px; }
 }
+
+
+/* ---- "AniList is down, showing backup data" notice ---- */
+.backup-note { position: fixed; top: 84px; left: 50%; transform: translateX(-50%); z-index: 80; display: flex; align-items: flex-start; gap: 14px; width: max-content; max-width: min(640px, calc(100vw - 24px)); padding: 12px 16px; background: var(--ink-2); border: 1px solid var(--signal); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); }
+.backup-note p { margin: 0; font-size: 14px; line-height: 1.45; }
+.backup-note b { color: var(--signal); }
+.backup-note button { flex: none; font-size: 22px; line-height: 1; padding: 0 4px; color: var(--muted); }
+.backup-note button:hover { color: var(--text); }
+@media (max-width: 700px) { .backup-note { top: 64px; } }

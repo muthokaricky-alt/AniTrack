@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { anilistQuery } from './anime.js';
-import { cleanQuery, errDetail } from '../inputs.js';
+import { cleanQuery, errDetail, CATALOG_DOWN } from '../inputs.js';
 
 const router = Router();
 
@@ -37,7 +37,7 @@ router.get('/search', async (req, res) => {
       })
     });
   } catch (err) {
-    res.status(502).json({ error: 'Failed to reach the character data source', detail: errDetail(err) });
+    res.status(502).json({ error: CATALOG_DOWN, detail: errDetail(err) });
   }
 });
 

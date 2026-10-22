@@ -33,6 +33,7 @@ async function request(path, options = {}) {
     if (data.detail) console.warn(`API detail (${path}):`, data.detail); // the upstream reason for a 502
     throw new Error(data.error || 'Request failed');
   }
+  if (data && data.source === 'backup') window.dispatchEvent(new Event('anitrack:backup')); // served from the backup catalogue
   return data;
 }
 

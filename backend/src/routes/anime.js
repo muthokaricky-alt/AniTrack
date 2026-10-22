@@ -2,7 +2,9 @@ import { Router } from 'express';
 import fetch from 'node-fetch';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
-import { cleanQuery, clampPage, isId, bucketWindow, errDetail } from '../inputs.js';
+import { cleanQuery, clampPage, isId, bucketWindow, errDetail, CATALOG_DOWN, USER_AGENT } from '../inputs.js';
+import { makeBreaker } from '../breaker.js';
+import { tryBackup, backupTopAnime, backupSeasonNow, backupSearchAnime, backupAnime } from '../jikan.js';
 
 const router = Router();
 const ANILIST_URL = process.env.ANILIST_URL || 'https://graphql.anilist.co';
@@ -14,14 +16,18 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// AniList sits behind Cloudflare, which can refuse requests that don't say who they are. Identify AniTrack politely.
-// (Set ANILIST_USER_AGENT in the environment to change it, for example once you have your own domain.)
-const USER_AGENT = process.env.ANILIST_USER_AGENT || 'AniTrack/1.0 (+https://anitrack-0pyj.onrender.com)';
+// AniList can switch its API off for hours. After 3 failures in a row we stop asking for 30 seconds, so pages fall back to
+// the backup source immediately and AniList isn't hammered while it recovers. (Requests identify themselves with USER_AGENT.)
+const breaker = makeBreaker({ threshold: 3, pauseMs: 30000 });
 
 // retries: how many times to wait and try again when AniList says "slow down" (429) or has a hiccup (5xx)
 export async function anilistQuery(query, variables, cacheKey, { tolerateErrors = false, retries = 2 } = {}) {
   const cached = cacheKey ? cache.get(cacheKey) : null;
   if (cached && Date.now() - cached.time < CACHE_TTL_MS) return cached.data;
+  if (breaker.isOpen()) {
+    if (cached) return cached.data;
+    throw Object.assign(new Error('AniList is paused after repeated failures'), { paused: true });
+  }
 
   try {
     let response;
@@ -34,7 +40,7 @@ export async function anilistQuery(query, variables, cacheKey, { tolerateErrors 
           signal: AbortSignal.timeout(12000)
         });
       } catch (netErr) {
-        if (attempt >= retries) throw netErr; // timeout or dropped connection: try again, shared hosts hiccup
+        if (attempt >= retries) throw Object.assign(netErr, { outage: true }); // timeout or dropped connection: try again, shared hosts hiccup
         await sleep(1500 * (attempt + 1));
         continue;
       }
@@ -48,10 +54,12 @@ export async function anilistQuery(query, variables, cacheKey, { tolerateErrors 
       try { body = (await response.text()).replace(/\s+/g, ' ').slice(0, 200); } catch { /* ignore */ }
       const err = new Error(`AniList request failed: ${response.status}`);
       err.body = body;
+      err.outage = response.status === 403 || response.status === 429 || response.status >= 500;
       throw err;
     }
     const json = await response.json();
     if (json.errors && !(tolerateErrors && json.data)) throw new Error(json.errors.map((e) => e.message).join('; '));
+    breaker.success();
     if (cacheKey) {
       if (cache.size > 500) cache.delete(cache.keys().next().value); // keep memory bounded
       cache.set(cacheKey, { data: json.data, time: Date.now() });
@@ -59,6 +67,7 @@ export async function anilistQuery(query, variables, cacheKey, { tolerateErrors 
     return json.data;
   } catch (err) {
     // Visitors only see "failed to reach the data source". The real reason (429, 403, timeout, ...) goes to the server log.
+    if (err.outage) breaker.failure();
     console.warn('AniList lookup failed:', err.message, err.body ? `| AniList said: ${err.body}` : '');
     if (cached) return cached.data; // better a slightly old answer than an error page
     throw err;
@@ -234,7 +243,9 @@ router.get('/search', async (req, res) => {
       pagination: { has_next_page: data.Page.pageInfo.hasNextPage }
     });
   } catch (err) {
-    res.status(502).json({ error: 'Failed to reach anime data source', detail: errDetail(err) });
+    const backup = genre ? null : await tryBackup(() => backupSearchAnime(q, page)); // genre-only searches have no backup
+    if (backup) return res.json(backup);
+    res.status(502).json({ error: CATALOG_DOWN, detail: errDetail(err) });
   }
 });
 
@@ -252,7 +263,9 @@ router.get('/top', async (req, res) => {
       pagination: { has_next_page: data.Page.pageInfo.hasNextPage }
     });
   } catch (err) {
-    res.status(502).json({ error: 'Failed to reach anime data source', detail: errDetail(err) });
+    const backup = await tryBackup(() => backupTopAnime(page));
+    if (backup) return res.json(backup);
+    res.status(502).json({ error: CATALOG_DOWN, detail: errDetail(err) });
   }
 });
 
@@ -270,7 +283,9 @@ router.get('/season/now', async (req, res) => {
       pagination: { has_next_page: data.Page.pageInfo.hasNextPage }
     });
   } catch (err) {
-    res.status(502).json({ error: 'Failed to reach anime data source', detail: errDetail(err) });
+    const backup = await tryBackup(() => backupSeasonNow());
+    if (backup) return res.json(backup);
+    res.status(502).json({ error: CATALOG_DOWN, detail: errDetail(err) });
   }
 });
 
@@ -298,7 +313,7 @@ router.get('/schedule', async (req, res) => {
       .map((r) => ({ airing_at: r.airingAt, episode: r.episode, anime: toJikanShape(r.media) }));
     res.json({ data });
   } catch (err) {
-    res.status(502).json({ error: 'Failed to reach anime data source', detail: errDetail(err) });
+    res.status(502).json({ error: CATALOG_DOWN, detail: errDetail(err) });
   }
 });
 
@@ -351,7 +366,7 @@ router.get('/airing', requireAuth, async (req, res) => {
       .sort((a, b) => a.airing_at - b.airing_at);
     res.json({ data: out });
   } catch (err) {
-    res.status(502).json({ error: 'Failed to reach anime data source', detail: errDetail(err) });
+    res.status(502).json({ error: CATALOG_DOWN, detail: errDetail(err) });
   }
 });
 
@@ -390,7 +405,7 @@ router.get('/for-you', requireAuth, async (req, res) => {
     });
     res.json({ rows });
   } catch (err) {
-    res.status(502).json({ error: 'Failed to reach anime data source', detail: errDetail(err) });
+    res.status(502).json({ error: CATALOG_DOWN, detail: errDetail(err) });
   }
 });
 
@@ -403,7 +418,10 @@ router.get('/:id', async (req, res) => {
     if (!data.Media) return res.status(404).json({ error: 'Anime not found' });
     res.json({ data: toJikanShape(data.Media) });
   } catch (err) {
-    res.status(502).json({ error: 'Failed to reach anime data source', detail: errDetail(err) });
+    const backup = await tryBackup(() => backupAnime(id));
+    if (backup?.notFound) return res.status(404).json({ error: 'Anime not found' });
+    if (backup) return res.json(backup);
+    res.status(502).json({ error: CATALOG_DOWN, detail: errDetail(err) });
   }
 });
 

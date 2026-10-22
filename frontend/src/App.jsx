@@ -7,6 +7,7 @@ import { ToastProvider } from './context/ToastContext.jsx';
 import SmoothScroll from './components/SmoothScroll.jsx';
 import BottomNav from './components/BottomNav.jsx';
 import Navbar from './components/Navbar.jsx';
+import BackupNotice from './components/BackupNotice.jsx';
 import MusicPlayer from './components/MusicPlayer.jsx';
 import PageTransition from './components/PageTransition.jsx';
 import CommandPalette from './components/CommandPalette.jsx';
@@ -81,6 +82,7 @@ function Shell() {
       <SmoothScroll />
       <PageTransition />
       <Navbar />
+      <BackupNotice />
       <BottomNav />
       <CommandPalette />
       <main className="page">
