@@ -864,6 +864,10 @@ html[data-accent='green'] { --signal: #22c55e; --signal-hot: #4ade80; }
 html[data-accent='pink'] { --signal: #ec4899; --signal-hot: #f472b6; }
 html[data-accent='gold'] { --signal: #eab308; --signal-hot: #facc15; }
 html[data-accent='violet'] { --signal: #8b5cf6; --signal-hot: #a78bfa; }
+html[data-accent='crimson'] { --signal: #e11d48; --signal-hot: #fb7185; }
+html[data-accent='teal'] { --signal: #0d9488; --signal-hot: #2dd4bf; }
+html[data-accent='lime'] { --signal: #65a30d; --signal-hot: #84cc16; }
+html[data-accent='fuchsia'] { --signal: #c026d3; --signal-hot: #e879f9; }
 
 /* light theme */
 html[data-theme='light'] {

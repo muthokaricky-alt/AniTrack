@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useList } from '../context/ListContext.jsx';
 import { useMangaList } from '../context/MangaListContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import { useInboxCount } from '../lib/inboxCount.js';
 import Avatar from '../components/Avatar.jsx';
 import AvatarPicker from '../components/AvatarPicker.jsx';
 import FavoritesEditor from '../components/FavoritesEditor.jsx';
@@ -227,8 +228,17 @@ export default function Profile() {
   const { user } = useAuth();
   const anime = useList();
   const manga = useMangaList();
-  const [tab, setTab] = useState('favorites');
+  const [params] = useSearchParams();
+  const TABS = ['favorites', 'compare', 'friends', 'settings'];
+  const [tab, setTab] = useState(TABS.includes(params.get('tab')) ? params.get('tab') : 'favorites');
   const [card, setCard] = useState(false);
+  const unread = useInboxCount(user);
+
+  // The navbar badge links to ?tab=friends&view=inbox, even when this page is already open
+  useEffect(() => {
+    const wanted = params.get('tab');
+    if (TABS.includes(wanted)) setTab(wanted);
+  }, [params]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="wrap page-pad">
@@ -258,7 +268,7 @@ export default function Profile() {
       <div className="kind-switch pf-tabs" role="tablist" aria-label="Profile sections">
         <button role="tab" aria-selected={tab === 'favorites'} className={tab === 'favorites' ? 'on' : ''} onClick={() => setTab('favorites')}>Favourites</button>
         <button role="tab" aria-selected={tab === 'compare'} className={tab === 'compare' ? 'on' : ''} onClick={() => setTab('compare')}>Compare</button>
-        <button role="tab" aria-selected={tab === 'friends'} className={tab === 'friends' ? 'on' : ''} onClick={() => setTab('friends')}>Friends</button>
+        <button role="tab" aria-selected={tab === 'friends'} className={tab === 'friends' ? 'on' : ''} onClick={() => setTab('friends')}>Friends{unread > 0 ? ` · ${unread}` : ''}</button>
         <button role="tab" aria-selected={tab === 'settings'} className={tab === 'settings' ? 'on' : ''} onClick={() => setTab('settings')}>Settings</button>
       </div>
 

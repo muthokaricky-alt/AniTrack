@@ -150,6 +150,24 @@ const db = {
         CHECK (follower_id <> followee_id)
       );
       CREATE INDEX IF NOT EXISTS follows_followee ON follows (followee_id);
+      CREATE TABLE IF NOT EXISTS recommendations (
+        id SERIAL PRIMARY KEY,
+        sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        recipient_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        kind TEXT NOT NULL CHECK (kind IN ('anime', 'manga')),
+        mal_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        image_url TEXT,
+        sender_score DOUBLE PRECISION,
+        note TEXT,
+        created_at TIMESTAMPTZ DEFAULT now(),
+        read_at TIMESTAMPTZ,
+        dismissed BOOLEAN NOT NULL DEFAULT FALSE,
+        CHECK (sender_id <> recipient_id),
+        UNIQUE (sender_id, recipient_id, kind, mal_id)
+      );
+      CREATE INDEX IF NOT EXISTS recs_recipient ON recommendations (recipient_id, created_at DESC);
+      CREATE INDEX IF NOT EXISTS recs_sender ON recommendations (sender_id, created_at DESC);
     `);
   }
 };

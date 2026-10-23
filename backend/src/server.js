@@ -13,6 +13,7 @@ import mangaRoutes from './routes/manga.js';
 import profileRoutes, { usersRoutes } from './routes/profile.js';
 import favoritesRoutes from './routes/favorites.js';
 import { userFollowRoutes, followRoutes } from './routes/follows.js';
+import recommendationRoutes from './routes/recommendations.js';
 import characterRoutes from './routes/characters.js';
 import imgRoutes from './routes/img.js';
 import db from './db.js';
@@ -65,6 +66,7 @@ app.use(['/api/anime/search', '/api/manga/search', '/api/characters/search'], pe
 app.use('/api/anime/schedule', perMinute(10));
 app.use(['/api/follows/matches', '/api/users/:username/match'], perMinute(15));
 app.use('/api/users', perMinute(90));
+app.use('/api/recommendations', perMinute(60));
 
 app.use(
   '/api/auth',
@@ -81,6 +83,7 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/users', userFollowRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/follows', followRoutes);
+app.use('/api/recommendations', recommendationRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/characters', characterRoutes);
 app.use('/api/img', rateLimit({ windowMs: 60 * 1000, max: 90, message: 'Too many image requests. Try again in a minute.' }), imgRoutes);

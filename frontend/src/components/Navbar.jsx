@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useInboxCount } from '../lib/inboxCount.js';
+import BackButton from './BackButton.jsx';
 import Logo from './Logo.jsx';
 import NewEpisodes from './NewEpisodes.jsx';
 import ThemeMenu from './ThemeMenu.jsx';
@@ -9,6 +11,7 @@ import { OPEN_EVENT, isMac } from './CommandPalette.jsx';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const unread = useInboxCount(user);
   const navigate = useNavigate();
   const [solid, setSolid] = useState(false);
   const bar = useRef(null);
@@ -41,6 +44,7 @@ export default function Navbar() {
 
   return (
     <header className={`nav ${solid ? 'is-solid' : ''}`}>
+      <BackButton />
       <Link to="/" className="brand" aria-label="AniTrack home">
         <Logo size={30} />
         <span className="brand-name">ANITRACK</span>
@@ -62,8 +66,15 @@ export default function Navbar() {
         <ThemeMenu />
         {user ? (
           <div className="nav-user">
-            <Link to="/profile" className="nav-profile" title="Your profile">
-              <Avatar user={user} size={34} />
+            <Link
+              to={unread > 0 ? '/profile?tab=friends&view=inbox' : '/profile'}
+              className="nav-profile"
+              title={unread > 0 ? `${unread} new recommendation${unread > 1 ? 's' : ''}` : 'Your profile'}
+            >
+              <span className="nav-av">
+                <Avatar user={user} size={34} />
+                {unread > 0 && <span className="nav-dot" aria-hidden="true">{unread > 9 ? '9+' : unread}</span>}
+              </span>
               <span className="nav-name">{user.username}</span>
             </Link>
             <button className="nav-out" onClick={() => { logout(); navigate('/'); }}>Log out</button>

@@ -105,3 +105,4 @@ export default function AnimeCard({ anime, rank, kind = 'anime' }) {
     </Link>
   );
 }
+

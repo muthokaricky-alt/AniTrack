@@ -10,6 +10,7 @@ import { gsap, ScrollTrigger, useGSAP } from '../lib/gsap.js';
 import { useAccent } from '../lib/useAccent.js';
 import AnimeCard from '../components/AnimeCard.jsx';
 import ScoreInput from '../components/ScoreInput.jsx';
+import RecommendButton from '../components/RecommendButton.jsx';
 
 // "Episode 7 airs in 2d 4h 10m", refreshed every 30 seconds
 function Countdown({ at, episode }) {
@@ -205,6 +206,7 @@ export default function AnimeDetail({ kind = 'anime' }) {
                     <button className="btn btn-quiet" disabled={saving} onClick={() => run(async () => { const copy = entry; await removeEntry(copy.id); toast('Removed from your list', 'info', { action: { label: 'Undo', onClick: () => restoreEntries([copy]).catch((e) => toast(e.message, 'error')) } }); })}>
                       Remove
                     </button>
+                    <RecommendButton kind={kind} malId={anime.mal_id} title={anime.title} />
                   </div>
                   <details className="rate-detail" open={Object.keys(entry.ratings || {}).length > 0}>
                     <summary>Rate in detail <em>(optional)</em></summary>

@@ -8,6 +8,7 @@ import SmoothScroll from './components/SmoothScroll.jsx';
 import BottomNav from './components/BottomNav.jsx';
 import Navbar from './components/Navbar.jsx';
 import BackupNotice from './components/BackupNotice.jsx';
+import { discordLink } from './constants.js';
 import MusicPlayer from './components/MusicPlayer.jsx';
 import PageTransition from './components/PageTransition.jsx';
 import CommandPalette from './components/CommandPalette.jsx';
@@ -69,7 +70,7 @@ function Footer() {
     <footer className="footer">
       <div className="wrap footer-row">
         <p>Anime data from <a href="https://anilist.co" target="_blank" rel="noreferrer">AniList</a>. Not affiliated with any streaming service.</p>
-        <p><Link to="/guide">How to use AniTrack</Link> · Made for people who finish series.</p>
+        <p><Link to="/guide">How to use AniTrack</Link>{discordLink && <> · <a href={discordLink} target="_blank" rel="noopener noreferrer">Join our Discord</a></>} · Made for people who finish series.</p>
       </div>
       <div className="footer-word" aria-hidden="true">ANITRACK</div>
     </footer>

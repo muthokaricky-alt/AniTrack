@@ -71,3 +71,11 @@ export const GENRES = [
   'Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Horror', 'Mahou Shoujo', 'Mecha', 'Music',
   'Mystery', 'Psychological', 'Romance', 'Sci-Fi', 'Slice of Life', 'Sports', 'Supernatural', 'Thriller'
 ];
+
+// "Recommend to a friend": the longest note allowed (the server enforces the same limit)
+export const REC_NOTE_MAX = 140;
+
+// Your Discord server's permanent invite link, for example 'https://discord.gg/abc123'.
+// Leave it '' and the footer link stays hidden. Anything that isn't a Discord invite is ignored.
+export const DISCORD_URL = '';
+export const discordLink = /^https:\/\/(discord\.gg|discord\.com\/invite)\/[A-Za-z0-9-]+\/?$/.test(DISCORD_URL) ? DISCORD_URL : '';

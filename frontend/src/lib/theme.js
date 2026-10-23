@@ -5,7 +5,11 @@ export const ACCENTS = [
   { key: 'green', label: 'Green', color: '#22c55e' },
   { key: 'pink', label: 'Pink', color: '#ec4899' },
   { key: 'gold', label: 'Gold', color: '#eab308' },
-  { key: 'violet', label: 'Violet', color: '#8b5cf6' }
+  { key: 'violet', label: 'Violet', color: '#8b5cf6' },
+  { key: 'crimson', label: 'Crimson', color: '#e11d48' },
+  { key: 'teal', label: 'Teal', color: '#0d9488' },
+  { key: 'lime', label: 'Lime', color: '#65a30d' },
+  { key: 'fuchsia', label: 'Fuchsia', color: '#c026d3' }
 ];
 export const MODES = [{ key: 'dark', label: 'Dark' }, { key: 'light', label: 'Light' }, { key: 'auto', label: 'Match device' }];
 

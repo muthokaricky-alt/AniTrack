@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useInboxCount } from '../lib/inboxCount.js';
 import Avatar from './Avatar.jsx';
 import { People } from './FollowBar.jsx';
+import Inbox from './Inbox.jsx';
 
 function Matches({ data }) {
   if (!data) return <p className="muted">Comparing your lists…</p>;
@@ -43,7 +45,9 @@ function Matches({ data }) {
 // "Friends" tab on your own profile: everyone you follow ranked by taste match, and who follows you
 export default function Friends() {
   const { user } = useAuth();
-  const [view, setView] = useState('following');
+  const [params] = useSearchParams();
+  const unread = useInboxCount(user);
+  const [view, setView] = useState(params.get('view') === 'inbox' ? 'inbox' : 'following');
   const [info, setInfo] = useState(null);
   const [matches, setMatches] = useState(null);
   const [followers, setFollowers] = useState(null);
@@ -52,6 +56,11 @@ export default function Friends() {
   useEffect(() => {
     api.followInfo(user.username).then(setInfo).catch(() => {});
   }, [user.username]);
+
+  // The navbar badge links here with ?view=inbox, even when this tab is already open
+  useEffect(() => {
+    if (params.get('view') === 'inbox') setView('inbox');
+  }, [params]);
 
   // Each view loads once per visit to this tab
   useEffect(() => {
@@ -66,8 +75,11 @@ export default function Friends() {
 
   return (
     <div className="fol-friends">
-      <p className="muted pf-note">Follow people from their public profile. Everyone you follow is ranked here by how well your tastes line up.</p>
+      <p className="muted pf-note">Follow people from their public profile. Everyone you follow is ranked here by how well your tastes line up. Friends are people you follow who follow you back, and you can send each other recommendations.</p>
       <div className="kind-switch" role="tablist" aria-label="Friends view">
+        <button role="tab" aria-selected={view === 'inbox'} className={view === 'inbox' ? 'on' : ''} onClick={() => setView('inbox')}>
+          Inbox{unread > 0 ? ` · ${unread}` : ''}
+        </button>
         <button role="tab" aria-selected={view === 'following'} className={view === 'following' ? 'on' : ''} onClick={() => setView('following')}>
           Following{info ? ` · ${info.following}` : ''}
         </button>
@@ -77,7 +89,7 @@ export default function Friends() {
       </div>
       {error && <p className="error-text">{error}</p>}
       <div className="fol-friends-body">
-        {view === 'following' ? <Matches data={matches} /> : <People users={followers} empty="Nobody follows you yet. Share your profile link and make sure your profile is public." />}
+        {view === 'inbox' ? <Inbox /> : view === 'following' ? <Matches data={matches} /> : <People users={followers} empty="Nobody follows you yet. Share your profile link and make sure your profile is public." />}
       </div>
     </div>
   );
