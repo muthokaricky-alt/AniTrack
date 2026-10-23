@@ -258,3 +258,79 @@
 .nav-back { flex: none; width: 36px; height: 36px; margin-right: -16px; display: grid; place-items: center; border: 1px solid var(--line-strong); color: var(--muted); transition: color 0.2s, border-color 0.2s; }
 .nav-back:hover { color: var(--text); border-color: var(--signal); }
 .nav-back:active svg { transform: translateX(-2px); }
+
+
+/* ---- Light mode polish --------------------------------------------------------------------------------------------
+   In light mode the page colour (--ink) is cream. Two things were hard to read, most of all on the brighter accents
+   (Gold, Green, Lime, Orange):
+   1. Text that sits ON an accent colour (primary buttons, tags, the ticker, error toasts, avatar letters) was cream on a
+      bright colour. It now uses the same near-black text as dark mode does.
+   2. Accent-coloured TEXT on the cream page is mixed with a little black so it stays readable.
+   Delete this whole block to go back to the old look. */
+html[data-theme='light'] { --on-signal: #0a0a0a; --signal-text: color-mix(in srgb, var(--signal) 62%, #000); }
+html[data-theme='light'] :is(
+  .btn-signal,
+  .btn-dark:not(:disabled):hover,
+  .nav-initial,
+  .ticker,
+  .quick-add,
+  .toast-error,
+  .sch-tag,
+  .kind-switch button.on,
+  .avatar-initial,
+  .music-ctl .music-play,
+  .nav-dot,
+  .music-source button.on
+) { color: var(--on-signal); }
+html[data-theme='light'] :is(
+  .btn-quiet:hover,
+  .text-link:hover,
+  .card-meta b,
+  .step-n,
+  .search-bar button,
+  .pagination-bar button:not(:disabled):hover,
+  .error-text,
+  .status-tabs .count,
+  .list-main h3:hover,
+  .sch-time,
+  .time-line strong,
+  .d-next dd,
+  .nav-profile:hover .nav-name,
+  .share-line a,
+  .fav-score,
+  .si-head output,
+  .si-clear:hover,
+  .pf-chips .is-public,
+  .fe-n,
+  .sc-n,
+  .pf-head .kicker,
+  .pub-head .kicker,
+  .imp-row.is-miss span:nth-child(2),
+  .stat:first-child strong,
+  .lf-clear,
+  .bnav a.active,
+  .mo-streak strong,
+  .wl-steps a:hover,
+  .wl-foot a,
+  .bell-pop li span,
+  .bell-all,
+  .rel-tag,
+  .air-behind,
+  .air-when,
+  .fy-seed,
+  .tm-quiet a,
+  .tm-foot a,
+  .tm-titles a:hover .tm-t,
+  .guide-item summary:hover,
+  .fol-counts button:hover,
+  .fol-counts button.on,
+  .fol-list a:hover span,
+  .fol-m-pct,
+  .backup-note b,
+  .rec-title:hover,
+  .rec-tag.new
+) { color: var(--signal-text); }
+html[data-theme='light'] .rate-detail summary::before { color: var(--signal-text); }
+html[data-theme='light'] .guide-item summary::after { color: var(--signal-text); }
+html[data-theme='light'] .guide-item ol li::marker { color: var(--signal-text); }
+html[data-theme='light'] .rec-friend.on { background: rgba(21, 19, 15, 0.05); }
