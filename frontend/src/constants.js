@@ -79,3 +79,6 @@ export const REC_NOTE_MAX = 140;
 // Leave it '' and the footer link stays hidden. Anything that isn't a Discord invite is ignored.
 export const DISCORD_URL = '';
 export const discordLink = /^https:\/\/(discord\.gg|discord\.com\/invite)\/[A-Za-z0-9-]+\/?$/.test(DISCORD_URL) ? DISCORD_URL : '';
+
+// An uploaded banner picture is shrunk until its data URL is no longer than this (the server enforces the same limit)
+export const BANNER_MAX_CHARS = 330000;

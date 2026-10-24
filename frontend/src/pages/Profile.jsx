@@ -13,6 +13,8 @@ import Top15Download from '../components/Top15Download.jsx';
 import ShareCard from '../components/ShareCard.jsx';
 import CountUp from '../components/CountUp.jsx';
 import Friends from '../components/Friends.jsx';
+import Banner from '../components/Banner.jsx';
+import BannerPicker from '../components/BannerPicker.jsx';
 
 const fromUser = (u) => ({ username: u.username, bio: u.bio || '', avatar: u.avatar || null, is_public: Boolean(u.is_public) });
 const EMPTY = { top3: [], top15: [] };
@@ -233,6 +235,12 @@ export default function Profile() {
   const [tab, setTab] = useState(TABS.includes(params.get('tab')) ? params.get('tab') : 'favorites');
   const [card, setCard] = useState(false);
   const unread = useInboxCount(user);
+  const [banner, setBanner] = useState(null); // { src, x, y } or null
+  const [picker, setPicker] = useState(false);
+
+  useEffect(() => {
+    api.myBanner().then((r) => setBanner(r.banner ? { src: r.banner, x: r.x, y: r.y } : null)).catch(() => {});
+  }, []);
 
   // The navbar badge links to ?tab=friends&view=inbox, even when this page is already open
   useEffect(() => {
@@ -242,7 +250,8 @@ export default function Profile() {
 
   return (
     <div className="wrap page-pad">
-      <header className="pf-head">
+      {banner && <Banner src={banner.src} x={banner.x} y={banner.y} className="banner-on-card" />}
+      <header className={`pf-head ${banner ? 'has-banner' : ''}`}>
         <Avatar user={user} size={104} />
         <div className="pf-head-main">
           <p className="kicker">Your profile</p>
@@ -257,6 +266,7 @@ export default function Profile() {
         </div>
         <div className="pf-head-actions">
           <button className="btn btn-signal btn-sm" onClick={() => setCard(true)}>Share card</button>
+          <button className="btn btn-line btn-sm" onClick={() => setPicker(true)}>{banner ? 'Change banner' : 'Add banner'}</button>
           {user.is_public ? (
             <Link className="btn btn-line btn-sm" to={`/u/${encodeURIComponent(user.username)}`}>View public page</Link>
           ) : (
@@ -274,6 +284,7 @@ export default function Profile() {
 
       {tab === 'favorites' ? <Favorites /> : tab === 'compare' ? <Compare /> : tab === 'friends' ? <Friends /> : <Settings />}
       {card && <ShareCard onClose={() => setCard(false)} />}
+      {picker && <BannerPicker current={banner} onClose={() => setPicker(false)} onSaved={setBanner} />}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import Avatar from '../components/Avatar.jsx';
 import CountUp from '../components/CountUp.jsx';
 import TasteMatch from '../components/TasteMatch.jsx';
 import FollowBar from '../components/FollowBar.jsx';
+import Banner from '../components/Banner.jsx';
 import FavoritesShowcase from '../components/FavoritesShowcase.jsx';
 
 function Favorites({ title, items, base }) {
@@ -74,7 +75,8 @@ export default function PublicProfile() {
 
   return (
     <div className="wrap page-pad pub">
-      <header className="pub-head">
+      {data.user.banner && <Banner src={data.user.banner.src} x={data.user.banner.x} y={data.user.banner.y} />}
+      <header className={`pub-head ${data.user.banner ? 'has-banner' : ''}`}>
         <Avatar user={data.user} size={148} />
         <div>
           <p className="kicker">Profile{joined ? ` · joined ${joined}` : ''}</p>

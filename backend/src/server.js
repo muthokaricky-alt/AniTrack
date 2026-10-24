@@ -53,6 +53,7 @@ const onHost = process.env.NODE_ENV === 'production' || Boolean(process.env.REND
 app.use(cors({ origin: process.env.CORS_ORIGIN || !onHost }));
 app.use(['/api/list/import', '/api/manga-list/import'], express.json({ limit: '2mb' })); // list backups can be large
 // profile photos (data URLs) need a little more room than ordinary JSON bodies
+app.use('/api/profile/banner', express.json({ limit: '500kb' })); // an uploaded banner picture is larger than a profile photo
 app.use(['/api/auth/register', '/api/profile'], express.json({ limit: '200kb' }));
 app.use(express.json({ limit: '100kb' }));
 
@@ -66,6 +67,7 @@ app.use(['/api/anime/search', '/api/manga/search', '/api/characters/search'], pe
 app.use('/api/anime/schedule', perMinute(10));
 app.use(['/api/follows/matches', '/api/users/:username/match'], perMinute(15));
 app.use('/api/users', perMinute(90));
+app.use('/api/profile/banner-options', perMinute(10));
 app.use('/api/recommendations', perMinute(60));
 
 app.use(

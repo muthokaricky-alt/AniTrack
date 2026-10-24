@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import db from '../db.js';
-import { parseAvatar, publicUser } from '../userUtil.js';
+import { parseAvatar, publicUser, USER_COLUMNS } from '../userUtil.js';
 import { signToken } from '../tokens.js';
 
 const router = Router();
@@ -35,7 +35,7 @@ router.post('/register', async (req, res) => {
   const passwordHash = await bcrypt.hash(password, 10);
   let created;
   try {
-    created = await db.get('INSERT INTO users (username, email, password_hash, avatar) VALUES (?, ?, ?, ?) RETURNING *', [username, email, passwordHash, avatar.value]);
+    created = await db.get(`INSERT INTO users (username, email, password_hash, avatar) VALUES (?, ?, ?, ?) RETURNING ${USER_COLUMNS}`, [username, email, passwordHash, avatar.value]);
   } catch (err) {
     if (err.code === '23505') return res.status(409).json({ error: 'Username or email already in use' }); // two sign-ups raced
     throw err;
@@ -52,7 +52,7 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ error: 'email and password are required' });
   }
 
-  const user = await db.get('SELECT * FROM users WHERE lower(email) = ?', [email]);
+  const user = await db.get(`SELECT ${USER_COLUMNS} FROM users WHERE lower(email) = ?`, [email]);
   if (!user) {
     return res.status(401).json({ error: 'Invalid email or password' });
   }

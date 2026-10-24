@@ -57,7 +57,8 @@ function wrapLines(ctx, text, maxWidth, maxLines) {
 
 const setSpacing = (ctx, px) => { if ('letterSpacing' in ctx) ctx.letterSpacing = `${px}px`; };
 
-async function drawCard(canvas, { user, kind, items, counts, mean, link }) {
+// stats: { total, progress, mean } for the list being shown, so a manga card never shows anime numbers
+async function drawCard(canvas, { user, kind, items, stats, link }) {
   await ensureFonts();
   const ctx = canvas.getContext('2d');
   canvas.width = W;
@@ -158,11 +159,20 @@ async function drawCard(canvas, { user, kind, items, counts, mean, link }) {
   const sy = 1100;
   ctx.fillStyle = TEXT;
   ctx.fillRect(60, sy, W - 120, 3);
-  const stats = [[String(counts.anime), 'anime tracked'], [String(counts.manga), 'manga tracked'], [mean ?? '—', 'mean anime score']];
-  stats.forEach(([n, label], i) => {
+  const name = KINDS[kind].name.toLowerCase();
+  const cells = [
+    [Number(stats.total || 0).toLocaleString(), `${name} tracked`],
+    [Number(stats.progress || 0).toLocaleString(), KINDS[kind].progressLabel.toLowerCase()], // episodes watched / chapters read
+    [stats.mean ?? '—', `mean ${name} score`]
+  ];
+  cells.forEach(([n, label], i) => {
     const x = 60 + i * 340;
     ctx.fillStyle = TEXT;
-    ctx.font = '900 88px Archivo, sans-serif';
+    let size = 88; // shrink a long number (like 12,345) until it fits its column
+    do {
+      ctx.font = `900 ${size}px Archivo, sans-serif`;
+      size -= 4;
+    } while (ctx.measureText(n).width > 300 && size > 40);
     ctx.fillText(n, x, sy + 110);
     ctx.fillStyle = MUTED;
     ctx.font = '500 22px "JetBrains Mono", monospace';
@@ -185,6 +195,7 @@ export default function ShareCard({ onClose }) {
   const toast = useToast();
   const canvas = useRef(null);
   const [kind, setKind] = useState('anime');
+  const shown = (kind === 'manga' ? manga : anime).stats; // the numbers for the list being shown
   const [favs, setFavs] = useState(null);
   const [state, setState] = useState('loading'); // loading | ready | empty | error
   const canShare = useMemo(() => {
@@ -224,12 +235,12 @@ export default function ShareCard({ onClose }) {
     if (!items.length) { setState('empty'); return undefined; }
     let off = false;
     setState('loading');
-    const link = user.is_public ? `${window.location.host}/u/${user.username}` : null;
-    drawCard(canvas.current, { user, kind, items, counts: { anime: anime.stats.total, manga: manga.stats.total }, mean: anime.stats.mean, link })
+    const link = user.is_public ? `${window.location.host}/u/${encodeURIComponent(user.username)}` : null;
+    drawCard(canvas.current, { user, kind, items, stats: { total: shown.total, progress: shown.progress, mean: shown.mean }, link })
       .then(() => !off && setState('ready'))
       .catch(() => !off && setState('error'));
     return () => { off = true; };
-  }, [items, kind, user, anime.stats.total, anime.stats.mean, manga.stats.total]);
+  }, [items, kind, user, shown.total, shown.progress, shown.mean]);
 
   const toBlob = () => new Promise((resolve) => canvas.current.toBlob(resolve, 'image/png'));
 

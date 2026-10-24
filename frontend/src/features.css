@@ -334,3 +334,41 @@ html[data-theme='light'] .rate-detail summary::before { color: var(--signal-text
 html[data-theme='light'] .guide-item summary::after { color: var(--signal-text); }
 html[data-theme='light'] .guide-item ol li::marker { color: var(--signal-text); }
 html[data-theme='light'] .rec-friend.on { background: rgba(21, 19, 15, 0.05); }
+
+
+/* ---- Profile banner and the banner picker ---- */
+.banner { --fade: var(--ink); position: relative; width: 100%; height: clamp(130px, 21vw, 280px); overflow: hidden; background: var(--ink-2); border: 1px solid var(--line); }
+.banner img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.banner-fade { position: absolute; left: 0; right: 0; bottom: 0; height: 45%; background: linear-gradient(to bottom, transparent, var(--fade)); pointer-events: none; }
+.banner-on-card { --fade: var(--ink-2); border-bottom: 0; }
+/* with a banner, the avatar overlaps its lower edge */
+.pf-head.has-banner { padding-top: 20px; align-items: flex-start; border-top: 0; }
+.pub-head.has-banner { padding-top: 24px; align-items: flex-start; }
+.pf-head.has-banner > :first-child { position: relative; z-index: 1; margin-top: -72px; box-shadow: 0 0 0 4px var(--ink-2); }
+.pub-head.has-banner > :first-child { position: relative; z-index: 1; margin-top: -90px; box-shadow: 0 0 0 5px var(--ink); }
+@media (max-width: 700px) {
+  .pf-head.has-banner > :first-child { margin-top: -56px; }
+  .pub-head.has-banner > :first-child { margin-top: -64px; }
+}
+
+.bp-modal { width: min(760px, 100%); }
+.bp-preview { margin-bottom: 14px; }
+.bp-preview .banner { height: clamp(110px, 16vw, 170px); }
+.bp-empty { display: grid; place-items: center; height: 120px; border: 1px dashed var(--line-strong); color: var(--muted); font-size: 14px; }
+.bp-sliders { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; margin-bottom: 18px; }
+.bp-sliders label { display: flex; flex-direction: column; gap: 6px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.bp-tabs { margin: 6px 0 18px; }
+.bp-pane { min-height: 120px; }
+.bp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; max-height: 300px; overflow-y: auto; padding: 2px; }
+.bp-thumb { display: flex; flex-direction: column; gap: 6px; padding: 0; text-align: left; border: 2px solid transparent; }
+.bp-thumb img { display: block; width: 100%; aspect-ratio: 19 / 6; object-fit: cover; background: var(--ink-3); }
+.bp-thumb span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--muted); }
+.bp-thumb:hover { border-color: var(--line-strong); }
+.bp-thumb.on { border-color: var(--signal); }
+.bp-upload { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+@media (max-width: 700px) { .bp-sliders { grid-template-columns: 1fr; } }
+
+/* Bio lines were a fixed pale grey, which nearly vanished on the cream page in light mode. This follows the theme instead
+   (in dark mode it works out to almost exactly the old colour). */
+.pf-bio, .pub-bio { color: color-mix(in srgb, var(--text) 85%, var(--ink)); }
+.bp-sliders input[type='range'] { width: 100%; accent-color: var(--signal); }

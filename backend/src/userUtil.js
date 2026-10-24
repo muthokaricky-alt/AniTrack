@@ -11,6 +11,10 @@ export function parseAvatar(input) {
 }
 
 // What the client is allowed to know about an account (never the password hash)
+// The user columns the app needs on login and profile calls. Named explicitly (rather than SELECT *) so a large banner
+// picture is not read from the database every time someone logs in or the app opens.
+export const USER_COLUMNS = 'id, username, email, password_hash, avatar, bio, is_public, token_version, created_at';
+
 export function publicUser(row) {
   return {
     id: row.id,

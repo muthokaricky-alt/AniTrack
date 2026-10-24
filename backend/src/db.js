@@ -82,6 +82,10 @@ const db = {
       CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower ON users (lower(email));
       CREATE UNIQUE INDEX IF NOT EXISTS users_username_lower ON users (lower(username));
       ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS banner TEXT;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS banner_x INTEGER NOT NULL DEFAULT 50;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS banner_y INTEGER NOT NULL DEFAULT 50;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS banner_v INTEGER NOT NULL DEFAULT 0;
 
       CREATE TABLE IF NOT EXISTS list_entries (
         id SERIAL PRIMARY KEY,
