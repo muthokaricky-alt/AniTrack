@@ -63,14 +63,16 @@ function Picker({ kind, exclude, onPick }) {
 }
 
 // One ordered list (a "top 3" or "top 15"): add, reorder, remove. Every change is saved straight away.
-export default function FavoritesEditor({ kind, list, items, onChange }) {
+// locked: how many of the first rows come from the Top 3 (only for the Top 15). They can't be moved or removed here.
+export default function FavoritesEditor({ kind, list, items, onChange, locked = 0 }) {
   const max = list === 'top3' ? 3 : 15;
   const title = `${list === 'top3' ? 'Top 3' : 'Top 15'} ${LABEL[kind]}`;
+  const lockedN = list === 'top15' ? Math.min(locked, items.length) : 0;
 
   const [drag, setDrag] = useState(null);
   const [over, setOver] = useState(null);
   function drop(to) {
-    if (drag == null || drag === to) return;
+    if (drag == null || drag === to || drag < lockedN || to < lockedN) return;
     const next = [...items];
     const [it] = next.splice(drag, 1);
     next.splice(to, 0, it);
@@ -80,7 +82,7 @@ export default function FavoritesEditor({ kind, list, items, onChange }) {
   function move(i, dir) {
     const next = [...items];
     const j = i + dir;
-    if (j < 0 || j >= next.length) return;
+    if (i < lockedN || j < lockedN || j >= next.length) return;
     [next[i], next[j]] = [next[j], next[i]];
     onChange(next);
   }
@@ -92,31 +94,42 @@ export default function FavoritesEditor({ kind, list, items, onChange }) {
         <span className="muted">{items.length} / {max}</span>
       </div>
 
+      {lockedN > 0 && <p className="muted fe-lock-note">The first {lockedN === 1 ? 'spot comes' : `${lockedN} spots come`} from your Top 3. Change those in the Top 3 list.</p>}
       {items.length === 0 && <p className="muted fe-empty">Nothing picked yet.</p>}
       <ol className="fe-list">
-        {items.map((it, i) => (
-          <li
-            key={it.item_id}
-            draggable
-            className={`${drag === i ? 'is-dragging' : ''} ${over === i && drag !== i ? 'is-over' : ''}`}
-            onDragStart={(e) => { setDrag(i); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(i)); }}
-            onDragOver={(e) => { e.preventDefault(); setOver(i); }}
-            onDrop={(e) => { e.preventDefault(); drop(i); setDrag(null); setOver(null); }}
-            onDragEnd={() => { setDrag(null); setOver(null); }}
-          >
-            <span className="fe-n" title="Drag to reorder">⠿ {i + 1}</span>
-            {it.image_url ? <img src={it.image_url} alt="" loading="lazy" /> : <span className="fp-noimg" />}
-            <div className="fe-main">
-              <strong>{it.title}</strong>
-              {it.sub && <em>{it.sub}</em>}
-            </div>
-            <div className="fe-ctl">
-              <button type="button" onClick={() => move(i, -1)} disabled={i === 0} aria-label={`Move ${it.title} up`}>▲</button>
-              <button type="button" onClick={() => move(i, 1)} disabled={i === items.length - 1} aria-label={`Move ${it.title} down`}>▼</button>
-              <button type="button" onClick={() => onChange(items.filter((_, k) => k !== i))} aria-label={`Remove ${it.title}`}>✕</button>
-            </div>
-          </li>
-        ))}
+        {items.map((it, i) => {
+          const isLocked = i < lockedN;
+          return (
+            <li
+              key={it.item_id}
+              draggable={!isLocked}
+              className={`${isLocked ? 'is-locked' : ''} ${drag === i ? 'is-dragging' : ''} ${over === i && drag !== i && !isLocked ? 'is-over' : ''}`}
+              onDragStart={(e) => {
+                if (isLocked) { e.preventDefault(); return; }
+                setDrag(i); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(i));
+              }}
+              onDragOver={(e) => { e.preventDefault(); if (!isLocked) setOver(i); }}
+              onDrop={(e) => { e.preventDefault(); drop(i); setDrag(null); setOver(null); }}
+              onDragEnd={() => { setDrag(null); setOver(null); }}
+            >
+              <span className="fe-n" title={isLocked ? 'From your Top 3' : 'Drag to reorder'}>{isLocked ? '' : '⠿ '}{i + 1}</span>
+              {it.image_url ? <img src={it.image_url} alt="" loading="lazy" /> : <span className="fp-noimg" />}
+              <div className="fe-main">
+                <strong>{it.title}</strong>
+                {it.sub && <em>{it.sub}</em>}
+              </div>
+              {isLocked ? (
+                <div className="fe-ctl"><span className="fe-tag">Top 3</span></div>
+              ) : (
+                <div className="fe-ctl">
+                  <button type="button" onClick={() => move(i, -1)} disabled={i <= lockedN} aria-label={`Move ${it.title} up`}>▲</button>
+                  <button type="button" onClick={() => move(i, 1)} disabled={i === items.length - 1} aria-label={`Move ${it.title} down`}>▼</button>
+                  <button type="button" onClick={() => onChange(items.filter((_, k) => k !== i))} aria-label={`Remove ${it.title}`}>✕</button>
+                </div>
+              )}
+            </li>
+          );
+        })}
       </ol>
 
       {items.length < max ? (

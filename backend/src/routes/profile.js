@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { signToken } from '../tokens.js';
-import { USER_COLUMNS } from '../userUtil.js';
+import { USER_COLUMNS, parseShape, DEFAULT_AVATAR_SHAPE } from '../userUtil.js';
 import { parseBanner, clampPos, dataUrlParts, publicBanner } from '../banner.js';
 import { anilistQuery } from './anime.js';
 import { CATALOG_DOWN, errDetail } from '../inputs.js';
@@ -29,7 +29,7 @@ router.patch('/', requireAuth, async (req, res) => {
   const user = await getUser(req.userId);
   if (!user) return res.status(401).json({ error: 'Account not found' });
   const body = req.body || {};
-  const next = { username: user.username, bio: user.bio, avatar: user.avatar, is_public: user.is_public };
+  const next = { username: user.username, bio: user.bio, avatar: user.avatar, avatar_shape: user.avatar_shape, is_public: user.is_public };
 
   if (body.username !== undefined) {
     const name = String(body.username).trim();
@@ -48,10 +48,15 @@ router.patch('/', requireAuth, async (req, res) => {
     if (!parsed.valid) return res.status(400).json({ error: 'Profile photo must be a JPEG, PNG or WebP image' });
     next.avatar = parsed.value;
   }
+  if (body.avatar_shape !== undefined) {
+    const shape = parseShape(body.avatar_shape);
+    if (!shape) return res.status(400).json({ error: 'Choose circle, square, rounded, hexagon or heart' });
+    next.avatar_shape = shape;
+  }
   if (body.is_public !== undefined) next.is_public = body.is_public ? 1 : 0;
 
   try {
-    await db.run('UPDATE users SET username = ?, bio = ?, avatar = ?, is_public = ? WHERE id = ?', [next.username, next.bio, next.avatar, next.is_public, user.id]);
+    await db.run('UPDATE users SET username = ?, bio = ?, avatar = ?, avatar_shape = ?, is_public = ? WHERE id = ?', [next.username, next.bio, next.avatar, next.avatar_shape, next.is_public, user.id]);
   } catch (err) {
     if (err.code === '23505') return res.status(409).json({ error: 'That username is already taken' });
     throw err;
@@ -176,7 +181,7 @@ async function summary(table, progress, userId) {
 // GET /api/users/:username
 usersRoutes.get('/:username', async (req, res) => {
   const u = await db.get(
-    `SELECT id, username, avatar, bio, is_public, created_at,
+    `SELECT id, username, avatar, avatar_shape, bio, is_public, created_at,
             CASE WHEN banner LIKE 'data:%' THEN NULL ELSE banner END AS banner_url, (banner LIKE 'data:%') AS banner_upload,
             banner_x, banner_y, banner_v
        FROM users WHERE lower(username) = lower(?)`,
@@ -184,7 +189,7 @@ usersRoutes.get('/:username', async (req, res) => {
   );
   if (!u || !u.is_public) return res.status(404).json({ error: 'This profile is private or does not exist' });
   res.json({
-    user: { username: u.username, avatar: u.avatar || null, bio: u.bio || '', joined: u.created_at, banner: publicBanner(u) },
+    user: { username: u.username, avatar: u.avatar || null, avatar_shape: parseShape(u.avatar_shape) || DEFAULT_AVATAR_SHAPE, bio: u.bio || '', joined: u.created_at, banner: publicBanner(u) },
     anime: await summary('list_entries', 'episodes_watched', u.id),
     manga: await summary('manga_entries', 'chapters_read', u.id),
     favorites: await loadFavorites(u.id)

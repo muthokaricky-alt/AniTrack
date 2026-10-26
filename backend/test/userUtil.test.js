@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseAvatar, publicUser } from '../src/userUtil.js';
+import { parseAvatar, publicUser, parseShape, AVATAR_SHAPES, DEFAULT_AVATAR_SHAPE } from '../src/userUtil.js';
 
 test('no avatar is allowed and becomes null', () => {
   assert.deepEqual(parseAvatar(undefined), { valid: true, value: null });
@@ -32,4 +32,18 @@ test('publicUser never includes the password hash', () => {
   assert.equal('password_hash' in out, false);
   assert.equal(out.is_public, true);
   assert.equal(out.bio, '');
+});
+
+test('profile picture shapes: five are allowed, circle is the default, anything else is refused', () => {
+  assert.deepEqual(AVATAR_SHAPES, ['circle', 'square', 'rounded', 'hexagon', 'heart']);
+  assert.equal(DEFAULT_AVATAR_SHAPE, 'circle');
+  for (const ok of AVATAR_SHAPES) assert.equal(parseShape(ok), ok);
+  for (const bad of ['star', 'CIRCLE', '', null, undefined, 5, ['circle']]) assert.equal(parseShape(bad), null);
+});
+
+test('publicUser always has a valid shape, even for old rows without one', () => {
+  const base = { id: 1, username: 'a', email: 'a@b.c', avatar: null, bio: null, is_public: 1 };
+  assert.equal(publicUser(base).avatar_shape, 'circle');
+  assert.equal(publicUser({ ...base, avatar_shape: 'heart' }).avatar_shape, 'heart');
+  assert.equal(publicUser({ ...base, avatar_shape: 'nonsense' }).avatar_shape, 'circle');
 });

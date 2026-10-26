@@ -19,13 +19,13 @@ const NOT_FRIENDS = 'You can only send recommendations to friends: people you fo
 // GET /api/recommendations/friends -> who you can send to (mutual follows)
 router.get('/friends', async (req, res) => {
   const rows = await db.all(
-    `SELECT u.username FROM follows a
+    `SELECT u.username, u.avatar_shape FROM follows a
        JOIN follows b ON b.follower_id = a.followee_id AND b.followee_id = a.follower_id
        JOIN users u ON u.id = a.followee_id
       WHERE a.follower_id = ? ORDER BY lower(u.username) LIMIT 100`,
     [req.userId]
   );
-  res.json({ friends: rows.map((r) => ({ username: r.username })) });
+  res.json({ friends: rows.map((r) => ({ username: r.username, avatar_shape: r.avatar_shape })) });
 });
 
 // GET /api/recommendations/unread-count -> a number for the little badge. The app asks once when it opens; it never polls.
@@ -41,14 +41,14 @@ router.get('/', async (req, res) => {
   const rows = sent
     ? await db.all(
         `SELECT r.id, r.kind, r.mal_id, r.title, r.image_url, r.sender_score AS score, r.note, r.created_at,
-                (r.read_at IS NOT NULL) AS seen, u.username, u.avatar
+                (r.read_at IS NOT NULL) AS seen, u.username, u.avatar, u.avatar_shape
            FROM recommendations r JOIN users u ON u.id = r.recipient_id
           WHERE r.sender_id = ? ORDER BY r.created_at DESC LIMIT ${BOX_LIMIT}`,
         [req.userId]
       )
     : await db.all(
         `SELECT r.id, r.kind, r.mal_id, r.title, r.image_url, r.sender_score AS score, r.note, r.created_at,
-                (r.read_at IS NULL) AS unread, u.username, u.avatar,
+                (r.read_at IS NULL) AS unread, u.username, u.avatar, u.avatar_shape,
                 (CASE WHEN r.kind = 'anime'
                       THEN EXISTS (SELECT 1 FROM list_entries le WHERE le.user_id = ? AND le.mal_id = r.mal_id)
                       ELSE EXISTS (SELECT 1 FROM manga_entries me WHERE me.user_id = ? AND me.mal_id = r.mal_id) END) AS on_list
@@ -57,11 +57,13 @@ router.get('/', async (req, res) => {
         [req.userId, req.userId, req.userId]
       );
   const avatars = {};
-  const items = rows.map(({ avatar, created_at: createdAt, ...r }) => {
+  const shapes = {};
+  const items = rows.map(({ avatar, avatar_shape: shape, created_at: createdAt, ...r }) => {
     if (avatar) avatars[r.username] = avatar;
+    shapes[r.username] = shape;
     return { ...r, created_at: new Date(createdAt).toISOString() };
   });
-  res.json({ box: sent ? 'sent' : 'inbox', items, avatars });
+  res.json({ box: sent ? 'sent' : 'inbox', items, avatars, shapes });
 });
 
 // POST /api/recommendations/read -> mark everything in your inbox as seen

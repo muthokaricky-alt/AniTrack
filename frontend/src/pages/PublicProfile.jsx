@@ -7,6 +7,7 @@ import CountUp from '../components/CountUp.jsx';
 import TasteMatch from '../components/TasteMatch.jsx';
 import FollowBar from '../components/FollowBar.jsx';
 import Banner from '../components/Banner.jsx';
+import { parseServerDate } from '../lib/dates.js';
 import FavoritesShowcase from '../components/FavoritesShowcase.jsx';
 
 function Favorites({ title, items, base }) {
@@ -71,7 +72,8 @@ export default function PublicProfile() {
   }
   if (!data) return <div className="wrap page-pad"><p className="muted">Loading profile…</p></div>;
 
-  const joined = data.user.joined ? new Date(data.user.joined.replace(' ', 'T') + 'Z').toLocaleDateString(undefined, { month: 'long', year: 'numeric' }) : null;
+  const joinedDate = parseServerDate(data.user.joined);
+  const joined = joinedDate ? joinedDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }) : null;
 
   return (
     <div className="wrap page-pad pub">

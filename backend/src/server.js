@@ -68,6 +68,7 @@ app.use('/api/anime/schedule', perMinute(10));
 app.use(['/api/follows/matches', '/api/users/:username/match'], perMinute(15));
 app.use('/api/users', perMinute(90));
 app.use('/api/profile/banner-options', perMinute(10));
+app.use('/api/characters', perMinute(60));
 app.use('/api/recommendations', perMinute(60));
 
 app.use(

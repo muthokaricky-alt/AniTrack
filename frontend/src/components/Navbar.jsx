@@ -63,18 +63,24 @@ export default function Navbar() {
           <kbd>{isMac ? '⌘ K' : 'Ctrl K'}</kbd>
         </button>
         <NewEpisodes />
+        {user && (
+          <Link
+            to="/profile?tab=friends&view=inbox"
+            className="nav-inbox"
+            aria-label={unread > 0 ? `Inbox, ${unread} new` : 'Inbox'}
+            title={unread > 0 ? `${unread} new recommendation${unread > 1 ? 's' : ''}` : 'Inbox: recommendations from friends'}
+          >
+            <svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true">
+              <path d="M2.5 5.5h15v9a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1zM2.8 6.2 10 11.6l7.2-5.4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />
+            </svg>
+            {unread > 0 && <span className="nav-dot" aria-hidden="true">{unread > 9 ? '9+' : unread}</span>}
+          </Link>
+        )}
         <ThemeMenu />
         {user ? (
           <div className="nav-user">
-            <Link
-              to={unread > 0 ? '/profile?tab=friends&view=inbox' : '/profile'}
-              className="nav-profile"
-              title={unread > 0 ? `${unread} new recommendation${unread > 1 ? 's' : ''}` : 'Your profile'}
-            >
-              <span className="nav-av">
-                <Avatar user={user} size={34} />
-                {unread > 0 && <span className="nav-dot" aria-hidden="true">{unread > 9 ? '9+' : unread}</span>}
-              </span>
+            <Link to="/profile" className="nav-profile" title="Your profile">
+              <Avatar user={user} size={34} />
               <span className="nav-name">{user.username}</span>
             </Link>
             <button className="nav-out" onClick={() => { logout(); navigate('/'); }}>Log out</button>

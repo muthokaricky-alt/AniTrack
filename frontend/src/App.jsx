@@ -8,6 +8,8 @@ import SmoothScroll from './components/SmoothScroll.jsx';
 import BottomNav from './components/BottomNav.jsx';
 import Navbar from './components/Navbar.jsx';
 import BackupNotice from './components/BackupNotice.jsx';
+import useKeyboardNav from './lib/useKeyboardNav.js';
+import { HEART_PATH } from './lib/avatarShape.js';
 import { discordLink } from './constants.js';
 import MusicPlayer from './components/MusicPlayer.jsx';
 import PageTransition from './components/PageTransition.jsx';
@@ -78,8 +80,17 @@ function Footer() {
 }
 
 function Shell() {
+  useKeyboardNav(); // Ctrl+Shift+Left / Right flips between the main pages
   return (
     <>
+      {/* the heart outline that heart-shaped profile pictures are cut to (see features.css) */}
+      <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true" focusable="false">
+        <defs>
+          <clipPath id="avatar-heart" clipPathUnits="objectBoundingBox">
+            <path d={HEART_PATH} />
+          </clipPath>
+        </defs>
+      </svg>
       <SmoothScroll />
       <PageTransition />
       <Navbar />

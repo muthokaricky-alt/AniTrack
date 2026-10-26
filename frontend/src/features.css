@@ -372,3 +372,67 @@ html[data-theme='light'] .rec-friend.on { background: rgba(21, 19, 15, 0.05); }
    (in dark mode it works out to almost exactly the old colour). */
 .pf-bio, .pub-bio { color: color-mix(in srgb, var(--text) 85%, var(--ink)); }
 .bp-sliders input[type='range'] { width: 100%; accent-color: var(--signal); }
+
+
+/* ---- Profile picture shapes ----
+   Circle is the default. Heart and hexagon are cut with clip-path (the heart outline is defined once in App.jsx). */
+.avatar, .shape-swatch { border-radius: 50%; }
+.avatar[data-shape='square'], .shape-swatch[data-shape='square'] { border-radius: 2px; }
+.avatar[data-shape='rounded'], .shape-swatch[data-shape='rounded'] { border-radius: 22%; }
+.avatar[data-shape='hexagon'], .shape-swatch[data-shape='hexagon'] { border-radius: 0; clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0 50%); }
+.avatar[data-shape='heart'], .shape-swatch[data-shape='heart'] { border-radius: 0; clip-path: url(#avatar-heart); }
+
+.shape-picker { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.shape-opt { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 74px; padding: 12px 6px 10px; border: 1px solid var(--line-strong); font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); transition: color 0.2s, border-color 0.2s; }
+.shape-opt:hover { color: var(--text); }
+.shape-opt.on { border-color: var(--signal); color: var(--text); }
+.shape-swatch { display: block; width: 34px; height: 34px; background: var(--signal); }
+
+/* ---- Top 15: the rows that come from the Top 3 ---- */
+.fe-list li.is-locked { cursor: default; border-left: 2px solid var(--signal); }
+.fe-tag { padding: 3px 8px; border: 1px solid var(--line-strong); font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.fe-lock-note { margin: 0 0 12px; font-size: 13px; }
+
+/* ---- Character dialog ---- */
+button.sc-tile { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.cd-modal { position: relative; width: min(720px, 100%); }
+.cd-close { position: absolute; top: 14px; right: 16px; font-size: 18px; color: var(--muted); }
+.cd-close:hover { color: var(--text); }
+.cd-head { display: grid; grid-template-columns: 150px 1fr; gap: 22px; margin-bottom: 18px; padding-right: 28px; }
+.cd-img { display: block; width: 150px; aspect-ratio: 2 / 3; object-fit: cover; background: var(--ink-3); }
+.cd-native { margin: 2px 0 0; font-size: 15px; color: var(--muted); }
+.cd-alt { margin: 6px 0 0; font-size: 13px; }
+.cd-facts { display: grid; gap: 6px; margin: 14px 0 0; font-size: 14px; }
+.cd-facts div { display: grid; grid-template-columns: 110px 1fr; gap: 12px; align-items: baseline; }
+.cd-facts dt { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.cd-facts dd { margin: 0; font-weight: 600; }
+.cd-desc { margin: 0 0 18px; max-height: 230px; overflow-y: auto; line-height: 1.6; white-space: pre-line; }
+.cd-series { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 12px; margin: 10px 0 20px; padding: 0; list-style: none; }
+.cd-series a { display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 1.25; }
+.cd-series img, .cd-noimg { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: cover; background: var(--ink-3); }
+.cd-series a:hover span:last-child { color: var(--signal); }
+@media (max-width: 560px) { .cd-head { grid-template-columns: 96px 1fr; gap: 14px; } .cd-img { width: 96px; } .cd-facts div { grid-template-columns: 90px 1fr; } }
+
+/* ---- Top bar: Inbox icon, and links that never wrap ---- */
+.nav-inbox { position: relative; flex: none; width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--line-strong); color: var(--muted); transition: color 0.2s, border-color 0.2s; }
+.nav-inbox:hover { color: var(--text); border-color: var(--signal); }
+.nav-inbox .nav-dot { top: -7px; right: -8px; }
+.nav-name { max-width: 16ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (min-width: 1001px) {
+  .nav { gap: clamp(14px, 1.8vw, 32px); }
+  .nav-links a { white-space: nowrap; }
+  /* if the bar is ever too full, the links scroll instead of spilling over the buttons next to them */
+  .nav-links { min-width: 0; gap: clamp(14px, 1.7vw, 28px); overflow-x: auto; scrollbar-width: none; }
+  .nav-links::-webkit-scrollbar { display: none; }
+}
+@media (max-width: 1360px) { .nav-name { display: none; } }
+
+/* ---- Light mode: the hero shade and the detail-page synopsis were fixed pale/dark colours ---- */
+.hero { background: radial-gradient(circle, color-mix(in srgb, var(--signal) 28%, transparent) 1.4px, transparent 1.9px) 0 0 / 24px 24px, var(--ink); }
+.hero-shade {
+  background:
+    linear-gradient(to top, var(--ink) 0%, transparent 42%),
+    linear-gradient(90deg, color-mix(in srgb, var(--ink) 82%, transparent) 0%, transparent 62%);
+}
+html[data-theme='light'] .hero-shade { opacity: 1; }
+.d-syn { color: color-mix(in srgb, var(--text) 82%, var(--ink)); }

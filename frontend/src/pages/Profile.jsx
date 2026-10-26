@@ -14,9 +14,11 @@ import ShareCard from '../components/ShareCard.jsx';
 import CountUp from '../components/CountUp.jsx';
 import Friends from '../components/Friends.jsx';
 import Banner from '../components/Banner.jsx';
+import ShapePicker from '../components/ShapePicker.jsx';
+import { withTop3First } from '../lib/favorites.js';
 import BannerPicker from '../components/BannerPicker.jsx';
 
-const fromUser = (u) => ({ username: u.username, bio: u.bio || '', avatar: u.avatar || null, is_public: Boolean(u.is_public) });
+const fromUser = (u) => ({ username: u.username, bio: u.bio || '', avatar: u.avatar || null, avatar_shape: u.avatar_shape || 'circle', is_public: Boolean(u.is_public) });
 const EMPTY = { top3: [], top15: [] };
 const FAV_KINDS = [
   { key: 'anime', label: 'Anime' },
@@ -34,12 +36,20 @@ function Favorites() {
     api.favorites().then(setFavs).catch((e) => setError(e.message));
   }, []);
 
+  // The Top 15 starts with the Top 3, so only the picks AFTER the Top 3 are saved for it. Changing the Top 3 reshuffles the
+  // start of the Top 15, so that list is reloaded from the server afterwards.
   async function change(k, list, next) {
     const before = favs;
-    setFavs((f) => ({ ...f, [k]: { ...f[k], [list]: next } })); // show it immediately, undo if the save fails
+    const locked = favs[k].top3.length;
+    setFavs((f) => {
+      const group = f[k];
+      if (list === 'top3') return { ...f, [k]: { top3: next, top15: withTop3First(next, group.top15.slice(group.top3.length)) } };
+      return { ...f, [k]: { ...group, top15: next } };
+    }); // show it immediately, undo if the save fails
     try {
-      const saved = await api.saveFavorites(k, list, next);
-      setFavs((f) => ({ ...f, [k]: { ...f[k], [list]: saved.items } }));
+      const saved = await api.saveFavorites(k, list, list === 'top15' ? next.slice(locked) : next);
+      if (list === 'top3') setFavs(await api.favorites());
+      else setFavs((f) => ({ ...f, [k]: { ...f[k], top15: saved.items } }));
     } catch (e) {
       setFavs(before);
       toast(e.message, 'error');
@@ -62,7 +72,7 @@ function Favorites() {
       </div>
       <div className="fe-grid">
         <FavoritesEditor kind={kind} list="top3" items={group.top3} onChange={(next) => change(kind, 'top3', next)} />
-        <FavoritesEditor kind={kind} list="top15" items={group.top15} onChange={(next) => change(kind, 'top15', next)} />
+        <FavoritesEditor kind={kind} list="top15" items={group.top15} locked={group.top3.length} onChange={(next) => change(kind, 'top15', next)} />
       </div>
       <Top15Download kind={kind} label={FAV_KINDS.find((k) => k.key === kind).label} items={group.top15} />
     </>
@@ -100,7 +110,7 @@ function Settings() {
   const [pwBusy, setPwBusy] = useState(false);
 
   // A background refresh may bring in newer profile data
-  useEffect(() => setForm(fromUser(user)), [user.username, user.bio, user.avatar, user.is_public]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => setForm(fromUser(user)), [user.username, user.bio, user.avatar, user.avatar_shape, user.is_public]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const saved = fromUser(user);
   const dirty = Object.keys(form).some((k) => form[k] !== saved[k]);
@@ -162,7 +172,8 @@ function Settings() {
       <form className="pf" onSubmit={save}>
         <div className="pf-section">
           <h2 className="mini-h">Photo</h2>
-          <AvatarPicker value={form.avatar} username={form.username} size={112} onChange={(avatar) => setForm((f) => ({ ...f, avatar }))} />
+          <AvatarPicker value={form.avatar} username={form.username} shape={form.avatar_shape} size={112} onChange={(avatar) => setForm((f) => ({ ...f, avatar }))} />
+          <ShapePicker value={form.avatar_shape} onChange={(avatar_shape) => setForm((f) => ({ ...f, avatar_shape }))} />
         </div>
 
         <div className="pf-section">

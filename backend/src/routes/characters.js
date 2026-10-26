@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { anilistQuery } from './anime.js';
-import { cleanQuery, errDetail, CATALOG_DOWN } from '../inputs.js';
+import { cleanQuery, isId, errDetail, CATALOG_DOWN } from '../inputs.js';
+import { characterShape } from '../character.js';
 
 const router = Router();
 
@@ -36,6 +37,39 @@ router.get('/search', async (req, res) => {
         };
       })
     });
+  } catch (err) {
+    res.status(502).json({ error: CATALOG_DOWN, detail: errDetail(err) });
+  }
+});
+
+const DETAIL_QUERY = `
+  query ($id: Int) {
+    Character(id: $id) {
+      id
+      name { full native alternative }
+      image { large }
+      description(asHtml: false)
+      gender
+      age
+      dateOfBirth { month day }
+      bloodType
+      favourites
+      media(perPage: 8, sort: POPULARITY_DESC) {
+        nodes { idMal type format title { romaji english } coverImage { large medium } }
+      }
+    }
+  }
+`;
+
+// GET /api/characters/:id  (an AniList character id) -> everything the character dialog shows, spoilers removed
+router.get('/:id', async (req, res) => {
+  if (!isId(req.params.id)) return res.status(400).json({ error: 'Invalid character id' });
+  const id = Number(req.params.id);
+  try {
+    const data = await anilistQuery(DETAIL_QUERY, { id }, `char:detail:${id}`);
+    const character = characterShape(data.Character);
+    if (!character) return res.status(404).json({ error: 'Character not found' });
+    res.json({ data: character });
   } catch (err) {
     res.status(502).json({ error: CATALOG_DOWN, detail: errDetail(err) });
   }

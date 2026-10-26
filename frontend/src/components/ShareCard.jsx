@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { HEART_PATH, HEX_POINTS, shapeOf } from '../lib/avatarShape.js';
 import { api, imgSrc } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useList } from '../context/ListContext.jsx';
@@ -58,6 +59,27 @@ function wrapLines(ctx, text, maxWidth, maxLines) {
 const setSpacing = (ctx, px) => { if ('letterSpacing' in ctx) ctx.letterSpacing = `${px}px`; };
 
 // stats: { total, progress, mean } for the list being shown, so a manga card never shows anime numbers
+// Limit drawing to a profile picture's shape. Call between ctx.save() and ctx.restore().
+function clipShape(ctx, shape, x, y, s) {
+  ctx.beginPath();
+  if (shape === 'circle') {
+    ctx.arc(x + s / 2, y + s / 2, s / 2, 0, Math.PI * 2);
+  } else if (shape === 'rounded') {
+    ctx.roundRect(x, y, s, s, s * 0.22);
+  } else if (shape === 'hexagon') {
+    HEX_POINTS.forEach(([px, py], i) => (i ? ctx.lineTo(x + px * s, y + py * s) : ctx.moveTo(x + px * s, y + py * s)));
+    ctx.closePath();
+  } else if (shape === 'heart') {
+    const path = new Path2D();
+    path.addPath(new Path2D(HEART_PATH), new DOMMatrix([s, 0, 0, s, x, y]));
+    ctx.clip(path);
+    return;
+  } else {
+    ctx.rect(x, y, s, s);
+  }
+  ctx.clip();
+}
+
 async function drawCard(canvas, { user, kind, items, stats, link }) {
   await ensureFonts();
   const ctx = canvas.getContext('2d');
@@ -83,6 +105,8 @@ async function drawCard(canvas, { user, kind, items, stats, link }) {
   // avatar
   const [avatar, ...covers] = await Promise.all([loadImage(user.avatar), ...items.map((i) => loadImage(imgSrc(i.image_url)))]);
   const ax = 60, ay = 132, as = 132;
+  ctx.save();
+  clipShape(ctx, shapeOf(user.avatar_shape), ax, ay, as); // the picture takes the shape the person chose
   if (avatar) drawCover(ctx, avatar, ax, ay, as, as);
   else {
     ctx.fillStyle = ORANGE;
@@ -93,6 +117,7 @@ async function drawCard(canvas, { user, kind, items, stats, link }) {
     ctx.fillText((user.username || '?').slice(0, 1).toUpperCase(), ax + as / 2, ay + as / 2 + 22);
     ctx.textAlign = 'left';
   }
+  ctx.restore();
 
   // name: shrink until it fits next to the avatar
   let size = 104;

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client.js';
+import { ACTIVITY_STEP_CAP } from '../constants.js';
 
 const GOAL_KEY = 'anitrack:weekgoal';
 const dayKey = (d) => `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
@@ -35,7 +36,8 @@ export default function Momentum({ kind }) {
     while (days.has(dayKey(cursor))) { streak += 1; cursor.setDate(cursor.getDate() - 1); }
     const from = startOfWeek(today).getTime();
     const week = events.filter((e) => new Date(e.ts).getTime() >= from);
-    const sum = (arr) => arr.reduce((s, e) => s + e.delta, 0);
+    // one update counts for at most ACTIVITY_STEP_CAP, so marking a long series as caught up can't fill the whole week
+    const sum = (arr) => arr.reduce((s, e) => s + Math.min(e.delta, ACTIVITY_STEP_CAP), 0);
     return { streak, weekAnime: sum(week.filter((e) => e.kind === 'anime')), weekManga: sum(week.filter((e) => e.kind === 'manga')), any: events.length > 0 };
   }, [events]);
 
@@ -59,7 +61,7 @@ export default function Momentum({ kind }) {
           <circle cx="38" cy="38" r={R} className="mo-track" />
           <circle cx="38" cy="38" r={R} className="mo-arc" strokeDasharray={C} strokeDashoffset={C * (1 - pct)} transform="rotate(-90 38 38)" />
         </svg>
-        <strong>{done}</strong>
+        <strong style={done >= 1000 ? { fontSize: 13 } : done >= 100 ? { fontSize: 17 } : undefined}>{done}</strong>
       </div>
       <div className="mo-text">
         <p className="mo-line"><b>{done}</b> of {editing ? (

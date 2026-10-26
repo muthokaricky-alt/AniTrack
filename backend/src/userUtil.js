@@ -13,7 +13,13 @@ export function parseAvatar(input) {
 // What the client is allowed to know about an account (never the password hash)
 // The user columns the app needs on login and profile calls. Named explicitly (rather than SELECT *) so a large banner
 // picture is not read from the database every time someone logs in or the app opens.
-export const USER_COLUMNS = 'id, username, email, password_hash, avatar, bio, is_public, token_version, created_at';
+export const USER_COLUMNS = 'id, username, email, password_hash, avatar, avatar_shape, bio, is_public, token_version, created_at';
+
+// The shapes a profile picture can have. 'circle' is what everyone starts with.
+export const AVATAR_SHAPES = ['circle', 'square', 'rounded', 'hexagon', 'heart'];
+export const DEFAULT_AVATAR_SHAPE = 'circle';
+// One of the allowed shapes, or null if the value is not one of them
+export const parseShape = (value) => (AVATAR_SHAPES.includes(value) ? value : null);
 
 export function publicUser(row) {
   return {
@@ -21,6 +27,7 @@ export function publicUser(row) {
     username: row.username,
     email: row.email,
     avatar: row.avatar || null,
+    avatar_shape: parseShape(row.avatar_shape) || DEFAULT_AVATAR_SHAPE,
     bio: row.bio || '',
     is_public: Boolean(row.is_public)
   };

@@ -48,10 +48,10 @@ userFollowRoutes.get('/:username/network', optionalAuth, async (req, res) => {
   const [show, filter] = type === 'followers' ? ['follower_id', 'followee_id'] : ['followee_id', 'follower_id']; // fixed column names, never user input
   const pub = target.id === req.userId ? '' : 'AND u.is_public = 1';
   const rows = await db.all(
-    `SELECT u.username, u.avatar, u.is_public FROM follows f JOIN users u ON u.id = f.${show} WHERE f.${filter} = ? ${pub} ORDER BY f.created_at DESC LIMIT ${LIST_LIMIT}`,
+    `SELECT u.username, u.avatar, u.avatar_shape, u.is_public FROM follows f JOIN users u ON u.id = f.${show} WHERE f.${filter} = ? ${pub} ORDER BY f.created_at DESC LIMIT ${LIST_LIMIT}`,
     [target.id]
   );
-  res.json({ type, users: rows.map((u) => ({ username: u.username, avatar: u.avatar || null, is_public: Boolean(u.is_public) })) });
+  res.json({ type, users: rows.map((u) => ({ username: u.username, avatar: u.avatar || null, avatar_shape: u.avatar_shape, is_public: Boolean(u.is_public) })) });
 });
 
 userFollowRoutes.post('/:username/follow', requireAuth, followLimit, async (req, res) => {
@@ -82,14 +82,14 @@ export const followRoutes = Router();
 // GET everyone you follow (public profiles), each with their taste match against you, best match first
 followRoutes.get('/matches', requireAuth, async (req, res) => {
   const people = await db.all(
-    `SELECT u.id, u.username, u.avatar FROM follows f JOIN users u ON u.id = f.followee_id
+    `SELECT u.id, u.username, u.avatar, u.avatar_shape FROM follows f JOIN users u ON u.id = f.followee_id
      WHERE f.follower_id = ? AND u.is_public = 1 ORDER BY f.created_at DESC LIMIT ${MATCH_LIMIT}`,
     [req.userId]
   );
   const mine = await loadTaste(req.userId);
   const matches = await Promise.all(
     people.map(async (p) => {
-      const base = { username: p.username, avatar: p.avatar || null, percent: null, shared_count: 0, common_genres: [] };
+      const base = { username: p.username, avatar: p.avatar || null, avatar_shape: p.avatar_shape, percent: null, shared_count: 0, common_genres: [] };
       if (!mine.length) return base;
       const theirs = await loadTaste(p.id);
       if (!theirs.length) return base;

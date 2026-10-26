@@ -83,7 +83,7 @@ export default function Inbox() {
                 </Link>
                 <div className="rec-body">
                   <p className="rec-meta">
-                    <Avatar user={{ username: r.username, avatar: current.avatars[r.username] }} size={20} />
+                    <Avatar user={{ username: r.username, avatar: current.avatars[r.username], avatar_shape: current.shapes?.[r.username] }} size={20} />
                     <span>{sent ? <>You sent this to <b>{r.username}</b></> : <><b>{r.username}</b> recommends</>}</span>
                     <span>· {ago(r.created_at)}</span>
                   </p>

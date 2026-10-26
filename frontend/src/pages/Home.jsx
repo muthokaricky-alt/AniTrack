@@ -122,7 +122,8 @@ export default function Home() {
   const [query, setQuery] = useState('');
   const season = useMemo(seasonLabel, []);
   const featured = useMemo(() => seasonal.filter((a) => a.banner).slice(0, 4), [seasonal]);
-  const watching = useMemo(() => entries.filter((e) => e.status === 'watching'), [entries]);
+  // a series that is already at its last episode is finished, not something to continue
+  const watching = useMemo(() => entries.filter((e) => e.status === 'watching' && !(e.total_episodes > 0 && e.episodes_watched >= e.total_episodes)), [entries]);
 
   function load() {
     setLoading(true);

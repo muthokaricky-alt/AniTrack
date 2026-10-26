@@ -82,3 +82,7 @@ export const discordLink = /^https:\/\/(discord\.gg|discord\.com\/invite)\/[A-Za
 
 // An uploaded banner picture is shrunk until its data URL is no longer than this (the server enforces the same limit)
 export const BANNER_MAX_CHARS = 330000;
+
+// One progress update counts for at most this many episodes (or chapters) in the weekly goal. This matches the server, which
+// caps what it logs, and also keeps old, inflated activity from before that change from skewing the week.
+export const ACTIVITY_STEP_CAP = 25;

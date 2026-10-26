@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { fileToAvatar } from '../lib/image.js';
 import Avatar from './Avatar.jsx';
 
-export default function AvatarPicker({ value, username, onChange, size = 88 }) {
+export default function AvatarPicker({ value, username, onChange, size = 88, shape }) {
   const input = useRef(null);
   const [error, setError] = useState('');
 
@@ -20,7 +20,7 @@ export default function AvatarPicker({ value, username, onChange, size = 88 }) {
 
   return (
     <div className="avatar-picker">
-      <Avatar user={{ avatar: value, username }} size={size} />
+      <Avatar user={{ avatar: value, username }} shape={shape} size={size} />
       <div className="avatar-picker-side">
         <div className="avatar-picker-btns">
           <button type="button" className="btn btn-line btn-sm" onClick={() => input.current?.click()}>

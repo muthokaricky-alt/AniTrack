@@ -3,6 +3,7 @@ import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { anilistQuery } from './anime.js';
 import { cleanImageUrl } from '../imageUrl.js';
+import { loggedDelta, autoStatus } from '../progress.js';
 import { errDetail } from '../inputs.js';
 
 // One router factory serves both lists. Table and column names come from these constants, never from user input.
@@ -295,11 +296,13 @@ function makeRouter(cfg) {
     }
 
     const newDone = done === undefined ? entry[progress] : done;
+    // choosing a status always wins; otherwise reaching the last episode/chapter completes the entry
+    const status = autoStatus({ requested: body.status, current: entry.status, done: newDone, total: entry[total] });
     await db.run(
       `UPDATE ${t} SET status = ?, score = ?, ${progress} = ?, review = ?, ratings = ?, tags = ?, updated_at = CURRENT_TIMESTAMP
        WHERE id = ? AND user_id = ?`,
       [
-        body.status ?? entry.status,
+        status,
         score === undefined ? entry.score : score,
         newDone,
         body.review === undefined ? entry.review : String(body.review).slice(0, 5000) || null,
@@ -309,8 +312,10 @@ function makeRouter(cfg) {
         req.userId
       ]
     );
-    if (done !== undefined && done > (entry[progress] || 0)) {
-      await db.run('INSERT INTO activity (user_id, kind, mal_id, delta) VALUES (?, ?, ?, ?)', [req.userId, cfg.kind, entry.mal_id, done - (entry[progress] || 0)]);
+    // Logged for streaks and the weekly goal. A big jump (marking a long series as caught up) is capped, see progress.js
+    const logged = done === undefined ? 0 : loggedDelta(entry[progress], done);
+    if (logged > 0) {
+      await db.run('INSERT INTO activity (user_id, kind, mal_id, delta) VALUES (?, ?, ?, ?)', [req.userId, cfg.kind, entry.mal_id, logged]);
     }
     res.json(unpack(await db.get(`SELECT * FROM ${t} WHERE id = ?`, [entry.id])));
   });

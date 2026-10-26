@@ -78,6 +78,7 @@ export const api = {
   markInboxRead: () => request('/recommendations/read', { method: 'POST' }),
   sendRecommendation: (body) => request('/recommendations', { method: 'POST', body: JSON.stringify(body) }),
   removeRecommendation: (id) => request(`/recommendations/${id}`, { method: 'DELETE' }),
+  characterInfo: (id) => request(`/characters/${id}`),
   myBanner: () => request('/profile/banner'),
   saveBanner: (body) => request('/profile/banner', { method: 'PUT', body: JSON.stringify(body) }),
   bannerOptions: () => request('/profile/banner-options'),
