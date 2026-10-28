@@ -104,9 +104,9 @@ export default function Manga() {
       {!loading && !error && !hasQuery && (
         <>
           <div className="section-heading"><h2 className="h2">Trending now</h2><span className="kicker">Publishing</span></div>
-          <div className="anime-grid">{trending.slice(0, 10).map((m) => <AnimeCard key={m.mal_id} anime={m} kind="manga" />)}</div>
+          <div className="t10-grid is-10 in-page">{trending.slice(0, 10).map((m) => <AnimeCard key={m.mal_id} anime={m} kind="manga" />)}</div>
           <div className="section-heading"><h2 className="h2">Top rated</h2><span className="kicker">All time</span></div>
-          <div className="anime-grid">{top.slice(0, 10).map((m) => <AnimeCard key={m.mal_id} anime={m} kind="manga" />)}</div>
+          <div className="t10-grid is-15 in-page">{top.slice(0, 15).map((m, i) => <AnimeCard key={m.mal_id} anime={m} kind="manga" rank={i + 1} />)}</div>
         </>
       )}
 

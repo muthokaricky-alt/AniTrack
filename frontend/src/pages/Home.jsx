@@ -31,8 +31,8 @@ function TopTen({ anime }) {
     <section className="top10" ref={root} aria-labelledby="top-title">
       <div className="wrap">
         <p className="kicker">All-time ranking</p>
-        <h2 id="top-title" className="h2">Top ten</h2>
-        <div className="t10-grid">
+        <h2 id="top-title" className="h2">Top 15</h2>
+        <div className="t10-grid is-15">
           {anime.map((a, i) => (
             <div className="t10-item" key={a.mal_id}>
               <AnimeCard anime={a} rank={i + 1} />
@@ -198,7 +198,7 @@ export default function Home() {
       {seasonal.length >= 4 && <PinnedRail anime={seasonal.slice(0, 12)} season={season} />}
       {user && watching.length > 0 ? <ContinueWatching entries={watching} /> : !loading && <HowItWorks />}
       {user && <ForYou />}
-      {top.length >= 4 && <TopTen anime={top.slice(0, 10)} />}
+      {top.length >= 4 && <TopTen anime={top.slice(0, 15)} />}
 
       {!user && (
         <section className="final-cta">

@@ -40,7 +40,7 @@ async function draw(canvas, username, label, items) {
     new Promise((r) => setTimeout(r, 3000))
   ]).catch(() => {});
   const rows = Math.ceil(items.length / COLS);
-  const top = 200;
+  const top = 252; // where the first row of covers starts: leaves room for the logo, kicker and title above it
   const H = top + rows * ROW + 90;
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
@@ -53,10 +53,10 @@ async function draw(canvas, username, label, items) {
   if ('letterSpacing' in ctx) ctx.letterSpacing = '4px';
   ctx.fillText('ANITRACK', PAD + 30, 78);
   ctx.fillStyle = ORANGE; ctx.font = '500 20px "JetBrains Mono", monospace';
-  ctx.fillText(`${username.toUpperCase()}'S`, PAD, 138);
+  ctx.fillText(`${username.toUpperCase()}'S`, PAD, 134);
   if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
   ctx.fillStyle = TEXT; ctx.font = '600 64px Fraunces, Georgia, serif';
-  ctx.fillText(`Top ${items.length} ${label}`, PAD, 188 - 4);
+  ctx.fillText(`Top ${items.length} ${label}`, PAD, 210); // 64px title: its tops reach about y=165, clear of the kicker above
 
   const imgs = await Promise.all(items.map((i) => load(imgSrc(i.image_url))));
   items.forEach((it, i) => {

@@ -436,3 +436,14 @@ button.sc-tile { padding: 0; border: 0; background: none; color: inherit; font: 
 }
 html[data-theme='light'] .hero-shade { opacity: 1; }
 .d-syn { color: color-mix(in srgb, var(--text) 82%, var(--ink)); }
+
+
+/* ---- Ranked grids always end on a full row ----
+   5 columns on desktop, 3 on tablets, 2 on phones. 15 titles fill 5 and 3 columns exactly; on phones the odd 15th is hidden
+   so the last row isn't left with a single card. The 10-title Trending grid hides its 10th on tablets for the same reason. */
+.t10-grid.in-page { margin: 0 0 56px; gap: 44px 24px; }
+@media (min-width: 701px) and (max-width: 1000px) { .t10-grid.is-10 > :nth-child(n + 10) { display: none; } }
+@media (max-width: 700px) {
+  .t10-grid.in-page { gap: 36px 14px; }
+  .t10-grid.is-15 > :nth-child(n + 15) { display: none; }
+}

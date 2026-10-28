@@ -146,7 +146,7 @@ async function drawCard(canvas, { user, kind, items, stats, link }) {
 
   // covers
   const cw = 300, ch = 450, gap = 30;
-  const cy = Math.max(y + 24, 440);
+  const cy = Math.max(y + 24, 410); // 410 (not 440) keeps the gap under the header and the one above the stats about equal
   const startX = items.length === 3 ? 60 : (W - (items.length * cw + (items.length - 1) * gap)) / 2;
   items.forEach((it, i) => {
     const x = startX + i * (cw + gap);
