@@ -15,4 +15,5 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: DATABASE_URL
-        sync: false # paste your Neon connection string in the Render dashboard
+        sync: false 
+        

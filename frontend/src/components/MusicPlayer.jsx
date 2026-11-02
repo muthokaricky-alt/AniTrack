@@ -240,6 +240,7 @@ export default function MusicPlayer() {
       )}
       {prefs.open && (
         <div className="music-panel">
+          <button type="button" className="music-close" onClick={() => update({ open: false })} aria-label="Hide the music player">✕</button>
           {hasBoth && (
             <div className="music-source" role="group" aria-label="Music source">
               <button className={!showSC ? 'on' : ''} aria-pressed={!showSC} onClick={() => chooseSource('built-in')}>Built-in</button>

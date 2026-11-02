@@ -447,3 +447,15 @@ html[data-theme='light'] .hero-shade { opacity: 1; }
   .t10-grid.in-page { gap: 36px 14px; }
   .t10-grid.is-15 > :nth-child(n + 15) { display: none; }
 }
+
+
+/* ---- Detail pages on phones: a small poster beside the title, the way phone apps do it ----
+   (A 240px-wide, 360px-tall poster took over 40% of the screen before the title even appeared.) */
+@media (max-width: 700px) {
+  .d-body { grid-template-columns: 112px 1fr; gap: 10px 16px; align-items: end; padding-top: 14vh; }
+  .d-poster { grid-column: 1; grid-row: 1 / span 2; max-width: none; align-self: end; }
+  .d-info { display: contents; } /* its children join the page grid, so only the title block sits beside the poster */
+  .d-info > * { grid-column: 1 / -1; }
+  .d-info > .kicker.d-in { grid-column: 2; grid-row: 1; align-self: end; margin: 0; }
+  .d-info > .d-title { grid-column: 2; grid-row: 2; align-self: start; margin: 0; font-size: clamp(20px, 6vw, 28px); line-height: 1.02; letter-spacing: -0.03em; overflow-wrap: anywhere; } /* a very long word breaks instead of poking off the screen */
+}
