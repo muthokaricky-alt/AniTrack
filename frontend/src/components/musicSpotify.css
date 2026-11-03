@@ -1,11 +1,11 @@
 /* SoundCloud source for the background music widget */
 .music-source { display: inline-flex; flex: none; border: 1px solid var(--line-strong); }
-.music-source button { padding: 7px 10px; font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.music-source button { padding: 7px 10px; font-family: var(--ui); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .music-source button:hover { color: var(--text); }
 .music-source button.on { background: var(--signal); color: var(--ink); }
 
 .music-spot-ctl { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
-.music-chip { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.music-chip { font-family: var(--ui); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
 .music-chip:hover { color: var(--text); }
 /* the playlist toggle is a real button so it's easy to spot */
 .music-chip-btn { padding: 7px 10px; border: 1px solid var(--line-strong); color: var(--text); }
