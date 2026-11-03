@@ -11,6 +11,7 @@ import { useAccent } from '../lib/useAccent.js';
 import AnimeCard from '../components/AnimeCard.jsx';
 import ScoreInput from '../components/ScoreInput.jsx';
 import RecommendButton from '../components/RecommendButton.jsx';
+import ReadLinks from '../components/ReadLinks.jsx';
 
 // "Episode 7 airs in 2d 4h 10m", refreshed every 30 seconds
 function Countdown({ at, episode }) {
@@ -148,6 +149,8 @@ export default function AnimeDetail({ kind = 'anime' }) {
               </button>
             )}
           </div>
+
+          {kind === 'manga' && <ReadLinks title={anime.title} links={anime.read_links} />}
 
           {anime.trailer && (
             <div className="d-trailer d-in">

@@ -6,6 +6,17 @@ import { tryBackup, backupTopManga, backupTrendingManga, backupSearchManga, back
 
 const router = Router();
 
+// Official places to read a title (MANGA Plus, VIZ, Comikey...), from AniList's external links.
+// Only live https links to reading sites; we link out and never host or proxy chapters.
+function toReadLinks(links) {
+  const seen = new Set();
+  return (links || [])
+    .filter((l) => l && l.type === 'STREAMING' && !l.isDisabled && typeof l.url === 'string' && l.url.startsWith('https://') && l.site)
+    .filter((l) => (seen.has(l.url) ? false : seen.add(l.url)))
+    .slice(0, 8)
+    .map((l) => ({ site: String(l.site).slice(0, 40), url: l.url, language: l.language || null }));
+}
+
 // Same output shape as the anime routes (mal_id, title, images.jpg.image_url, score...), with chapters/volumes instead of episodes
 function toMangaShape(media) {
   if (!media) return null;
@@ -30,6 +41,7 @@ function toMangaShape(media) {
             .map(toMangaShape)
         }
       : {}),
+    ...(media.externalLinks ? { read_links: toReadLinks(media.externalLinks) } : {}),
     images: { jpg: { image_url: media.coverImage?.extraLarge || media.coverImage?.large || media.coverImage?.medium || null } }
   };
 }
@@ -64,6 +76,7 @@ const DETAIL_QUERY = `
   query ($idMal: Int) {
     Media(idMal: $idMal, type: MANGA) {
       ${FIELDS}
+      externalLinks { site url type language isDisabled }
       recommendations(perPage: 8, sort: RATING_DESC) {
         nodes {
           mediaRecommendation {
