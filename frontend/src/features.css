@@ -459,3 +459,60 @@ html[data-theme='light'] .hero-shade { opacity: 1; }
   .d-info > .kicker.d-in { grid-column: 2; grid-row: 1; align-self: end; margin: 0; }
   .d-info > .d-title { grid-column: 2; grid-row: 2; align-self: start; margin: 0; font-size: clamp(20px, 6vw, 28px); line-height: 1.02; letter-spacing: -0.03em; overflow-wrap: anywhere; } /* a very long word breaks instead of poking off the screen */
 }
+
+/* ===== v7: phone + desktop polish ===== */
+:root { --wrap-max: 1288px; }
+
+/* phones */
+@media (max-width: 700px) {
+  .page-pad { padding-top: 84px; padding-bottom: 72px; }
+  .nav.is-solid { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+
+  /* stats: numbers no longer crowd the dividers */
+  .stat { padding: 16px 0; }
+  .stat strong { font-size: clamp(26px, 8.4vw, 34px); letter-spacing: -0.04em; }
+  .stat + .stat { padding-left: 12px; }
+  .stat > span { font-size: 10px; letter-spacing: 0.08em; }
+
+  /* list tools: a tidy 2-column grid instead of six full-width bars */
+  .list-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 28px; }
+  .list-tools .tools-gap { display: none; }
+  .list-tools > .btn { width: 100%; flex: none; justify-content: center; text-align: center; padding: 13px 6px; letter-spacing: 0.06em; }
+  .list-tools > .roulette { grid-column: 1 / -1; }
+
+  /* status tabs: bleed to the screen edge, fade on the right so it is obvious they scroll */
+  .status-tabs { margin-inline: -18px; padding-inline: 18px 44px; gap: 22px; scroll-snap-type: x proximity; scroll-padding-inline: 18px; scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); }
+  .status-tabs::-webkit-scrollbar { display: none; }
+  .status-tabs button { scroll-snap-align: start; padding-bottom: 12px; }
+
+  /* filter bar: search on top, selects side by side, view switch + Select underneath */
+  .list-filter { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+  .list-filter .lf-search { grid-column: 1 / -1; min-width: 0; -webkit-appearance: none; appearance: none; }
+  .list-filter select { grid-column: span 3; min-width: 0; width: 100%; }
+  .list-filter .view-switch { order: 0; grid-column: span 4; display: grid; grid-template-columns: repeat(3, 1fr); }
+  .list-filter .view-switch button { padding: 13px 0; text-align: center; letter-spacing: 0.06em; }
+  .list-filter > .btn { grid-column: span 2; justify-content: center; padding: 13px 6px; }
+  .list-filter input, .list-filter select { font-size: 16px; padding: 13px 12px; }
+
+  /* list rows: +1, status and score on one line, Details and Remove as two even buttons */
+  .list-rows.view-list .list-controls { display: flex; flex-wrap: wrap; gap: 8px; }
+  .list-rows.view-list .list-controls .step-btn { flex: none; }
+  .list-rows.view-list .list-controls select { flex: 1 1 calc(50% - 31.5px); min-width: 0; }
+  .list-rows.view-list .list-controls .btn-quiet { flex: 1 1 calc(50% - 4.5px); justify-content: center; border: 1px solid var(--line); padding: 11px 6px; }
+
+  /* grid view cards are narrow: status on its own line, then +1 and score side by side */
+  .list-rows.view-grid .list-controls { display: grid; grid-template-columns: 5fr 7fr; gap: 8px; align-items: stretch; }
+  .list-rows.view-grid .list-controls select { width: 100%; min-width: 0; font-size: 16px; padding-inline: 8px; }
+  .list-rows.view-grid .list-controls select[aria-label="Status"] { grid-column: 1 / -1; order: -1; }
+  .list-rows.view-grid .list-controls .step-btn { width: 100%; height: auto; min-height: 46px; }
+}
+
+/* big monitors: let the content breathe, and line the header up with it */
+@media (min-width: 1001px) {
+  .nav { padding-inline: max(24px, calc((100vw - var(--wrap-max)) / 2 + 24px)); }
+}
+@media (min-width: 1700px) {
+  :root { --wrap-max: 1480px; }
+  .anime-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+}

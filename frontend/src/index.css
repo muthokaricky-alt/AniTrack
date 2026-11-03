@@ -47,7 +47,7 @@ img { display: block; max-width: 100%; }
 ::selection { background: var(--signal); color: var(--ink); }
 :focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; }
 
-.wrap { width: 100%; max-width: 1288px; margin: 0 auto; padding: 0 24px; }
+.wrap { width: 100%; max-width: var(--wrap-max, 1288px); margin: 0 auto; padding: 0 24px; }
 .page-pad { padding-top: 132px; padding-bottom: 96px; }
 .section-pad { padding-top: 64px; padding-bottom: 64px; }
 .muted { color: var(--muted); font-size: 14px; }
