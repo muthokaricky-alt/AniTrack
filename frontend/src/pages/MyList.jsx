@@ -232,8 +232,8 @@ export default function MyList() {
           <button className="btn btn-line btn-sm" onClick={exportJson} disabled={entries.length === 0}>Export JSON</button>
           <button className="btn btn-line btn-sm" onClick={exportCsv} disabled={entries.length === 0}>Export CSV</button>
           <button className="btn btn-line btn-sm" onClick={exportExcel} disabled={busy || (animeList.entries.length === 0 && mangaList.entries.length === 0)} title="Both lists, one sheet each">Export Excel</button>
-          <button className="btn btn-sm btn-import" onClick={() => fileInput.current?.click()} disabled={busy} title="Excel, Word, CSV or JSON">Import</button>
-          <input ref={fileInput} type="file" accept=".xlsx,.docx,.csv,.json,.txt" onChange={importFile} hidden />
+          <button className="btn btn-sm btn-import" onClick={() => fileInput.current?.click()} disabled={busy} title="Excel, Word, CSV, JSON or a MyAnimeList .xml export">Import</button>
+          <input ref={fileInput} type="file" accept=".xlsx,.docx,.csv,.json,.txt,.xml,.gz" onChange={importFile} hidden />
         </div>
 
         <div className="status-tabs" role="tablist">

@@ -8,6 +8,8 @@ import { useToast } from '../context/ToastContext.jsx';
 
 const CHUNK = 16; // titles per catalogue request (the server accepts at most 25 and splits them further)
 const MAX_LOOKUPS = 250; // keeps one import from hammering the catalogue API
+const BATCH = 50; // ids per cover lookup (the server accepts at most 50)
+const SAVE_CHUNK = 1000; // entries per save request (the server accepts at most 3000)
 const norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
 // Group the parsed sections by list, drop repeated titles within the file
@@ -33,6 +35,7 @@ export default function ImportDialog({ sections, defaultKind, onClose }) {
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [groups, setGroups] = useState([]);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const primary = useRef(null);
   const listsRef = useRef(lists);
   listsRef.current = lists;
@@ -64,12 +67,15 @@ export default function ImportDialog({ sections, defaultKind, onClose }) {
         return { kind, items };
       });
 
+      // Files from MyAnimeList carry ids but no covers or genres: fetch those so imported titles look complete
+      const needArt = built.flatMap(({ kind, items }) => items.filter((it) => it.match && !it.existing && !it.match.image_url).map((it) => ({ kind, it })));
+
       if (toLookUp.length > MAX_LOOKUPS) {
         setError(`${toLookUp.length} titles need matching and the limit is ${MAX_LOOKUPS} at a time. Split the file into smaller parts, or add a "MAL ID" column.`);
         setPhase('review');
         return;
       }
-      setProgress({ done: 0, total: toLookUp.length });
+      setProgress({ done: 0, total: toLookUp.length + needArt.length });
       try {
         for (const kind of Object.keys(KINDS)) {
           const todo = toLookUp.filter((i) => i.kind === kind);
@@ -95,6 +101,36 @@ export default function ImportDialog({ sections, defaultKind, onClose }) {
         return;
       }
       if (cancelled) return;
+
+      // A failed cover lookup is not fatal: those titles are still imported, just without a picture for now
+      let artFailed = 0;
+      for (const kind of Object.keys(KINDS)) {
+        const todo = needArt.filter((n) => n.kind === kind).map((n) => n.it);
+        for (let i = 0; i < todo.length; i += BATCH) {
+          const part = todo.slice(i, i + BATCH);
+          try {
+            const { data } = await api.list(kind).batch(part.map((p) => p.match.mal_id));
+            if (cancelled) return;
+            const byId = new Map((data || []).map((d) => [d.mal_id, d]));
+            for (const p of part) {
+              const d = byId.get(p.match.mal_id);
+              if (!d) continue;
+              p.match = {
+                ...p.match,
+                title: d.title || p.match.title,
+                image_url: d.images?.jpg?.image_url || null,
+                genres: d.genres || [],
+                [KINDS[kind].total]: d[KINDS[kind].totalProp] ?? null
+              };
+            }
+          } catch {
+            artFailed += part.length;
+          }
+          setProgress((p) => ({ ...p, done: p.done + part.length }));
+        }
+      }
+      if (artFailed) setNotice(`Covers could not be loaded for ${artFailed} title${artFailed === 1 ? '' : 's'} just now. They will still be imported.`);
+
       // two different titles can resolve to the same show; keep the first
       const final = built.map(({ kind, items }) => {
         const ids = new Set();
@@ -159,8 +195,10 @@ export default function ImportDialog({ sections, defaultKind, onClose }) {
       for (const g of groups) {
         const entries = g.items.filter((it) => it.match).map(toEntry);
         if (!entries.length) continue;
-        const res = await api.list(g.kind).import(entries);
-        imported += res.imported;
+        for (let i = 0; i < entries.length; i += SAVE_CHUNK) {
+          const res = await api.list(g.kind).import(entries.slice(i, i + SAVE_CHUNK));
+          imported += res.imported;
+        }
         await lists[g.kind].reload();
       }
       toast(`Imported ${imported} title${imported === 1 ? '' : 's'}${counts.missing ? `. ${counts.missing} could not be matched.` : ''}`);
@@ -178,7 +216,7 @@ export default function ImportDialog({ sections, defaultKind, onClose }) {
 
         {phase === 'matching' && (
           <div className="imp-wait">
-            <p>Matching titles to the catalogue{progress.total ? `… ${progress.done} of ${progress.total}` : '…'}</p>
+            <p>Matching titles and fetching covers{progress.total ? `… ${progress.done} of ${progress.total}` : '…'}</p>
             <div className="progress" aria-hidden="true"><span style={{ width: progress.total ? `${(progress.done / progress.total) * 100}%` : '15%' }} /></div>
           </div>
         )}
@@ -188,6 +226,7 @@ export default function ImportDialog({ sections, defaultKind, onClose }) {
         {phase === 'review' && (
           <>
             {error && <p className="error-text">{error}</p>}
+            {notice && <p className="muted imp-note">{notice}</p>}
             {groups.map((g) => {
               const ok = g.items.filter((i) => i.match).length;
               return (

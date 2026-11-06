@@ -273,6 +273,90 @@ function parseJson(text) {
   return [{ kind: data?.kind === 'manga' || data?.kind === 'anime' ? data.kind : null, rows }];
 }
 
+// ----- MyAnimeList export (.xml, or the .xml.gz that MyAnimeList actually downloads) --------------
+// The file is machine-generated and very regular, so plain pattern matching is enough. That also keeps
+// this testable without a browser and never loads external entities or DTDs.
+
+const MAL_STATUS_NUM = { 1: 'active', 2: 'completed', 3: 'on_hold', 4: 'dropped', 6: 'plan' };
+
+function xmlDecode(text) {
+  return text.replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos);/gi, (m, e) => {
+    const k = e.toLowerCase();
+    if (k === 'amp') return '&';
+    if (k === 'lt') return '<';
+    if (k === 'gt') return '>';
+    if (k === 'quot') return '"';
+    if (k === 'apos') return "'";
+    const code = k[1] === 'x' ? parseInt(k.slice(2), 16) : parseInt(k.slice(1), 10);
+    return Number.isInteger(code) && code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : m;
+  });
+}
+
+// <tag>text</tag> or <tag><![CDATA[text]]></tag>; the tag names are fixed strings from this file, never user input
+function xmlField(block, tag) {
+  const m = block.match(new RegExp(`<${tag}>\\s*(?:<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>|([^<]*))\\s*</${tag}>`));
+  if (!m) return '';
+  return m[1] !== undefined ? m[1] : xmlDecode(m[2]);
+}
+
+const MAL_TAGS = {
+  anime: { id: 'series_animedb_id', title: 'series_title', total: 'series_episodes', done: 'my_watched_episodes' },
+  manga: { id: 'manga_mangadb_id', title: 'manga_title', total: 'manga_chapters', done: 'my_read_chapters' }
+};
+
+export function parseMalXml(text) {
+  const sections = [];
+  for (const kind of ['anime', 'manga']) {
+    const tags = MAL_TAGS[kind];
+    const blocks = text.match(new RegExp(`<${kind}>[\\s\\S]*?</${kind}>`, 'g')) || [];
+    const rows = blocks
+      .map((b) => {
+        const status = xmlField(b, 'my_status').trim();
+        return {
+          title: xmlField(b, tags.title).trim(),
+          mal_id: toInt(xmlField(b, tags.id)) || null,
+          status: normStatus(status) || MAL_STATUS_NUM[status] || null,
+          score: normScore(xmlField(b, 'my_score')), // MyAnimeList stores 0 for "not scored", which becomes null
+          progress: toInt(xmlField(b, tags.done)),
+          total: toInt(xmlField(b, tags.total)) || null, // 0 means "unknown"
+          review: xmlField(b, 'my_comments').trim() || null,
+          genres: [],
+          ratings: null
+        };
+      })
+      .filter((r) => r.title);
+    if (rows.length) sections.push({ kind, rows });
+  }
+  return sections;
+}
+
+const MAX_UNPACKED_BYTES = 25 * 1024 * 1024; // stops a tiny .gz from expanding into something huge
+
+async function gunzipText(file) {
+  if (typeof DecompressionStream === 'undefined') {
+    throw new Error('This browser cannot open .gz files. Unzip it first and import the .xml file inside.');
+  }
+  try {
+    const reader = file.stream().pipeThrough(new DecompressionStream('gzip')).getReader();
+    const chunks = [];
+    let size = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > MAX_UNPACKED_BYTES) {
+        await reader.cancel();
+        throw new Error('That file is too large once unpacked.');
+      }
+      chunks.push(value);
+    }
+    return await new Blob(chunks).text();
+  } catch (err) {
+    if (err.message.startsWith('That file is too large')) throw err;
+    throw new Error('That .gz file could not be unpacked. Is it the export from MyAnimeList?');
+  }
+}
+
 // ----- entry point ------------------------------------------------------------------------------
 
 export async function parseFile(file) {
@@ -285,9 +369,12 @@ export async function parseFile(file) {
     sections = [{ kind: null, rows: rowsFromMatrix(parseCsv(text), { allowHeaderless: true }) }];
   } else if (name.endsWith('.xlsx')) sections = await parseXlsx(await file.arrayBuffer());
   else if (name.endsWith('.docx')) sections = await parseDocx(await file.arrayBuffer());
-  else if (name.endsWith('.xls') || name.endsWith('.doc')) {
+  else if (name.endsWith('.xml') || name.endsWith('.gz')) {
+    sections = parseMalXml(name.endsWith('.gz') ? await gunzipText(file) : await file.text());
+    if (!sections.length) throw new Error('That does not look like a MyAnimeList export. On MyAnimeList open Export My List and use the .xml file it gives you.');
+  } else if (name.endsWith('.xls') || name.endsWith('.doc')) {
     throw new Error('Old .xls and .doc files are not supported. In Excel or Word, choose Save As and pick .xlsx or .docx.');
-  } else throw new Error('Unsupported file type. Use .xlsx, .docx, .csv or .json.');
+  } else throw new Error('Unsupported file type. Use .xlsx, .docx, .csv, .json or a MyAnimeList .xml export.');
 
   sections = sections.filter((s) => s.rows.length);
   if (!sections.length) throw new Error('No titles found in that file. Put one title per row, with a "Title" column if you use a table.');

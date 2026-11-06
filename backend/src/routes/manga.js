@@ -4,6 +4,7 @@ import { cleanQuery, clampPage, isId, errDetail } from '../inputs.js';
 import { CATALOG_DOWN } from '../inputs.js';
 import { tryBackup, backupTopManga, backupTrendingManga, backupSearchManga, backupManga } from '../jikan.js';
 import { toOfficialLinks } from '../links.js';
+import { parseIdList } from '../idList.js';
 
 const router = Router();
 
@@ -121,6 +122,27 @@ router.get('/top', (req, res) => {
 router.get('/trending', (req, res) =>
   pageOf({ page: 1, sort: ['TRENDING_DESC'], status: 'RELEASING' }, 'manga:trending', res, () => backupTrendingManga())
 );
+
+// GET /api/manga/batch?ids=1,5,20  (up to 50 MyAnimeList ids at once: covers, genres and chapter counts for imports)
+const BATCH_QUERY = `
+  query ($ids: [Int]) {
+    Page(page: 1, perPage: 50) {
+      media(idMal_in: $ids, type: MANGA) {
+        ${FIELDS}
+      }
+    }
+  }
+`;
+router.get('/batch', async (req, res) => {
+  const ids = parseIdList(req.query.ids);
+  if (!ids) return res.status(400).json({ error: 'ids must be 1 to 50 comma-separated numbers' });
+  try {
+    const data = await anilistQuery(BATCH_QUERY, { ids }, `manga:batch:${ids.join(',')}`);
+    res.json({ data: mapList(data.Page.media) });
+  } catch (err) {
+    fail(res, err);
+  }
+});
 
 // GET /api/manga/:id  (MyAnimeList id)
 router.get('/:id', async (req, res) => {

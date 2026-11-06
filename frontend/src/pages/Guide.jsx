@@ -102,11 +102,11 @@ const GUIDES = [
     to: '/my-list', cta: 'Open My List', auth: true
   },
   {
-    id: 'import', group: 'Import and export', title: 'Import your list from Excel, Word or CSV',
-    words: 'import excel word docx xlsx csv json myanimelist',
+    id: 'import', group: 'Import and export', title: 'Import your list from MyAnimeList, Excel, Word or CSV',
+    words: 'import excel word docx xlsx csv json myanimelist mal xml export switch',
     steps: [
       'Go to My List and press the orange Import button.',
-      'Pick your .xlsx, .docx, .csv or .json file. Titles are matched against the catalogue.',
+      'Pick your file: a MyAnimeList export (.xml or .xml.gz, from MyAnimeList under Export My List), or an .xlsx, .docx, .csv or .json file. Titles are matched against the catalogue.',
       'Check the preview. Titles that could not be matched are listed so you can see what will be skipped, then press the Import button to confirm.'
     ],
     note: 'Importing never removes titles you already have.',

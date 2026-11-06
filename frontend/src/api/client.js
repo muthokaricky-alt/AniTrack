@@ -132,7 +132,9 @@ export const api = {
       update: (id, body) => request(`${base}/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
       remove: (id) => request(`${base}/${id}`, { method: 'DELETE' }),
       import: (entries) => request(`${base}/import`, { method: 'POST', body: JSON.stringify({ entries }) }),
-      resolve: (titles) => request(`${base}/resolve`, { method: 'POST', body: JSON.stringify({ titles }) })
+      resolve: (titles) => request(`${base}/resolve`, { method: 'POST', body: JSON.stringify({ titles }) }),
+      // covers, genres and totals for up to 50 MyAnimeList ids at once
+      batch: (ids) => request(`${kind === 'manga' ? '/manga' : '/anime'}/batch?ids=${ids.join(',')}`)
     };
   }
 };

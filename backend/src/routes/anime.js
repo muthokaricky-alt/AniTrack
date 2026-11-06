@@ -6,6 +6,7 @@ import { cleanQuery, clampPage, isId, bucketWindow, errDetail, CATALOG_DOWN, USE
 import { makeBreaker } from '../breaker.js';
 import { tryBackup, backupTopAnime, backupSeasonNow, backupSearchAnime, backupAnime } from '../jikan.js';
 import { toOfficialLinks } from '../links.js';
+import { parseIdList } from '../idList.js';
 
 const router = Router();
 const ANILIST_URL = process.env.ANILIST_URL || 'https://graphql.anilist.co';
@@ -407,6 +408,27 @@ router.get('/for-you', requireAuth, async (req, res) => {
       if (items.length >= 3) rows.push({ seed: { mal_id: seed.mal_id, title: seed.title }, data: items });
     });
     res.json({ rows });
+  } catch (err) {
+    res.status(502).json({ error: CATALOG_DOWN, detail: errDetail(err) });
+  }
+});
+
+// GET /api/anime/batch?ids=1,5,20  (up to 50 MyAnimeList ids at once: covers, genres and episode counts for imports)
+const BATCH_QUERY = `
+  query ($ids: [Int]) {
+    Page(page: 1, perPage: 50) {
+      media(idMal_in: $ids, type: ANIME) {
+        ${MEDIA_FIELDS}
+      }
+    }
+  }
+`;
+router.get('/batch', async (req, res) => {
+  const ids = parseIdList(req.query.ids);
+  if (!ids) return res.status(400).json({ error: 'ids must be 1 to 50 comma-separated numbers' });
+  try {
+    const data = await anilistQuery(BATCH_QUERY, { ids }, `batch:${ids.join(',')}`);
+    res.json({ data: mapList(data.Page.media) });
   } catch (err) {
     res.status(502).json({ error: CATALOG_DOWN, detail: errDetail(err) });
   }
