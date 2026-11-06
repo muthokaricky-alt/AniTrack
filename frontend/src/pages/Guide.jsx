@@ -102,11 +102,12 @@ const GUIDES = [
     to: '/my-list', cta: 'Open My List', auth: true
   },
   {
-    id: 'import', group: 'Import and export', title: 'Import your list from MyAnimeList, Excel, Word or CSV',
-    words: 'import excel word docx xlsx csv json myanimelist mal xml export switch',
+    id: 'import', group: 'Import and export', title: 'Import your list from MyAnimeList, AniList, Excel, Word or CSV',
+    words: 'import excel word docx xlsx csv json myanimelist mal anilist username xml export switch',
     steps: [
       'Go to My List and press the orange Import button.',
-      'Pick your file: a MyAnimeList export (.xml or .xml.gz, from MyAnimeList under Export My List), or an .xlsx, .docx, .csv or .json file. Titles are matched against the catalogue.',
+      'On AniList? Choose "From an AniList username", type your username (your profile must be public) and your lists are fetched for you. Otherwise choose "Upload a file".',
+      'Files accepted: a MyAnimeList export (.xml or .xml.gz, from MyAnimeList under Export My List), or an .xlsx, .docx, .csv or .json file. Titles are matched against the catalogue.',
       'Check the preview. Titles that could not be matched are listed so you can see what will be skipped, then press the Import button to confirm.'
     ],
     note: 'Importing never removes titles you already have.',
@@ -152,6 +153,16 @@ const GUIDES = [
       'The card shows your Top 3 favourites, topped up with your highest-rated titles if you have fewer than three.'
     ],
     to: '/profile', cta: 'Open Profile', auth: true
+  },
+  {
+    id: 'lists', group: 'Favourites and sharing', title: 'Make your own lists (top 10 arcs, best isekai…)',
+    words: 'custom lists top 10 ranked arcs isekai collection share public private notes order',
+    steps: [
+      'Open My lists from the My List page and type a name, or tap an idea like "Top 10 arcs". Tick Ranked if you want #1, #2, #3.',
+      'Search anime or manga, press Add, and use the arrows to put them in order. Add a note under a title, such as which arc you mean.',
+      'Lists are private by default. Press "Make public to share" and then "Copy link" to send it to a friend.'
+    ],
+    to: '/lists', cta: 'Open My lists', auth: true
   },
   {
     id: 'public', group: 'Favourites and sharing', title: 'Make your profile public and compare tastes',

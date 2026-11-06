@@ -23,6 +23,8 @@ import Schedule from './pages/Schedule.jsx';
 import Wrapped from './pages/Wrapped.jsx';
 import Guide from './pages/Guide.jsx';
 import Manga from './pages/Manga.jsx';
+import Lists from './pages/Lists.jsx';
+import CustomList from './pages/CustomList.jsx';
 import Profile from './pages/Profile.jsx';
 import PublicProfile from './pages/PublicProfile.jsx';
 import Login from './pages/Login.jsx';
@@ -115,6 +117,8 @@ function Shell() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/my-list" element={<PrivateRoute><MyList /></PrivateRoute>} />
+          <Route path="/lists" element={<PrivateRoute><Lists /></PrivateRoute>} />
+          <Route path="/lists/:id" element={<CustomList />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         </ErrorBoundary>

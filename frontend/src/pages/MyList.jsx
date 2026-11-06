@@ -8,6 +8,7 @@ import { KINDS, SCORE_OPTIONS } from '../constants.js';
 import Insights from '../components/Insights.jsx';
 import Roulette from '../components/Roulette.jsx';
 import ImportDialog from '../components/ImportDialog.jsx';
+import ImportSource from '../components/ImportSource.jsx';
 import AiringWeek from '../components/AiringWeek.jsx';
 import CountUp from '../components/CountUp.jsx';
 import RowPanel from '../components/RowPanel.jsx';
@@ -53,6 +54,8 @@ export default function MyList() {
   const [tab, setTab] = useState(saved.tab || 'all');
   const [rowError, setRowError] = useState('');
   const [importSections, setImportSections] = useState(null);
+  const [importNote, setImportNote] = useState('');
+  const [showImportSource, setShowImportSource] = useState(false);
   const [busy, setBusy] = useState(false);
   const [prefs, setPrefs] = useState(loadPrefs);
   const [q, setQ] = useState(saved.q || '');
@@ -228,11 +231,12 @@ export default function MyList() {
         <div className="list-tools">
           <Roulette pool={pool} kind={kind} onStart={(entry) => save(entry.id, { status: cfg.activeStatus })} />
           <Link className="btn btn-line btn-sm" to="/wrapped">Wrapped</Link>
+          <Link className="btn btn-line btn-sm" to="/lists">My lists</Link>
           <span className="tools-gap" />
           <button className="btn btn-line btn-sm" onClick={exportJson} disabled={entries.length === 0}>Export JSON</button>
           <button className="btn btn-line btn-sm" onClick={exportCsv} disabled={entries.length === 0}>Export CSV</button>
           <button className="btn btn-line btn-sm" onClick={exportExcel} disabled={busy || (animeList.entries.length === 0 && mangaList.entries.length === 0)} title="Both lists, one sheet each">Export Excel</button>
-          <button className="btn btn-sm btn-import" onClick={() => fileInput.current?.click()} disabled={busy} title="Excel, Word, CSV, JSON or a MyAnimeList .xml export">Import</button>
+          <button className="btn btn-sm btn-import" onClick={() => setShowImportSource(true)} disabled={busy} title="From MyAnimeList, AniList, Excel, Word, CSV or JSON">Import</button>
           <input ref={fileInput} type="file" accept=".xlsx,.docx,.csv,.json,.txt,.xml,.gz" onChange={importFile} hidden />
         </div>
 
@@ -362,7 +366,14 @@ export default function MyList() {
         </div>
       </div>
       {body()}
-      {importSections && <ImportDialog sections={importSections} defaultKind={kind} onClose={() => setImportSections(null)} />}
+      {showImportSource && (
+        <ImportSource
+          onFile={() => fileInput.current?.click()}
+          onSections={(sections, note) => { setImportNote(note || ''); setImportSections(sections); setShowImportSource(false); }}
+          onClose={() => setShowImportSource(false)}
+        />
+      )}
+      {importSections && <ImportDialog sections={importSections} defaultKind={kind} note={importNote} onClose={() => setImportSections(null)} />}
     </div>
   );
 }

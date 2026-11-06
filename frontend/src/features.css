@@ -529,3 +529,57 @@ html[data-theme='light'] .hero-shade { opacity: 1; }
 @keyframes wake-in { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translate(-50%, 0); } }
 @media (max-width: 700px) { .wake-banner { top: 62px; } }
 @media (prefers-reduced-motion: reduce) { .wake-banner, .wake-dots i { animation: none; } }
+
+/* ===== Import source chooser ===== */
+.src-options { display: grid; gap: 10px; margin: 8px 0 24px; }
+.src-option { display: grid; gap: 4px; text-align: left; padding: 16px 18px; background: transparent; border: 1px solid var(--line-strong); color: var(--text); cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+.src-option strong { font-family: var(--ui); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; }
+.src-option span { font-size: 13px; color: var(--muted); }
+.src-option:hover, .src-option:focus-visible { border-color: var(--signal); background: var(--ink-2); }
+
+/* ===== Custom lists ===== */
+.cl-create { max-width: 620px; margin-bottom: 40px; }
+.cl-ideas { display: flex; flex-wrap: wrap; gap: 8px; margin: -12px 0 18px; }
+.cl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.cl-card { display: block; border: 1px solid var(--line); background: var(--ink-2); transition: border-color 0.2s, transform 0.2s; }
+.cl-card:hover, .cl-card:focus-visible { border-color: var(--signal); transform: translateY(-2px); }
+.cl-mosaic { display: grid; grid-template-columns: repeat(4, 1fr); aspect-ratio: 16 / 7; background: var(--ink-2); overflow: hidden; }
+.cl-mosaic img { width: 100%; height: 100%; object-fit: cover; }
+.cl-empty { grid-column: 1 / -1; display: grid; place-items: center; font-size: 12px; color: var(--stone); letter-spacing: 0.08em; text-transform: uppercase; }
+.cl-card-body { padding: 14px 16px 16px; }
+.cl-card-body h3 { font-size: 18px; line-height: 1.2; }
+.cl-card-body p { margin-top: 4px; font-size: 13px; color: var(--muted); }
+
+.cl-desc { margin-top: 12px; max-width: 62ch; color: var(--muted); line-height: 1.5; }
+.cl-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 24px; }
+.cl-edit { max-width: 620px; margin: 8px 0 28px; }
+.cl-delete { margin-left: auto; color: var(--signal); }
+.cl-picker { margin: 0 0 24px; max-width: 720px; }
+
+.cl-items { list-style: none; margin: 24px 0 8px; padding: 0; counter-reset: none; }
+.cl-item { display: grid; grid-template-columns: 56px 1fr auto; gap: 14px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.cl-items.is-ranked .cl-item { grid-template-columns: 44px 56px 1fr auto; }
+.cl-rank { font-weight: 800; font-size: 28px; line-height: 1; color: var(--signal); font-variant-numeric: tabular-nums; text-align: center; }
+.cl-cover { display: block; width: 56px; height: 80px; object-fit: cover; background: var(--ink-2); }
+.cl-main { min-width: 0; }
+.cl-main strong { display: block; font-size: 17px; line-height: 1.25; overflow-wrap: anywhere; }
+.cl-main a:hover strong { color: var(--signal); }
+.cl-kind { display: inline-block; margin-top: 2px; font-family: var(--ui); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--stone); }
+.cl-note { margin-top: 6px; font-size: 14px; line-height: 1.45; color: var(--muted); }
+.cl-note-input { width: 100%; margin-top: 8px; padding: 8px 10px; font-family: var(--field); font-size: 14px; background: transparent; color: var(--text); border: 1px solid var(--line); }
+.cl-note-input:focus { border-color: var(--signal); outline: none; }
+.cl-tools { display: flex; gap: 6px; }
+.cl-tools button { width: 38px; height: 38px; font-size: 16px; line-height: 1; background: transparent; color: var(--text); border: 1px solid var(--line-strong); cursor: pointer; }
+.cl-tools button:hover:not(:disabled) { border-color: var(--signal); color: var(--signal); }
+.cl-tools button:disabled { opacity: 0.3; cursor: default; }
+.cl-count { font-size: 13px; }
+@media (max-width: 700px) {
+  .cl-item { grid-template-columns: 48px 1fr; }
+  .cl-items.is-ranked .cl-item { grid-template-columns: 32px 48px 1fr; }
+  .cl-cover { width: 48px; height: 70px; }
+  .cl-rank { font-size: 22px; }
+  .cl-tools { grid-column: 1 / -1; justify-content: flex-end; }
+  .list-tools > .btn-import { grid-column: 1 / -1; }
+}
+.cl-picker .genre-row { margin: 8px 0 12px; }
+.cl-note-input { max-width: 560px; }

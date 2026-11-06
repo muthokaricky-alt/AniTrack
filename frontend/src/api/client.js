@@ -123,6 +123,17 @@ export const api = {
   trendingManga: () => request('/manga/trending'),
   mangaDetail: (id) => request(`/manga/${id}`),
 
+  customLists: {
+    mine: () => request('/custom-lists'),
+    forUser: (username) => request(`/custom-lists/user/${encodeURIComponent(username)}`),
+    get: (id) => request(`/custom-lists/${id}`),
+    create: (body) => request('/custom-lists', { method: 'POST', body: JSON.stringify(body) }),
+    update: (id, body) => request(`/custom-lists/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+    remove: (id) => request(`/custom-lists/${id}`, { method: 'DELETE' })
+  },
+
+  importAniList: (username, kind) => request(`/import/anilist?username=${encodeURIComponent(username)}&kind=${kind}`),
+
   // The anime list and the manga list share the same operations on different endpoints
   list: (kind) => {
     const base = kind === 'manga' ? '/manga-list' : '/list';

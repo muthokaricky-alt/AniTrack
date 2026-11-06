@@ -173,6 +173,29 @@ const db = {
       );
       CREATE INDEX IF NOT EXISTS recs_recipient ON recommendations (recipient_id, created_at DESC);
       CREATE INDEX IF NOT EXISTS recs_sender ON recommendations (sender_id, created_at DESC);
+
+      CREATE TABLE IF NOT EXISTS custom_lists (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        title TEXT NOT NULL,
+        description TEXT,
+        ranked BOOLEAN NOT NULL DEFAULT FALSE,
+        is_public BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMPTZ DEFAULT now(),
+        updated_at TIMESTAMPTZ DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS custom_lists_user ON custom_lists (user_id, updated_at DESC);
+      CREATE TABLE IF NOT EXISTS custom_list_items (
+        list_id INTEGER NOT NULL REFERENCES custom_lists(id) ON DELETE CASCADE,
+        position INTEGER NOT NULL,
+        kind TEXT NOT NULL CHECK (kind IN ('anime', 'manga')),
+        mal_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        image_url TEXT,
+        note TEXT,
+        PRIMARY KEY (list_id, position)
+      );
+      ALTER TABLE custom_list_items DROP CONSTRAINT IF EXISTS custom_list_items_list_id_kind_mal_id_key;
     `);
   }
 };

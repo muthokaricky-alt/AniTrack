@@ -28,14 +28,14 @@ function groupSections(sections, defaultKind) {
   return Object.values(groups).map(({ kind, rows }) => ({ kind, rows }));
 }
 
-export default function ImportDialog({ sections, defaultKind, onClose }) {
+export default function ImportDialog({ sections, defaultKind, note = '', onClose }) {
   const toast = useToast();
   const lists = { anime: useList(), manga: useMangaList() };
   const [phase, setPhase] = useState('matching'); // matching | review | importing
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [groups, setGroups] = useState([]);
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState(note);
   const primary = useRef(null);
   const listsRef = useRef(lists);
   listsRef.current = lists;
@@ -129,7 +129,7 @@ export default function ImportDialog({ sections, defaultKind, onClose }) {
           setProgress((p) => ({ ...p, done: p.done + part.length }));
         }
       }
-      if (artFailed) setNotice(`Covers could not be loaded for ${artFailed} title${artFailed === 1 ? '' : 's'} just now. They will still be imported.`);
+      if (artFailed) setNotice((n) => [n, `Covers could not be loaded for ${artFailed} title${artFailed === 1 ? '' : 's'} just now. They will still be imported.`].filter(Boolean).join(' '));
 
       // two different titles can resolve to the same show; keep the first
       const final = built.map(({ kind, items }) => {

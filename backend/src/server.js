@@ -16,6 +16,8 @@ import { userFollowRoutes, followRoutes } from './routes/follows.js';
 import recommendationRoutes from './routes/recommendations.js';
 import characterRoutes from './routes/characters.js';
 import imgRoutes from './routes/img.js';
+import importAniListRoutes from './routes/importAniList.js';
+import customListRoutes from './routes/customLists.js';
 import db from './db.js';
 import { rateLimit } from './middleware/rateLimit.js';
 import { securityHeaders } from './securityHeaders.js';
@@ -76,6 +78,8 @@ app.use(
   rateLimit({ windowMs: 15 * 60 * 1000, max: 30, message: 'Too many login attempts. Try again in a few minutes.' }),
   authRoutes
 );
+app.use('/api/import', rateLimit({ windowMs: 15 * 60 * 1000, max: 12, message: 'Too many import requests. Try again in a few minutes.' }), importAniListRoutes);
+app.use('/api/custom-lists', customListRoutes);
 app.use('/api/list', listRoutes);
 app.use('/api/activity', activityRoutes);
 app.use('/api/manga-list', mangaListRoutes);
