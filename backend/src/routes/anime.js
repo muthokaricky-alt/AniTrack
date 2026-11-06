@@ -5,6 +5,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { cleanQuery, clampPage, isId, bucketWindow, errDetail, CATALOG_DOWN, USER_AGENT } from '../inputs.js';
 import { makeBreaker } from '../breaker.js';
 import { tryBackup, backupTopAnime, backupSeasonNow, backupSearchAnime, backupAnime } from '../jikan.js';
+import { toOfficialLinks } from '../links.js';
 
 const router = Router();
 const ANILIST_URL = process.env.ANILIST_URL || 'https://graphql.anilist.co';
@@ -107,6 +108,7 @@ export function toJikanShape(media) {
       : {}),
     ...(media.trailer?.site === 'youtube' && /^[\w-]{6,20}$/.test(media.trailer.id || '') ? { trailer: media.trailer.id } : {}),
     ...(media.studios?.nodes?.[0]?.name ? { studio: media.studios.nodes[0].name } : {}),
+    ...(media.externalLinks ? { watch_links: toOfficialLinks(media.externalLinks) } : {}),
     ...(media.relations
       ? {
           relations: (media.relations.edges || [])
@@ -163,6 +165,7 @@ const DETAIL_QUERY = `
       nextAiringEpisode { airingAt episode }
       trailer { id site }
       studios(isMain: true) { nodes { name } }
+      externalLinks { site url type language isDisabled }
       relations {
         edges {
           relationType

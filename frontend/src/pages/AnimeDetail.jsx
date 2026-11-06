@@ -12,6 +12,7 @@ import AnimeCard from '../components/AnimeCard.jsx';
 import ScoreInput from '../components/ScoreInput.jsx';
 import RecommendButton from '../components/RecommendButton.jsx';
 import ReadLinks from '../components/ReadLinks.jsx';
+import WatchLinks from '../components/WatchLinks.jsx';
 
 // "Episode 7 airs in 2d 4h 10m", refreshed every 30 seconds
 function Countdown({ at, episode }) {
@@ -151,6 +152,7 @@ export default function AnimeDetail({ kind = 'anime' }) {
           </div>
 
           {kind === 'manga' && <ReadLinks title={anime.title} links={anime.read_links} />}
+          {kind !== 'manga' && <WatchLinks links={anime.watch_links} />}
 
           {anime.trailer && (
             <div className="d-trailer d-in">
