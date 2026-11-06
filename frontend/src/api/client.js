@@ -1,5 +1,7 @@
 // In dev, Vite proxies /api to the backend. In production the backend serves the app,
 // so /api is same-origin. Set VITE_API_URL only if the API lives on a different host.
+import { createWakeTracker, isRead, looksAsleep, sleep, RETRY_DELAYS } from '../lib/wake.js';
+
 const BASE = `${(import.meta.env.VITE_API_URL || '').replace(/\/$/, '')}/api`;
 
 function authHeaders() {
@@ -7,34 +9,55 @@ function authHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+const track = createWakeTracker((name) => window.dispatchEvent(new Event(name)));
+
 async function request(path, options = {}) {
-  let res;
+  const done = track();
   try {
-    res = await fetch(`${BASE}${path}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeaders(),
-        ...(options.headers || {})
+    const canRetry = isRead(options);
+    for (let attempt = 0; ; attempt += 1) {
+      const mayRetry = canRetry && attempt < RETRY_DELAYS.length;
+      let res;
+      try {
+        res = await fetch(`${BASE}${path}`, {
+          ...options,
+          headers: {
+            'Content-Type': 'application/json',
+            ...authHeaders(),
+            ...(options.headers || {})
+          }
+        });
+      } catch {
+        // Offline is not the same as asleep: fail straight away instead of waiting
+        if (mayRetry && navigator.onLine !== false) {
+          await sleep(RETRY_DELAYS[attempt]);
+          continue;
+        }
+        throw new Error('Could not reach the server. Check your connection and try again.');
       }
-    });
-  } catch {
-    throw new Error('Could not reach the server. Check your connection and try again.');
-  }
 
-  if (res.status === 204) return null;
-  const data = await res.json().catch(() => ({}));
+      if (res.status === 204) return null;
+      const data = await res.json().catch(() => ({}));
 
-  if (res.status === 401 && !path.startsWith('/auth') && localStorage.getItem('anitrack_token')) {
-    // Token expired or invalid: sign the user out everywhere
-    window.dispatchEvent(new Event('anitrack:unauthorized'));
+      if (mayRetry && looksAsleep(res.status, data)) {
+        await sleep(RETRY_DELAYS[attempt]);
+        continue;
+      }
+
+      if (res.status === 401 && !path.startsWith('/auth') && localStorage.getItem('anitrack_token')) {
+        // Token expired or invalid: sign the user out everywhere
+        window.dispatchEvent(new Event('anitrack:unauthorized'));
+      }
+      if (!res.ok) {
+        if (data.detail) console.warn(`API detail (${path}):`, data.detail); // the upstream reason for a 502
+        throw new Error(data.error || (looksAsleep(res.status, data) ? 'The server is still waking up. Please try again in a moment.' : 'Request failed'));
+      }
+      if (data && data.source === 'backup') window.dispatchEvent(new Event('anitrack:backup')); // served from the backup catalogue
+      return data;
+    }
+  } finally {
+    done();
   }
-  if (!res.ok) {
-    if (data.detail) console.warn(`API detail (${path}):`, data.detail); // the upstream reason for a 502
-    throw new Error(data.error || 'Request failed');
-  }
-  if (data && data.source === 'backup') window.dispatchEvent(new Event('anitrack:backup')); // served from the backup catalogue
-  return data;
 }
 
 // Cover pictures for the share card go through our own server so the browser lets us export the canvas

@@ -8,6 +8,7 @@ import SmoothScroll from './components/SmoothScroll.jsx';
 import BottomNav from './components/BottomNav.jsx';
 import Navbar from './components/Navbar.jsx';
 import BackupNotice from './components/BackupNotice.jsx';
+import WakeBanner from './components/WakeBanner.jsx';
 import useKeyboardNav from './lib/useKeyboardNav.js';
 import { HEART_PATH } from './lib/avatarShape.js';
 import { discordLink } from './constants.js';
@@ -95,6 +96,7 @@ function Shell() {
       <PageTransition />
       <Navbar />
       <BackupNotice />
+      <WakeBanner />
       <BottomNav />
       <CommandPalette />
       <main className="page">
