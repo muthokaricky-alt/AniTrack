@@ -217,16 +217,34 @@ export async function loadTaste(userId) {
   return out;
 }
 
+// Anime and manga favourites (Top 3 and Top 15 merged), for the favourites part of the match
+export async function loadFavouriteTitles(userId) {
+  const rows = await db.all("SELECT kind, item_id, title, image_url FROM favorites WHERE user_id = ? AND kind IN ('anime', 'manga')", [userId]);
+  const seen = new Set();
+  const out = [];
+  for (const r of rows) {
+    const key = `${r.kind}:${r.item_id}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ kind: r.kind, mal_id: r.item_id, title: r.title, image_url: r.image_url });
+  }
+  return out;
+}
+
 // GET /api/users/:username/match -> compare the logged-in user with a public profile
 usersRoutes.get('/:username/match', requireAuth, async (req, res) => {
   const them = await db.get('SELECT id, username, is_public FROM users WHERE lower(username) = lower(?)', [String(req.params.username).slice(0, 60)]);
   if (!them || !them.is_public) return res.status(404).json({ error: 'This profile is private or does not exist' });
   if (them.id === req.userId) return res.status(400).json({ error: "That's your own profile" });
-  const mine = await loadTaste(req.userId);
-  const theirs = await loadTaste(them.id);
-  if (!mine.length) return res.status(400).json({ error: 'Add some titles to your list first, then come back to compare' });
-  if (!theirs.length) return res.status(400).json({ error: `${them.username} has no titles on their list yet` });
-  res.json({ username: them.username, ...compareTaste(mine, theirs) });
+  const [mine, theirs, myFavs, theirFavs] = await Promise.all([loadTaste(req.userId), loadTaste(them.id), loadFavouriteTitles(req.userId), loadFavouriteTitles(them.id)]);
+  // A match needs two lists, or failing that two sets of favourites
+  const comparable = (mine.length && theirs.length) || (myFavs.length && theirFavs.length);
+  if (!comparable) {
+    if (!mine.length && !myFavs.length) return res.status(400).json({ error: 'Add some titles to your list, or pick your favourites, then come back to compare' });
+    if (!theirs.length && !theirFavs.length) return res.status(400).json({ error: `${them.username} has no titles or favourites yet` });
+    return res.status(400).json({ error: `You and ${them.username} have nothing to compare yet. One of you only has a list and the other only favourites` });
+  }
+  res.json({ username: them.username, ...compareTaste(mine, theirs, { mine: myFavs, theirs: theirFavs }) });
 });
 
 export default router;

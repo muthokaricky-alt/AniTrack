@@ -7,7 +7,9 @@ import CountUp from './CountUp.jsx';
 const R = 74;
 const CIRC = 2 * Math.PI * R;
 
-function verdict(p) {
+function verdict(p, basis, sharedFavs) {
+  // With favourites alone, "nearly opposite" would be unfair: a handful of picks says little
+  if (basis === 'favourites' && sharedFavs === 0) return 'No favourites in common yet';
   if (p >= 85) return 'Practically the same taste';
   if (p >= 70) return 'A strong match';
   if (p >= 50) return 'Plenty in common';
@@ -15,7 +17,7 @@ function verdict(p) {
   return 'Nearly opposite tastes';
 }
 
-const PART_LABEL = { genres: 'Genres you lean towards', scores: 'How you rate shared titles', overlap: 'Titles you both have' };
+const PART_LABEL = { genres: 'Genres you lean towards', scores: 'How you rate shared titles', overlap: 'Titles you both have', favourites: 'Favourites you share' };
 
 // Compares the logged-in visitor with the profile they are looking at
 export default function TasteMatch({ username, viewer }) {
@@ -68,9 +70,12 @@ export default function TasteMatch({ username, viewer }) {
         </div>
 
         <div className="tm-body">
-          <p className="tm-verdict">{verdict(d.percent)}</p>
+          <p className="tm-verdict">{verdict(d.percent, d.basis, d.shared_favourites_count)}</p>
           <ul className="tm-parts">
-            {Object.entries(d.parts).map(([k, v]) => (
+            {Object.entries(d.parts)
+              // an empty favourites bar, or bars that cannot be measured when only favourites are compared, would just be noise
+              .filter(([k, v]) => v != null || (k !== 'favourites' && d.basis !== 'favourites'))
+              .map(([k, v]) => (
               <li key={k}>
                 <span>{PART_LABEL[k]}</span>
                 <div className="tm-bar"><i style={{ width: `${v ?? 0}%` }} /></div>
@@ -78,15 +83,29 @@ export default function TasteMatch({ username, viewer }) {
               </li>
             ))}
           </ul>
-          <p className="muted tm-note">
-            {d.shared_count} title{d.shared_count === 1 ? '' : 's'} in common{d.mean_diff != null ? `, rated ${d.mean_diff} points apart on average` : ''}.
-          </p>
+          {d.basis === 'favourites' ? (
+            <p className="muted tm-note">
+              Based on favourites only, because one of you has no titles on a list yet. {d.shared_favourites_count} favourite{d.shared_favourites_count === 1 ? '' : 's'} in common.
+            </p>
+          ) : (
+            <p className="muted tm-note">
+              {d.shared_count} title{d.shared_count === 1 ? '' : 's'} in common{d.mean_diff != null ? `, rated ${d.mean_diff} points apart on average` : ''}.
+            </p>
+          )}
           {d.common_genres.length > 0 && (
             <p className="tm-genres">{d.common_genres.map((g) => <span key={g} className="chip">{g}</span>)}</p>
           )}
         </div>
       </div>
 
+      {d.shared_favourites?.length > 0 && (
+        <div className="tm-block">
+          <h3 className="mini-h">You both picked these as favourites</h3>
+          <ul className="tm-titles">
+            {d.shared_favourites.map((t) => <FavRow key={`${t.kind}${t.mal_id}`} t={t} />)}
+          </ul>
+        </div>
+      )}
       {d.both_loved.length > 0 && (
         <div className="tm-block">
           <h3 className="mini-h">You both rated these highly</h3>
@@ -103,8 +122,20 @@ export default function TasteMatch({ username, viewer }) {
           </ul>
         </div>
       )}
-      <p className="muted tm-foot">The match blends genres, ratings on shared titles and how many titles you share. It is a fun guide, not science.</p>
+      <p className="muted tm-foot">The match blends genres, ratings on shared titles, how many titles you share and the favourites you both picked. It is a fun guide, not science.</p>
     </section>
+  );
+}
+
+function FavRow({ t }) {
+  return (
+    <li>
+      <Link to={`/${t.kind}/${t.mal_id}`}>
+        {t.image_url ? <img src={t.image_url} alt="" loading="lazy" /> : <span className="tm-noimg" />}
+        <span className="tm-t">{t.title}</span>
+        <span className="tm-s">{t.kind}</span>
+      </Link>
+    </li>
   );
 }
 

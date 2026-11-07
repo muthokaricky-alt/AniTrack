@@ -79,3 +79,74 @@ test('parseGenres copes with bad data', () => {
   assert.deepEqual(parseGenres('not json'), []);
   assert.deepEqual(parseGenres('{"a":1}'), []);
 });
+
+// ----- favourites -----
+import { compareFavourites } from '../src/taste.js';
+const fav = (kind, mal_id) => ({ kind, mal_id, title: `F${mal_id}`, image_url: null });
+
+test('compareFavourites finds shared favourites and applies the 40% rule', () => {
+  const r = compareFavourites([fav('anime', 1), fav('anime', 2), fav('manga', 3), fav('anime', 4)], [fav('anime', 1), fav('manga', 3), fav('anime', 9)]);
+  assert.deepEqual(r.shared.map((s) => `${s.kind}:${s.mal_id}`), ['anime:1', 'manga:3']);
+  assert.equal(r.overlap, 1); // 2 of the smaller set's 3 is well past 40%
+  assert.equal(compareFavourites([fav('anime', 1)], [fav('anime', 2)]).overlap, 0);
+});
+
+test('the same id as anime and as manga are different favourites', () => {
+  assert.equal(compareFavourites([fav('anime', 5)], [fav('manga', 5)]).shared.length, 0);
+});
+
+test('compareFavourites gives null overlap when either side has no favourites', () => {
+  assert.equal(compareFavourites([], [fav('anime', 1)]).overlap, null);
+  assert.equal(compareFavourites([fav('anime', 1)], []).overlap, null);
+  assert.equal(compareFavourites().overlap, null);
+});
+
+test('without favourites the result is exactly what it was before, and says it is based on the lists', () => {
+  const list = [entry('anime', 1, 9, action), entry('anime', 2, 8, action), entry('anime', 3, 7, action)];
+  const plain = compareTaste(list, list);
+  const withEmpty = compareTaste(list, list, { mine: [], theirs: [] });
+  assert.equal(plain.percent, withEmpty.percent);
+  assert.equal(plain.basis, 'lists');
+  assert.equal(plain.parts.favourites, null);
+  assert.deepEqual(plain.shared_favourites, []);
+});
+
+test('favourites join the blend when both people have lists and favourites', () => {
+  const list = [entry('anime', 1, 9, action), entry('anime', 2, 8, action), entry('anime', 3, 7, action)];
+  const same = [fav('anime', 1), fav('anime', 2)];
+  const r = compareTaste(list, list, { mine: same, theirs: same });
+  assert.equal(r.basis, 'both');
+  assert.equal(r.parts.favourites, 100);
+  assert.equal(r.shared_favourites_count, 2);
+  const apart = compareTaste(list, list, { mine: [fav('anime', 1)], theirs: [fav('anime', 7)] });
+  assert.equal(apart.parts.favourites, 0);
+  assert.ok(apart.percent < r.percent, 'no shared favourites should pull the match down');
+});
+
+test('someone with only favourites can still be matched, on favourites alone', () => {
+  const r = compareTaste([], [], { mine: [fav('anime', 1), fav('anime', 2), fav('anime', 3)], theirs: [fav('anime', 2), fav('anime', 3), fav('manga', 8)] });
+  assert.equal(r.basis, 'favourites');
+  assert.equal(r.percent, 100);
+  assert.equal(r.parts.genres, null);
+  assert.equal(r.parts.scores, null);
+  assert.equal(r.parts.overlap, null);
+  assert.deepEqual(r.shared_favourites.map((s) => s.mal_id), [2, 3]);
+  const none = compareTaste([], [], { mine: [fav('anime', 1)], theirs: [fav('anime', 2)] });
+  assert.equal(none.percent, 0);
+  assert.equal(none.basis, 'favourites');
+});
+
+test('one empty list with a full one only compares favourites, and nothing at all is a quiet zero', () => {
+  const list = [entry('anime', 1, 9, action)];
+  const r = compareTaste(list, [], { mine: [fav('anime', 1)], theirs: [fav('anime', 1)] });
+  assert.equal(r.basis, 'favourites');
+  assert.equal(r.percent, 100);
+  assert.equal(compareTaste([], []).percent, 0);
+});
+
+test('shared favourites are capped at six for display but counted in full', () => {
+  const many = Array.from({ length: 9 }, (_, i) => fav('anime', i + 1));
+  const r = compareTaste([], [], { mine: many, theirs: many });
+  assert.equal(r.shared_favourites.length, 6);
+  assert.equal(r.shared_favourites_count, 9);
+});

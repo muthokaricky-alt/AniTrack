@@ -129,6 +129,7 @@ export const api = {
     get: (id) => request(`/custom-lists/${id}`),
     create: (body) => request('/custom-lists', { method: 'POST', body: JSON.stringify(body) }),
     update: (id, body) => request(`/custom-lists/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+    addItem: (id, item) => request(`/custom-lists/${id}/items`, { method: 'POST', body: JSON.stringify(item) }),
     remove: (id) => request(`/custom-lists/${id}`, { method: 'DELETE' })
   },
 

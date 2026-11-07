@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import db from '../db.js';
 import { requireAuth, optionalAuth } from '../middleware/auth.js';
-import { cleanListInput, MAX_LISTS } from '../customList.js';
+import { cleanListInput, MAX_LISTS, MAX_ITEMS } from '../customList.js';
 
 const router = Router();
 const isId = (s) => /^\d{1,9}$/.test(String(s));
@@ -130,6 +130,31 @@ router.put('/:id', requireAuth, async (req, res) => {
     if (value.items) await replaceItems(t, id, value.items);
   });
   res.json(await loadFull(id, req.userId));
+});
+
+// POST /api/custom-lists/:id/items  { kind, mal_id, title, image_url?, note? }  (adds one title to the end, for "Add to list" buttons)
+router.post('/:id/items', requireAuth, async (req, res) => {
+  if (!isId(req.params.id)) return res.status(404).json({ error: 'List not found' });
+  const id = Number(req.params.id);
+  const { value, error } = cleanListInput({ items: [req.body] });
+  if (error) return res.status(400).json({ error });
+  const item = value.items[0];
+
+  const result = await db.tx(async (t) => {
+    // Locking the list row makes two quick adds queue up instead of colliding on the same position
+    const mine = await t.get('SELECT id FROM custom_lists WHERE id = ? AND user_id = ? FOR UPDATE', [id, req.userId]);
+    if (!mine) return { status: 404, error: 'List not found' };
+    const { n, next } = await t.get('SELECT COUNT(*) AS n, COALESCE(MAX(position) + 1, 0) AS next FROM custom_list_items WHERE list_id = ?', [id]);
+    if (n >= MAX_ITEMS) return { status: 400, error: `That list is full (${MAX_ITEMS} titles)` };
+    await t.run(
+      'INSERT INTO custom_list_items (list_id, position, kind, mal_id, title, image_url, note) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [id, next, item.kind, item.mal_id, item.title, item.image_url, item.note]
+    );
+    await t.run('UPDATE custom_lists SET updated_at = now() WHERE id = ?', [id]);
+    return { count: n + 1 };
+  });
+  if (result.error) return res.status(result.status).json({ error: result.error });
+  res.status(201).json({ ok: true, count: result.count });
 });
 
 // DELETE /api/custom-lists/:id

@@ -25,7 +25,23 @@ function cosine(a, b) {
 //   genres  (40%): cosine similarity of score-weighted genre vectors, 0.5 or less counts as 0%
 //   scores  (40%): how closely they rate titles they both have (0 points apart = 100%, 3 or more apart = 0%)
 //   overlap (20%): how many titles they share (40% of the smaller list in common = 100%)
-export function compareTaste(mine, theirs) {
+//   favourites (25%): how many favourites they share, only when both have some (see compareFavourites)
+// If either list is empty, only the favourites can be compared.
+// Favourites two people share (anime and manga only; the Top 3 and Top 15 are merged by the caller).
+// overlap: 40% of the smaller set in common counts as 100%, same rule as the list overlap. null when either side has none.
+export function compareFavourites(mine = [], theirs = []) {
+  const theirByKey = new Map(theirs.map((f) => [`${f.kind}:${f.mal_id}`, f]));
+  const shared = [];
+  for (const f of mine) {
+    const o = theirByKey.get(`${f.kind}:${f.mal_id}`);
+    if (o) shared.push({ kind: f.kind, mal_id: f.mal_id, title: f.title, image_url: f.image_url || o.image_url || null });
+  }
+  const smaller = Math.min(mine.length, theirs.length);
+  return { shared, overlap: smaller ? clamp01(shared.length / smaller / 0.4) : null };
+}
+
+// favs is optional: { mine: [...], theirs: [...] } of favourite titles. Without it the result is exactly as before.
+export function compareTaste(mine, theirs, favs = {}) {
   const theirById = new Map(theirs.map((e) => [`${e.kind}:${e.mal_id}`, e]));
   const shared = [];
   for (const e of mine) {
@@ -35,14 +51,16 @@ export function compareTaste(mine, theirs) {
   const both = shared.filter((s) => s.you != null && s.them != null);
   const meanDiff = both.length >= 3 ? both.reduce((sum, s) => sum + Math.abs(s.you - s.them), 0) / both.length : null;
   const cos = cosine(genreVector(mine), genreVector(theirs));
-  const overlapRaw = mine.length && theirs.length ? shared.length / Math.min(mine.length, theirs.length) : 0;
+  const overlapRaw = mine.length && theirs.length ? shared.length / Math.min(mine.length, theirs.length) : null;
+  const fav = compareFavourites(favs.mine, favs.theirs);
 
   const parts = {
     genres: cos == null ? null : clamp01((cos - 0.5) / 0.5),
     scores: meanDiff == null ? null : clamp01(1 - meanDiff / 3),
-    overlap: clamp01(overlapRaw / 0.4)
+    overlap: overlapRaw == null ? null : clamp01(overlapRaw / 0.4),
+    favourites: fav.overlap
   };
-  const weights = { genres: 0.4, scores: 0.4, overlap: 0.2 };
+  const weights = { genres: 0.4, scores: 0.4, overlap: 0.2, favourites: 0.25 };
   let sum = 0, wsum = 0;
   for (const k of Object.keys(parts)) if (parts[k] != null) { sum += parts[k] * weights[k]; wsum += weights[k]; }
 
@@ -53,11 +71,15 @@ export function compareTaste(mine, theirs) {
   const pct = (x) => (x == null ? null : Math.round(x * 100));
   return {
     percent: wsum ? Math.round((sum / wsum) * 100) : 0,
-    parts: { genres: pct(parts.genres), scores: pct(parts.scores), overlap: pct(parts.overlap) },
+    // what the percentage is based on: both lists, favourites only (a list is empty), or lists only
+    basis: !(mine.length && theirs.length) ? 'favourites' : fav.overlap != null ? 'both' : 'lists',
+    parts: { genres: pct(parts.genres), scores: pct(parts.scores), overlap: pct(parts.overlap), favourites: pct(parts.favourites) },
     shared_count: shared.length,
     mean_diff: meanDiff == null ? null : Math.round(meanDiff * 10) / 10,
     both_loved: both.filter((s) => s.you >= 8 && s.them >= 8).sort((a, b) => Math.min(b.you, b.them) - Math.min(a.you, a.them)).slice(0, 6),
     disagree: both.filter((s) => Math.abs(s.you - s.them) >= 2).sort((a, b) => Math.abs(b.you - b.them) - Math.abs(a.you - a.them)).slice(0, 3),
-    common_genres: commonGenres
+    common_genres: commonGenres,
+    shared_favourites: fav.shared.slice(0, 6),
+    shared_favourites_count: fav.shared.length
   };
 }

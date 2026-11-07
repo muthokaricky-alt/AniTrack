@@ -589,3 +589,22 @@ html[data-theme='light'] .hero-shade { opacity: 1; }
 
 /* Public profile: a list with nothing tracked yet */
 .pub-empty { max-width: 38ch; font-size: 14px; line-height: 1.55; color: var(--muted); }
+
+/* ===== Add to a list (dialog on anime and manga pages) ===== */
+.tracker-lists { margin-top: 14px; }
+.al-modal { max-width: 520px; }
+.al-sub { margin-bottom: 16px; }
+.al-lists { list-style: none; margin: 4px 0 18px; padding: 0; max-height: 260px; overflow-y: auto; border: 1px solid var(--line); }
+.al-lists li + li { border-top: 1px solid var(--line); }
+.al-row { display: grid; grid-template-columns: 1fr auto auto; gap: 14px; align-items: center; width: 100%; padding: 12px 14px; text-align: left; background: transparent; color: var(--text); border: 0; cursor: pointer; }
+.al-row:hover:not(:disabled), .al-row:focus-visible { background: var(--ink-2); }
+.al-row:disabled { opacity: 0.5; cursor: default; }
+.al-name { font-weight: 700; overflow-wrap: anywhere; }
+.al-meta { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.al-act { font-family: var(--ui); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--signal); }
+.al-row.on .al-name::after { content: ' ✓'; color: var(--signal); }
+.al-new { margin: 6px 0 18px; }
+.al-new label { display: block; margin-bottom: 8px; font-family: var(--ui); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.al-new-row { display: flex; gap: 8px; }
+.al-new-row input { flex: 1; min-width: 0; padding: 10px 12px; font-family: var(--field); font-size: 16px; background: transparent; color: var(--text); border: 1px solid var(--line-strong); }
+.al-new-row input:focus { border-color: var(--signal); outline: none; }

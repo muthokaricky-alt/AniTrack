@@ -11,6 +11,7 @@ import { useAccent } from '../lib/useAccent.js';
 import AnimeCard from '../components/AnimeCard.jsx';
 import ScoreInput from '../components/ScoreInput.jsx';
 import RecommendButton from '../components/RecommendButton.jsx';
+import AddToList from '../components/AddToList.jsx';
 import ReadLinks from '../components/ReadLinks.jsx';
 import WatchLinks from '../components/WatchLinks.jsx';
 
@@ -183,6 +184,9 @@ export default function AnimeDetail({ kind = 'anime' }) {
                     {s.label}
                   </button>
                 ))}
+              </div>
+              <div className="tracker-lists">
+                <AddToList kind={kind === 'manga' ? 'manga' : 'anime'} malId={anime.mal_id} title={anime.title} imageUrl={image} />
               </div>
               {entry && (
                 <>
