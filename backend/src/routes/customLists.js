@@ -73,10 +73,11 @@ router.get('/', requireAuth, async (req, res) => {
   res.json({ lists: await withCovers(rows) });
 });
 
-// GET /api/custom-lists/user/:username  (that person's public lists)
+// GET /api/custom-lists/user/:username  (that person's public lists, only if their profile is public)
 router.get('/user/:username', async (req, res) => {
-  const user = await db.get('SELECT id, username FROM users WHERE lower(username) = lower(?)', [String(req.params.username).slice(0, 60)]);
-  if (!user) return res.status(404).json({ error: 'User not found' });
+  const user = await db.get('SELECT id, username, is_public FROM users WHERE lower(username) = lower(?)', [String(req.params.username).slice(0, 60)]);
+  // A private profile answers exactly like a missing one. A single public list can still be opened by its own link.
+  if (!user || !user.is_public) return res.status(404).json({ error: 'User not found' });
   const rows = await db.all(`${SUMMARY_SQL} WHERE l.user_id = ? AND l.is_public ORDER BY l.updated_at DESC`, [user.id]);
   res.json({ username: user.username, lists: await withCovers(rows) });
 });

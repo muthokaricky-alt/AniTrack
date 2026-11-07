@@ -9,6 +9,7 @@ import FollowBar from '../components/FollowBar.jsx';
 import Banner from '../components/Banner.jsx';
 import { parseServerDate } from '../lib/dates.js';
 import FavoritesShowcase from '../components/FavoritesShowcase.jsx';
+import ListCard from '../components/ListCard.jsx';
 
 function Favorites({ title, items, base }) {
   if (!items.length) return null;
@@ -56,15 +57,19 @@ export default function PublicProfile() {
   const { user: viewer } = useAuth();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
+  const [lists, setLists] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
     setData(null);
+    setLists([]);
     setError('');
     api
       .publicProfile(username)
       .then((res) => !cancelled && setData(res))
       .catch((e) => !cancelled && setError(e.message));
+    // Lists are a bonus on this page, so a failure here just means the section stays hidden
+    api.customLists.forUser(username).then((res) => !cancelled && setLists(res.lists || [])).catch(() => {});
     return () => { cancelled = true; };
   }, [username]);
 
@@ -107,6 +112,15 @@ export default function PublicProfile() {
       )}
 
       <FavoritesShowcase favorites={data.favorites} navigate={navigate} />
+
+      {lists.length > 0 && (
+        <section className="pub-lists" aria-label={`Lists by ${data.user.username}`}>
+          <h2 className="mini-h">Lists</h2>
+          <div className="cl-grid">
+            {lists.map((l) => <ListCard key={l.id} list={l} showVisibility={false} />)}
+          </div>
+        </section>
+      )}
 
       <Favorites title="Highest-rated anime" items={data.anime.favorites} base="/anime" />
       <Favorites title="Highest-rated manga" items={data.manga.favorites} base="/manga" />

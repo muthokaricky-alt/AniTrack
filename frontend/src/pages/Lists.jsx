@@ -3,28 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { useToast } from '../context/ToastContext.jsx';
 import ErrorState from '../components/ErrorState.jsx';
+import ListCard from '../components/ListCard.jsx';
 
 const IDEAS = ['Top 10 arcs', 'Best isekai', 'Comfort anime', 'Underrated gems'];
 const FAV_KINDS = [['anime', 'anime'], ['manga', 'manga'], ['character', 'characters']];
-
-export function ListCard({ list }) {
-  const covers = (list.covers || []).slice(0, 4);
-  return (
-    <Link to={`/lists/${list.id}`} className="cl-card">
-      <div className="cl-mosaic" aria-hidden="true">
-        {covers.length ? covers.map((src, i) => <img key={i} src={src} alt="" loading="lazy" />) : <span className="cl-empty">No titles yet</span>}
-      </div>
-      <div className="cl-card-body">
-        <h3>{list.title}</h3>
-        <p>
-          {list.count} title{list.count === 1 ? '' : 's'}
-          {list.ranked ? ' · Ranked' : ''}
-          {list.is_public === false ? ' · Private' : list.is_public ? ' · Public' : ''}
-        </p>
-      </div>
-    </Link>
-  );
-}
 
 // A Top 15 from the profile. Anime and manga ones can be turned into a normal list (to add notes, share or make a card).
 function FavCard({ kind, label, items, onMakeList, busy }) {
