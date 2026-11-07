@@ -32,12 +32,20 @@ function Block({ label, data, unit }) {
   return (
     <div className="pub-block">
       <h2 className="mini-h">{label}</h2>
-      <dl>
-        <div><dt>Titles</dt><dd><CountUp value={data.total} /></dd></div>
-        <div><dt>Completed</dt><dd><CountUp value={data.completed} /></dd></div>
-        <div><dt>{unit}</dt><dd><CountUp value={data.progress} /></dd></div>
-        <div><dt>Mean score</dt><dd><CountUp value={data.mean} /></dd></div>
-      </dl>
+      {data.total === 0 ? (
+        // Stats are counted from the watch list. Favourites are picked separately, so someone with only
+        // favourites would otherwise see a row of zeros that looks broken.
+        <p className="pub-empty">
+          Nothing on their {label.toLowerCase()} list yet. These numbers come from the titles they track, and their favourites are picked separately.
+        </p>
+      ) : (
+        <dl>
+          <div><dt>Titles</dt><dd><CountUp value={data.total} /></dd></div>
+          <div><dt>Completed</dt><dd><CountUp value={data.completed} /></dd></div>
+          <div><dt>{unit}</dt><dd><CountUp value={data.progress} /></dd></div>
+          <div><dt>Mean score</dt><dd><CountUp value={data.mean} /></dd></div>
+        </dl>
+      )}
     </div>
   );
 }

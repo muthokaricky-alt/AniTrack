@@ -586,3 +586,6 @@ html[data-theme='light'] .hero-shade { opacity: 1; }
 .cl-section { margin: 40px 0 16px; }
 .cl-fav { display: grid; gap: 10px; align-content: start; }
 .cl-fav .btn { justify-self: start; }
+
+/* Public profile: a list with nothing tracked yet */
+.pub-empty { max-width: 38ch; font-size: 14px; line-height: 1.55; color: var(--muted); }
