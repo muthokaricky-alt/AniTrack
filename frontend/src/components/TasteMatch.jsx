@@ -83,6 +83,7 @@ export default function TasteMatch({ username, viewer }) {
               </li>
             ))}
           </ul>
+          <p className="tm-algo">gotten via the Rick's Algorithm</p>
           {d.basis === 'favourites' ? (
             <p className="muted tm-note">
               Based on favourites only, because one of you has no titles on a list yet. {d.shared_favourites_count} favourite{d.shared_favourites_count === 1 ? '' : 's'} in common.

@@ -608,3 +608,4 @@ html[data-theme='light'] .hero-shade { opacity: 1; }
 .al-new-row { display: flex; gap: 8px; }
 .al-new-row input { flex: 1; min-width: 0; padding: 10px 12px; font-family: var(--field); font-size: 16px; background: transparent; color: var(--text); border: 1px solid var(--line-strong); }
 .al-new-row input:focus { border-color: var(--signal); outline: none; }
+.tm-algo { margin-top: 12px; font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; color: var(--stone); }
