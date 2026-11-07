@@ -5,6 +5,7 @@ import { useToast } from '../context/ToastContext.jsx';
 import ErrorState from '../components/ErrorState.jsx';
 
 const IDEAS = ['Top 10 arcs', 'Best isekai', 'Comfort anime', 'Underrated gems'];
+const FAV_KINDS = [['anime', 'anime'], ['manga', 'manga'], ['character', 'characters']];
 
 export function ListCard({ list }) {
   const covers = (list.covers || []).slice(0, 4);
@@ -25,6 +26,25 @@ export function ListCard({ list }) {
   );
 }
 
+// A Top 15 from the profile. Anime and manga ones can be turned into a normal list (to add notes, share or make a card).
+function FavCard({ kind, label, items, onMakeList, busy }) {
+  const covers = items.map((i) => i.image_url).filter(Boolean).slice(0, 4);
+  return (
+    <div className="cl-fav">
+      <Link to="/profile?tab=favorites" className="cl-card">
+        <div className="cl-mosaic" aria-hidden="true">{covers.map((src, i) => <img key={i} src={src} alt="" loading="lazy" />)}</div>
+        <div className="cl-card-body">
+          <h3>Top {items.length} {label}</h3>
+          <p>On your profile · edit there</p>
+        </div>
+      </Link>
+      {kind !== 'character' && (
+        <button type="button" className="btn btn-line btn-sm" onClick={onMakeList} disabled={busy}>Make it a list</button>
+      )}
+    </div>
+  );
+}
+
 export default function Lists() {
   const toast = useToast();
   const navigate = useNavigate();
@@ -33,12 +53,15 @@ export default function Lists() {
   const [title, setTitle] = useState('');
   const [ranked, setRanked] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [favs, setFavs] = useState(null);
 
   const load = useCallback(() => {
     setError('');
     api.customLists.mine().then((res) => setLists(res.lists)).catch((err) => setError(err.message));
   }, []);
   useEffect(load, [load]);
+  // The profile favourites are a bonus here, so a failure to load them is not worth an error message
+  useEffect(() => { api.favorites().then(setFavs).catch(() => setFavs(null)); }, []);
 
   async function create(e) {
     e.preventDefault();
@@ -52,6 +75,24 @@ export default function Lists() {
       setBusy(false);
     }
   }
+
+  async function makeList(kind, label, items) {
+    setBusy(true);
+    try {
+      const made = await api.customLists.create({
+        title: `Top ${items.length} ${label}`,
+        ranked: true,
+        items: items.map((i) => ({ kind, mal_id: i.item_id, title: i.title, image_url: i.image_url, note: null }))
+      });
+      toast('List created from your favourites');
+      navigate(`/lists/${made.id}`);
+    } catch (err) {
+      toast(err.message, 'error');
+      setBusy(false);
+    }
+  }
+
+  const favCards = favs ? FAV_KINDS.filter(([k]) => favs[k]?.top15?.length) : [];
 
   return (
     <div className="wrap page-pad">
@@ -74,6 +115,18 @@ export default function Lists() {
         <button type="submit" className="btn btn-signal" disabled={busy || !title.trim()}>{busy ? 'Creating…' : 'Create list'}</button>
       </form>
 
+      {favCards.length > 0 && (
+        <section aria-label="From your profile">
+          <p className="kicker cl-section">From your profile</p>
+          <div className="cl-grid">
+            {favCards.map(([k, label]) => (
+              <FavCard key={k} kind={k} label={label} items={favs[k].top15} busy={busy} onMakeList={() => makeList(k, label, favs[k].top15)} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      <p className="kicker cl-section">Your lists</p>
       {error && <ErrorState message={error} onRetry={load} />}
       {!error && lists === null && <p className="muted" role="status">Loading your lists…</p>}
       {lists && lists.length === 0 && (

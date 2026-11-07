@@ -583,3 +583,6 @@ html[data-theme='light'] .hero-shade { opacity: 1; }
 }
 .cl-picker .genre-row { margin: 8px 0 12px; }
 .cl-note-input { max-width: 560px; }
+.cl-section { margin: 40px 0 16px; }
+.cl-fav { display: grid; gap: 10px; align-content: start; }
+.cl-fav .btn { justify-self: start; }

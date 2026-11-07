@@ -4,6 +4,7 @@ import { api } from '../api/client.js';
 import { useToast } from '../context/ToastContext.jsx';
 import ErrorState from '../components/ErrorState.jsx';
 import TitlePicker from '../components/TitlePicker.jsx';
+import ListCardDownload from '../components/ListCardDownload.jsx';
 
 const MAX_ITEMS = 50;
 
@@ -162,6 +163,8 @@ export default function CustomList() {
           </div>
         </form>
       )}
+
+      <ListCardDownload list={list} />
 
       {owner && <TitlePicker taken={taken} onPick={add} disabled={busy || list.items.length >= MAX_ITEMS} />}
 

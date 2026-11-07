@@ -20,7 +20,7 @@ function longestStreak(events) {
   return best;
 }
 
-const loadImg = (src) => new Promise((res) => { if (!src) return res(null); const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
+const loadImg = (src) => new Promise((res) => { if (!src) return res(null); const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
 
 async function drawCard(canvas, d) {
   await Promise.race([Promise.all(['900 80px Archivo', '600 80px Fraunces', '500 22px "JetBrains Mono"'].map((f) => document.fonts.load(f))), new Promise((r) => setTimeout(r, 3000))]).catch(() => {});

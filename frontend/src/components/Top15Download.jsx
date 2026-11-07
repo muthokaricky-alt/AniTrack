@@ -10,6 +10,7 @@ const W = PAD * 2 + COLS * CW + (COLS - 1) * GX;
 const load = (src) => new Promise((res) => {
   if (!src) return res(null);
   const i = new Image();
+  i.crossOrigin = 'anonymous'; // lets the picture be saved into the card when the API is on another address
   i.onload = () => res(i); i.onerror = () => res(null); i.src = src;
 });
 

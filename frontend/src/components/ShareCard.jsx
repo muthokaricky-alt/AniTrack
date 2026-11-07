@@ -18,6 +18,7 @@ const loadImage = (src) =>
   new Promise((resolve) => {
     if (!src) return resolve(null);
     const img = new Image();
+    img.crossOrigin = 'anonymous'; // lets the picture be saved into the card when the API is on another address
     img.onload = () => resolve(img);
     img.onerror = () => resolve(null);
     img.src = src;

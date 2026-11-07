@@ -160,6 +160,7 @@ const GUIDES = [
     steps: [
       'Open My lists from the My List page and type a name, or tap an idea like "Top 10 arcs". Tick Ranked if you want #1, #2, #3.',
       'Search anime or manga, press Add, and use the arrows to put them in order. Add a note under a title, such as which arc you mean.',
+      'Press "Download card" for a picture of the list. Your notes become the captions, so you see Marineford with One Piece underneath. You can also turn a Top 15 from your profile into a list.',
       'Lists are private by default. Press "Make public to share" and then "Copy link" to send it to a friend.'
     ],
     to: '/lists', cta: 'Open My lists', auth: true
