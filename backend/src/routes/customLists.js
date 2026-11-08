@@ -94,7 +94,7 @@ router.get('/discover', async (req, res) => {
               (SELECT COUNT(*) FROM custom_list_items i WHERE i.list_id = l.id) AS count,
               (SELECT COUNT(*) FROM custom_lists c WHERE c.copied_from = l.id) AS saves
        FROM custom_lists l JOIN users u ON u.id = l.user_id
-       WHERE l.is_public AND u.is_public
+       WHERE l.is_public AND u.is_public = 1  -- lists use true/false, but users.is_public holds 0 or 1
      ) t
      WHERE t.count >= 3
      ORDER BY t.saves DESC, t.updated_at DESC
