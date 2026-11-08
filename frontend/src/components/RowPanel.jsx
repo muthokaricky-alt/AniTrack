@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import ScoreInput from './ScoreInput.jsx';
+import EntryDates from './EntryDates.jsx';
 
 // Slide-down editor under a My List row: score, notes and tags without leaving the page
-export default function RowPanel({ entry, onSave, allTags }) {
+export default function RowPanel({ entry, kind, onSave, allTags }) {
   const [tag, setTag] = useState('');
   const tags = entry.tags || [];
 
@@ -19,6 +20,7 @@ export default function RowPanel({ entry, onSave, allTags }) {
       <div className="lr-score">
         <ScoreInput label="Your score" value={entry.score ?? null} onCommit={(v) => onSave({ score: v })} />
       </div>
+      <EntryDates entry={entry} kind={kind} onSave={onSave} />
       <label className="lr-notes">
         Notes
         <textarea

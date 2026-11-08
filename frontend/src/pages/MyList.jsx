@@ -13,6 +13,9 @@ import AiringWeek from '../components/AiringWeek.jsx';
 import CountUp from '../components/CountUp.jsx';
 import RowPanel from '../components/RowPanel.jsx';
 import Momentum from '../components/Momentum.jsx';
+import SwipeRow from '../components/SwipeRow.jsx';
+import AirBadge from '../components/AirBadge.jsx';
+import { useAiringMap } from '../lib/airing.js';
 import Welcome from '../components/Welcome.jsx';
 import ListSkeleton from '../components/ListSkeleton.jsx';
 import ErrorState from '../components/ErrorState.jsx';
@@ -53,6 +56,9 @@ export default function MyList() {
   const saved = useMemo(() => { try { return JSON.parse(sessionStorage.getItem('anitrack:listfilters') || '{}'); } catch { return {}; } }, []);
   const [tab, setTab] = useState(saved.tab || 'all');
   const [rowError, setRowError] = useState('');
+  // Swiping rows is for touch screens; a mouse has the buttons
+  const touch = useMemo(() => typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(pointer: coarse)').matches, []);
+  const airing = useAiringMap(kind === 'anime' && entries.length > 0);
   const [importSections, setImportSections] = useState(null);
   const [importNote, setImportNote] = useState('');
   const [showImportSource, setShowImportSource] = useState(false);
@@ -171,9 +177,9 @@ export default function MyList() {
   }
 
   function exportCsv() {
-    const head = ['title', 'mal_id', 'status', 'score', cfg.progress, cfg.total, 'genres', 'tags', 'detailed_ratings', 'notes'];
+    const head = ['title', 'mal_id', 'status', 'score', cfg.progress, cfg.total, 'genres', 'tags', 'detailed_ratings', 'notes', 'started', 'finished', 'rewatches'];
     const rows = entries.map((e) =>
-      [e.title, e.mal_id, e.status, e.score, e[cfg.progress], e[cfg.total], (e.genres || []).join('; '), (e.tags || []).join('; '), Object.entries(e.ratings || {}).map(([k, v]) => `${k}=${v}`).join('; '), e.review].map(csvCell).join(',')
+      [e.title, e.mal_id, e.status, e.score, e[cfg.progress], e[cfg.total], (e.genres || []).join('; '), (e.tags || []).join('; '), Object.entries(e.ratings || {}).map(([k, v]) => `${k}=${v}`).join('; '), e.review, e.started_on || '', e.finished_on || '', e.rewatches || 0].map(csvCell).join(',')
     );
     download(`anitrack-${kind}-list.csv`, [head.join(','), ...rows].join('\n'), 'text/csv');
   }
@@ -225,7 +231,7 @@ export default function MyList() {
           <div className="stat"><strong><CountUp value={stats.mean} /></strong><span>Mean score</span></div>
         </div>
 
-        <Momentum kind={kind} />
+        <Momentum kind={kind} total={stats.progress} />
         {kind === 'anime' && <AiringWeek />}
 
         <div className="list-tools">
@@ -304,7 +310,15 @@ export default function MyList() {
             const done = entry[cfg.progress] ?? 0;
             const pct = total ? Math.min(100, Math.round((done / total) * 100)) : 0;
             return (
-              <div className={`list-row ${picked.has(entry.id) ? 'is-picked' : ''}`} key={entry.id} onClick={selecting ? () => toggle(entry.id) : undefined}>
+              <SwipeRow
+                className={`list-row ${picked.has(entry.id) ? 'is-picked' : ''}`}
+                key={entry.id}
+                onClick={selecting ? () => toggle(entry.id) : undefined}
+                enabled={touch && prefs.view === 'list' && !selecting && !openRows.has(entry.id)}
+                canRight={() => !(total && done >= total)}
+                onRight={() => save(entry.id, { [cfg.progress]: done + 1 })}
+                onLeft={() => remove(entry)}
+              >
                 {selecting && <input type="checkbox" className="lr-check" checked={picked.has(entry.id)} onChange={() => toggle(entry.id)} onClick={(e) => e.stopPropagation()} aria-label={`Select ${entry.title}`} />}
                 <Link to={`${cfg.path}/${entry.mal_id}`} className="list-cover">
                   {entry.image_url ? <img src={entry.image_url} alt="" loading="lazy" /> : <div className="img-fallback" />}
@@ -314,6 +328,7 @@ export default function MyList() {
                   <div className="progress" aria-hidden="true"><span style={{ width: `${pct}%` }} /></div>
                   <div className="meta">
                     {done} {total ? `of ${total}` : ''} {cfg.unit.toLowerCase()}{total ? ` · ${pct}%` : ''}
+                    {kind === 'anime' && airing.has(entry.mal_id) && <AirBadge item={airing.get(entry.mal_id)} />}
                   </div>
                   {(entry.tags || []).length > 0 && <div className="row-tags">{entry.tags.map((t) => <button key={t} type="button" className="tag" onClick={(e) => { e.stopPropagation(); setTag(t); }}>{t}</button>)}</div>}
                 </div>
@@ -341,8 +356,8 @@ export default function MyList() {
                   </button>
                   <button className="btn btn-quiet btn-sm" onClick={(e) => { e.stopPropagation(); remove(entry); }}>Remove</button>
                 </div>
-                {openRows.has(entry.id) && <RowPanel entry={entry} allTags={allTags} onSave={(patch) => save(entry.id, patch)} />}
-              </div>
+                {openRows.has(entry.id) && <RowPanel entry={entry} kind={kind} allTags={allTags} onSave={(patch) => save(entry.id, patch)} />}
+              </SwipeRow>
             );
           })}
         </div>

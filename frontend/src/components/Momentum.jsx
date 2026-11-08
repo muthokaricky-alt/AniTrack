@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client.js';
 import { ACTIVITY_STEP_CAP } from '../constants.js';
+import { dayKey } from '../lib/activity.js';
+import ActivityHeatmap from './ActivityHeatmap.jsx';
 
 const GOAL_KEY = 'anitrack:weekgoal';
-const dayKey = (d) => `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 
 function startOfWeek(now) {
   const d = new Date(now);
@@ -13,7 +14,7 @@ function startOfWeek(now) {
 }
 
 // Streak, this week's count and a goal ring, built from the progress log
-export default function Momentum({ kind }) {
+export default function Momentum({ kind, total = 0 }) {
   const [events, setEvents] = useState(null);
   const [goal, setGoal] = useState(() => {
     try { return Number(localStorage.getItem(GOAL_KEY)) || 10; } catch { return 10; }
@@ -73,6 +74,7 @@ export default function Momentum({ kind }) {
         <strong>{m.streak}</strong>
         <span>day streak</span>
       </div>
+      <ActivityHeatmap events={events} kind={kind} total={total} unit={unit} />
     </section>
   );
 }

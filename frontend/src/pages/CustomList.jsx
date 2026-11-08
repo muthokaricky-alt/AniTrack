@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { useToast } from '../context/ToastContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import ErrorState from '../components/ErrorState.jsx';
 import TitlePicker from '../components/TitlePicker.jsx';
 import ListCardDownload from '../components/ListCardDownload.jsx';
@@ -31,6 +32,7 @@ export default function CustomList() {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
+  const { user } = useAuth();
   const [list, setList] = useState(null);
   const [error, setError] = useState('');
   const [missing, setMissing] = useState(false);
@@ -98,6 +100,18 @@ export default function CustomList() {
     }
   }
 
+  async function copyList() {
+    setBusy(true);
+    try {
+      const made = await api.customLists.copy(id);
+      toast(list.is_owner ? 'List duplicated' : 'Saved a copy to your lists');
+      navigate(`/lists/${made.id}`);
+    } catch (err) {
+      toast(err.message, 'error');
+      setBusy(false);
+    }
+  }
+
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(`${window.location.origin}/lists/${id}`);
@@ -140,7 +154,19 @@ export default function CustomList() {
           ) : (
             <button type="button" className="btn btn-line btn-sm" onClick={() => save({ is_public: true }, 'List is now public')} disabled={busy}>Make public to share</button>
           )}
+          <button type="button" className="btn btn-quiet btn-sm" onClick={copyList} disabled={busy}>Duplicate</button>
           <Link className="btn btn-quiet btn-sm" to="/lists">All lists</Link>
+        </div>
+      )}
+
+      {!owner && (
+        <div className="cl-actions">
+          {user ? (
+            <button type="button" className="btn btn-signal btn-sm" onClick={copyList} disabled={busy}>{busy ? 'Saving…' : 'Save a copy'}</button>
+          ) : (
+            <Link className="btn btn-line btn-sm" to="/login">Log in to save a copy</Link>
+          )}
+          <Link className="btn btn-quiet btn-sm" to="/lists/discover">Discover more lists</Link>
         </div>
       )}
 
@@ -178,11 +204,15 @@ export default function CustomList() {
           {list.items.map((it, i) => (
             <li key={`${it.kind}:${it.mal_id}:${i}`} className="cl-item">
               {list.ranked && <span className="cl-rank" aria-label={`Number ${i + 1}`}>{i + 1}</span>}
-              <Link to={`/${it.kind}/${it.mal_id}`} className="cl-cover-link" tabIndex={-1} aria-hidden="true">
-                {it.image_url ? <img className="cl-cover" src={it.image_url} alt="" loading="lazy" /> : <span className="cl-cover" />}
-              </Link>
+              {it.kind === 'character' ? (
+                it.image_url ? <img className="cl-cover" src={it.image_url} alt="" loading="lazy" /> : <span className="cl-cover" />
+              ) : (
+                <Link to={`/${it.kind}/${it.mal_id}`} className="cl-cover-link" tabIndex={-1} aria-hidden="true">
+                  {it.image_url ? <img className="cl-cover" src={it.image_url} alt="" loading="lazy" /> : <span className="cl-cover" />}
+                </Link>
+              )}
               <div className="cl-main">
-                <Link to={`/${it.kind}/${it.mal_id}`}><strong>{it.title}</strong></Link>
+                {it.kind === 'character' ? <strong>{it.title}</strong> : <Link to={`/${it.kind}/${it.mal_id}`}><strong>{it.title}</strong></Link>}
                 <span className="cl-kind">{it.kind}</span>
                 {owner ? <NoteInput value={it.note} onSave={(note) => setNote(i, note)} disabled={busy} /> : it.note && <p className="cl-note">{it.note}</p>}
               </div>

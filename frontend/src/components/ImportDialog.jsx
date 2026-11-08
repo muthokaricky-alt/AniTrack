@@ -183,6 +183,9 @@ export default function ImportDialog({ sections, defaultKind, note = '', onClose
       [cfg.progress]: done,
       [cfg.total]: total,
       review: row.review ?? e?.review ?? null,
+      started_on: row.started_on ?? e?.started_on ?? null,
+      finished_on: row.finished_on ?? e?.finished_on ?? null,
+      rewatches: row.rewatches ?? e?.rewatches ?? 0,
       genres,
       ...(row.ratings ? { ratings: row.ratings } : {})
     };

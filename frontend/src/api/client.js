@@ -1,5 +1,6 @@
 // In dev, Vite proxies /api to the backend. In production the backend serves the app,
 // so /api is same-origin. Set VITE_API_URL only if the API lives on a different host.
+import { todayLocal } from '../lib/dates.js';
 import { createWakeTracker, isRead, looksAsleep, sleep, RETRY_DELAYS } from '../lib/wake.js';
 
 const BASE = `${(import.meta.env.VITE_API_URL || '').replace(/\/$/, '')}/api`;
@@ -129,6 +130,8 @@ export const api = {
     get: (id) => request(`/custom-lists/${id}`),
     create: (body) => request('/custom-lists', { method: 'POST', body: JSON.stringify(body) }),
     update: (id, body) => request(`/custom-lists/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+    discover: (page = 1) => request(`/custom-lists/discover?page=${page}`),
+    copy: (id) => request(`/custom-lists/${id}/copy`, { method: 'POST' }),
     addItem: (id, item) => request(`/custom-lists/${id}/items`, { method: 'POST', body: JSON.stringify(item) }),
     remove: (id) => request(`/custom-lists/${id}`, { method: 'DELETE' })
   },
@@ -140,8 +143,8 @@ export const api = {
     const base = kind === 'manga' ? '/manga-list' : '/list';
     return {
       get: () => request(base),
-      add: (body) => request(base, { method: 'POST', body: JSON.stringify(body) }),
-      update: (id, body) => request(`${base}/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+      add: (body) => request(base, { method: 'POST', body: JSON.stringify({ ...body, today: todayLocal() }) }),
+      update: (id, body) => request(`${base}/${id}`, { method: 'PATCH', body: JSON.stringify({ ...body, today: todayLocal() }) }),
       remove: (id) => request(`${base}/${id}`, { method: 'DELETE' }),
       import: (entries) => request(`${base}/import`, { method: 'POST', body: JSON.stringify({ entries }) }),
       resolve: (titles) => request(`${base}/resolve`, { method: 'POST', body: JSON.stringify({ titles }) }),

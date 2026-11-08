@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../api/client.js';
+import { loadAiring } from '../lib/airing.js';
+import { untilText as until } from '../lib/countdown.js';
 import { useList } from '../context/ListContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 
@@ -14,16 +15,6 @@ function useNow(ms = 30000) {
     return () => clearInterval(id);
   }, [ms]);
   return now;
-}
-
-function until(secs) {
-  if (secs <= 0) return 'airing now';
-  const d = Math.floor(secs / 86400);
-  const h = Math.floor((secs % 86400) / 3600);
-  const m = Math.floor((secs % 3600) / 60);
-  if (d > 0) return `in ${d}d ${h}h`;
-  if (h > 0) return `in ${h}h ${m}m`;
-  return `in ${m}m`;
 }
 
 function dayLabel(ts, now) {
@@ -52,7 +43,7 @@ export default function AiringWeek() {
       return undefined;
     }
     let off = false;
-    api.airing().then((r) => !off && setItems(r.data || [])).catch(() => !off && setItems([]));
+    loadAiring().then((data) => !off && setItems(data)).catch(() => !off && setItems([]));
     return () => { off = true; };
   }, [key]);
 

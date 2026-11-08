@@ -60,6 +60,18 @@ function parseRatings(v) {
   return Object.keys(out).length ? out : null;
 }
 
+// "2026-11-08" stays as it is, a spreadsheet date becomes that day, and MyAnimeList's "0000-00-00" (or anything
+// else that is not a real date) becomes null
+export function normDate(v) {
+  if (v instanceof Date) return Number.isNaN(v.getTime()) ? null : v.toISOString().slice(0, 10);
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v ?? '').trim());
+  if (!m) return null;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const dt = new Date(Date.UTC(y, mo - 1, d));
+  const real = y >= 1950 && dt.getUTCFullYear() === y && dt.getUTCMonth() === mo - 1 && dt.getUTCDate() === d;
+  return real ? `${m[1]}-${m[2]}-${m[3]}` : null;
+}
+
 const splitGenres = (v) => (Array.isArray(v) ? v : String(v ?? '').split(/[;,]/)).map((g) => String(g).trim()).filter(Boolean).slice(0, 12);
 
 // ----- spreadsheet-style tables (CSV, Excel sheets, Word tables) ---------------------------
@@ -73,7 +85,10 @@ const HEADERS = {
   total: ['total', 'total episodes', 'total chapters', 'total eps', 'series episodes', 'series chapters'],
   review: ['notes', 'note', 'review', 'comments', 'comment', 'my comments', 'my notes'],
   genres: ['genres', 'genre'],
-  ratings: ['detailed ratings', 'detailed rating', 'ratings', 'category ratings']
+  ratings: ['detailed ratings', 'detailed rating', 'ratings', 'category ratings'],
+  started_on: ['started', 'start date', 'started on', 'my start date', 'date started'],
+  finished_on: ['finished', 'finish date', 'finished on', 'my finish date', 'date finished', 'completed on'],
+  rewatches: ['rewatches', 'rewatched', 'times watched', 'times read', 'my times watched', 'my times read', 'rereads', 'repeat']
 };
 
 function findHeader(matrix) {
@@ -113,7 +128,10 @@ function rowsFromMatrix(matrix, { allowHeaderless }) {
       total: toInt(get(r, 'total')),
       review: String(get(r, 'review') ?? '').trim() || null,
       genres: splitGenres(get(r, 'genres')),
-      ratings: parseRatings(get(r, 'ratings'))
+      ratings: parseRatings(get(r, 'ratings')),
+      started_on: normDate(get(r, 'started_on')),
+      finished_on: normDate(get(r, 'finished_on')),
+      rewatches: Math.max(0, toInt(get(r, 'rewatches')) || 0)
     }))
     .filter((r) => r.title);
 }
@@ -268,7 +286,10 @@ function parseJson(text) {
       review: typeof e.review === 'string' && e.review.trim() ? e.review : null,
       genres: splitGenres(e.genres),
       ratings: e.ratings && typeof e.ratings === 'object' ? e.ratings : null,
-      image_url: typeof e.image_url === 'string' ? e.image_url : null
+      image_url: typeof e.image_url === 'string' ? e.image_url : null,
+      started_on: normDate(e.started_on),
+      finished_on: normDate(e.finished_on),
+      rewatches: Math.max(0, toInt(e.rewatches) || 0)
     }));
   return [{ kind: data?.kind === 'manga' || data?.kind === 'anime' ? data.kind : null, rows }];
 }
@@ -300,8 +321,8 @@ function xmlField(block, tag) {
 }
 
 const MAL_TAGS = {
-  anime: { id: 'series_animedb_id', title: 'series_title', total: 'series_episodes', done: 'my_watched_episodes' },
-  manga: { id: 'manga_mangadb_id', title: 'manga_title', total: 'manga_chapters', done: 'my_read_chapters' }
+  anime: { id: 'series_animedb_id', title: 'series_title', total: 'series_episodes', done: 'my_watched_episodes', times: 'my_times_watched' },
+  manga: { id: 'manga_mangadb_id', title: 'manga_title', total: 'manga_chapters', done: 'my_read_chapters', times: 'my_times_read' }
 };
 
 export function parseMalXml(text) {
@@ -321,7 +342,10 @@ export function parseMalXml(text) {
           total: toInt(xmlField(b, tags.total)) || null, // 0 means "unknown"
           review: xmlField(b, 'my_comments').trim() || null,
           genres: [],
-          ratings: null
+          ratings: null,
+          started_on: normDate(xmlField(b, 'my_start_date')),
+          finished_on: normDate(xmlField(b, 'my_finish_date')),
+          rewatches: Math.max(0, toInt(xmlField(b, tags.times)) || 0)
         };
       })
       .filter((r) => r.title);

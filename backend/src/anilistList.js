@@ -2,6 +2,8 @@
 // Pure functions only, so they can be tested without the network.
 
 // AniList usernames are letters, digits and underscores, 2 to 20 characters
+import { fuzzyToIso } from './dates.js';
+
 export const USERNAME_RE = /^[A-Za-z0-9_]{2,20}$/;
 
 const STATUS = { CURRENT: 'active', REPEATING: 'active', COMPLETED: 'completed', PAUSED: 'on_hold', DROPPED: 'dropped', PLANNING: 'plan' };
@@ -17,6 +19,9 @@ export const LIST_QUERY = `
           score(format: POINT_10_DECIMAL)
           progress
           notes
+          repeat
+          startedAt { year month day }
+          completedAt { year month day }
           media { idMal title { romaji english } episodes chapters genres coverImage { extraLarge large medium } }
         }
       }
@@ -53,6 +58,9 @@ export function shapeCollection(collection, kind) {
         progress: Number.isInteger(e.progress) && e.progress >= 0 ? e.progress : null,
         total: Number.isInteger(total) && total > 0 ? total : null,
         review: typeof e.notes === 'string' && e.notes.trim() ? e.notes.trim().slice(0, 5000) : null,
+        started_on: fuzzyToIso(e.startedAt),
+        finished_on: fuzzyToIso(e.completedAt),
+        rewatches: Number.isInteger(e.repeat) && e.repeat > 0 ? Math.min(e.repeat, 99) : 0,
         genres: Array.isArray(m.genres) ? m.genres.filter((g) => typeof g === 'string').slice(0, 12) : [],
         ratings: null,
         image_url: m.coverImage?.extraLarge || m.coverImage?.large || m.coverImage?.medium || null

@@ -15,6 +15,7 @@ if (process.env.NEON_WEBSOCKET === '1') {
 const { Pool, types } = driver;
 types.setTypeParser(20, (v) => Number(v));      // COUNT(*) and other bigints arrive as numbers
 types.setTypeParser(1700, (v) => parseFloat(v)); // NUMERIC as numbers
+types.setTypeParser(1082, (v) => v);              // DATE stays a plain 'YYYY-MM-DD' string (no time zone shifting)
 
 if (!process.env.DATABASE_URL) {
   console.error('DATABASE_URL is not set. Add your Neon connection string to backend/.env (and to Render > Environment).');
@@ -124,6 +125,13 @@ const db = {
         UNIQUE (user_id, mal_id)
       );
 
+      ALTER TABLE list_entries ADD COLUMN IF NOT EXISTS started_on DATE;
+      ALTER TABLE list_entries ADD COLUMN IF NOT EXISTS finished_on DATE;
+      ALTER TABLE list_entries ADD COLUMN IF NOT EXISTS rewatches INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE manga_entries ADD COLUMN IF NOT EXISTS started_on DATE;
+      ALTER TABLE manga_entries ADD COLUMN IF NOT EXISTS finished_on DATE;
+      ALTER TABLE manga_entries ADD COLUMN IF NOT EXISTS rewatches INTEGER NOT NULL DEFAULT 0;
+
       CREATE TABLE IF NOT EXISTS favorites (
         user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         kind TEXT NOT NULL,
@@ -188,14 +196,18 @@ const db = {
       CREATE TABLE IF NOT EXISTS custom_list_items (
         list_id INTEGER NOT NULL REFERENCES custom_lists(id) ON DELETE CASCADE,
         position INTEGER NOT NULL,
-        kind TEXT NOT NULL CHECK (kind IN ('anime', 'manga')),
+        kind TEXT NOT NULL CHECK (kind IN ('anime', 'manga', 'character')),
         mal_id INTEGER NOT NULL,
         title TEXT NOT NULL,
         image_url TEXT,
         note TEXT,
         PRIMARY KEY (list_id, position)
       );
+      ALTER TABLE custom_lists ADD COLUMN IF NOT EXISTS copied_from INTEGER REFERENCES custom_lists(id) ON DELETE SET NULL;
+      CREATE INDEX IF NOT EXISTS custom_lists_copied ON custom_lists (copied_from) WHERE copied_from IS NOT NULL;
       ALTER TABLE custom_list_items DROP CONSTRAINT IF EXISTS custom_list_items_list_id_kind_mal_id_key;
+      ALTER TABLE custom_list_items DROP CONSTRAINT IF EXISTS custom_list_items_kind_check;
+      ALTER TABLE custom_list_items ADD CONSTRAINT custom_list_items_kind_check CHECK (kind IN ('anime', 'manga', 'character'));
     `);
   }
 };

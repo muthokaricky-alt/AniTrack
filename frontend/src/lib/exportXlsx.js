@@ -20,7 +20,10 @@ export async function buildWorkbook({ anime, manga }) {
       { header: 'Genres', key: 'genres', width: 30 },
       { header: 'Detailed ratings', key: 'ratings', width: 34 },
       { header: 'Notes', key: 'notes', width: 50, style: { alignment: { wrapText: true, vertical: 'top' } } },
-      { header: 'MAL ID', key: 'mal_id', width: 10 }
+      { header: 'MAL ID', key: 'mal_id', width: 10 },
+      { header: 'Started', key: 'started', width: 12 },
+      { header: 'Finished', key: 'finished', width: 12 },
+      { header: 'Rewatches', key: 'rewatches', width: 11 }
     ];
     for (const e of entries) {
       ws.addRow({
@@ -32,7 +35,10 @@ export async function buildWorkbook({ anime, manga }) {
         genres: (e.genres || []).join('; '),
         ratings: Object.entries(e.ratings || {}).map(([k, v]) => `${k}=${v}`).join('; '),
         notes: e.review || '',
-        mal_id: e.mal_id
+        mal_id: e.mal_id,
+        started: e.started_on || '',
+        finished: e.finished_on || '',
+        rewatches: e.rewatches || 0
       });
     }
     const head = ws.getRow(1);

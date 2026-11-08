@@ -613,3 +613,45 @@ html[data-theme='light'] .hero-shade { opacity: 1; }
 /* Public profile: lists section */
 .pub-lists { margin-top: 56px; }
 .pub-lists .mini-h { margin-bottom: 20px; }
+.cl-more { margin: 32px 0 8px; text-align: center; }
+
+/* ===== Activity heatmap (inside the momentum card) ===== */
+.mo-heat { flex: 1 1 100%; margin-top: 6px; padding-top: 18px; border-top: 1px solid var(--line); }
+.hm-grid { display: grid; grid-template-rows: repeat(7, 1fr); grid-auto-flow: column; grid-auto-columns: 1fr; gap: 3px; width: 100%; }
+.hm-cell { display: block; border-radius: 2px; background: var(--line); min-width: 0; min-height: 0; }
+.hm-1 { background: rgba(255, 75, 31, 0.28); }
+.hm-2 { background: rgba(255, 75, 31, 0.5); }
+.hm-3 { background: rgba(255, 75, 31, 0.75); }
+.hm-4 { background: var(--signal); }
+.hm-future { visibility: hidden; }
+.hm-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; margin-top: 12px; font-size: 12px; color: var(--muted); }
+.hm-legend { display: inline-flex; align-items: center; gap: 3px; }
+.hm-legend .hm-cell { width: 11px; height: 11px; }
+.hm-legend .hm-cell:first-of-type { margin-left: 4px; }
+.hm-days { margin-top: 12px; font-size: 14px; color: var(--text); }
+.hm-days b { font-size: 18px; color: var(--signal); }
+
+/* ===== Swipe on list rows (touch screens, list view): right = +1, left = remove ===== */
+.meta-air { color: var(--signal); }
+@media (pointer: coarse) {
+  .list-rows.view-list { overflow-x: clip; }
+  .list-rows.view-list .list-row { touch-action: pan-y; transition: background 0.2s, transform 0.2s ease; }
+  .list-rows.view-list .list-row.swiping { transition: none; background: var(--ink-2); }
+  .list-rows.view-list .list-row.swipe-right::before,
+  .list-rows.view-list .list-row.swipe-left::after { position: absolute; top: 0; bottom: 0; width: 120px; display: flex; align-items: center; font-family: var(--ui); font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+  .list-rows.view-list .list-row.swipe-right::before { content: '+1'; right: 100%; justify-content: flex-end; padding-right: 18px; color: var(--signal); font-size: 20px; }
+  .list-rows.view-list .list-row.swipe-left::after { content: 'Remove'; left: 100%; padding-left: 18px; color: #ff6b6b; }
+}
+
+/* ===== Start and finish dates, and the repeat counter ===== */
+.ed { display: flex; flex-wrap: wrap; gap: 18px 22px; align-items: flex-end; }
+.ed label { display: flex; flex-direction: column; gap: 6px; font-family: var(--ui); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+.ed input[type='date'] { width: 160px; font-family: var(--field); font-size: 16px; }
+.lr-dates { margin: 14px 0; }
+.lr-dates input[type='date'] { padding: 9px 10px; background: transparent; color: var(--text); border: 1px solid var(--line-strong); color-scheme: dark; }
+.lr-dates input[type='date']:focus { border-color: var(--signal); outline: none; }
+.ed-again { display: inline-flex; align-items: center; gap: 8px; font-family: var(--ui); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+.ed-again b { min-width: 3ch; text-align: center; font-size: 16px; letter-spacing: 0; }
+.ed-again button { width: 34px; height: 34px; font-size: 18px; line-height: 1; background: transparent; color: inherit; border: 1px solid currentColor; cursor: pointer; }
+.ed-again button:disabled { opacity: 0.3; cursor: default; }
+@media (max-width: 700px) { .ed input[type='date'] { width: 100%; } .ed label { flex: 1 1 140px; } }

@@ -1,27 +1,87 @@
 # AniTrack
 
-A personal anime watchlist tracker, in the spirit of MyAnimeList. Search the
-anime catalog, log what you're watching, rate and review, and see your stats.
+An anime and manga tracker in the spirit of MyAnimeList. Search the catalogue, log what you're watching or
+reading, rate and review, make ranked lists, and compare taste with friends.
+
+**Live demo:** https://anitrack.muthokaricky.workers.dev
+(The API sleeps on free hosting, so the first load after a quiet spell can take up to a minute. The app shows a
+"Waking up the server" message while it wakes.)
 
 ![AniTrack homepage](./homepage.png)
 
-## Stack
+## How it fits together
 
-- **Frontend**: React 18 + Vite, React Router, plain CSS (no framework)
-- **Backend**: Express + PostgreSQL (Neon)
-- **Auth**: JWT + bcrypt
-- **Anime data**: [AniList GraphQL API](https://anilist.gitbook.io/anilist-apiv2-docs/) — no key required
+```mermaid
+flowchart LR
+  B[Browser] -->|HTML, JS, CSS| CF[Cloudflare: static frontend]
+  B -->|JSON API| R[Render: Express API]
+  R --> N[(Neon: Postgres)]
+  R --> A[AniList GraphQL API]
+```
 
-Your own database only stores accounts and each user's list entries
-(status, score, progress, reviews). Anime metadata (titles, covers,
-synopses) is fetched live from AniList and cached briefly on the server.
+- **Frontend**: React 18 + Vite, React Router, plain CSS (no framework). Served from Cloudflare so it is always on.
+- **Backend**: Express + PostgreSQL (Neon). JWT + bcrypt for accounts.
+- **Catalogue data**: [AniList GraphQL API](https://anilist.gitbook.io/anilist-apiv2-docs/), no key required, cached briefly
+  on the server, with a backup catalogue if AniList is down.
+
+Your own database stores accounts, list entries (status, score, progress, dates, reviews), favourites and custom
+lists. Titles, covers and synopses come live from AniList.
+
+## Features
+
+**Track**
+- Anime and manga lists with status, score (0.5 steps), progress, notes, tags and optional detailed ratings
+- Start and finish dates (filled in for you when you start and finish) and a rewatch / reread counter
+- Weekly goal, streak, a year-long activity heatmap and a "days watched" total
+- Live "Ep 8 in 2d 4h" countdowns on the shows you are watching, plus a weekly airing schedule
+- On a phone: swipe a row right for +1, left to remove (with undo)
+
+**Discover**
+- Search with genre filters, seasonal and top-rated lists, and recommendations from your highest-rated titles
+- "Where to watch" links on anime pages and "Read officially" links on manga pages (official sites only; AniTrack
+  never hosts or embeds chapters or episodes)
+
+**Lists and sharing**
+- Custom lists of anime, manga and characters ("Top 10 arcs", "Top 10 villains"), ranked or not, with a note on
+  each entry. The same title can appear more than once, so one show can fill several arc slots
+- Private by default; make a list public and share the link. Public lists appear on your profile
+- Discover page for other people's public lists, with "Save a copy"
+- Download a list as a poster image (the note becomes the caption: *Marineford*, with *One Piece* underneath) or as text
+- Profile with photo, bio and favourites (top 3 and top 15 for anime, manga and characters), a public page, and a
+  taste match against any public profile (see below)
+- Wrapped: a yearly summary you can download as an image
+
+**Import and export**
+- Import from MyAnimeList (`.xml` or `.xml.gz`), an AniList username (public lists), Excel, Word, CSV or JSON.
+  Titles are matched against the catalogue and you review the matches before anything is saved. Covers, genres,
+  dates and rewatch counts come across where the source has them
+- Export a list as JSON or CSV, or both lists as one Excel workbook
+
+**Under the hood**
+- Free-tier friendly: a waking-server banner with automatic retries for reads, and an always-on static frontend
+- Login rate limiting, security headers, input validation, one shared list router for anime and manga
+- Link previews (Open Graph tags) so shared links look right in chat apps
+
+### Rick's Algorithm (the taste match)
+
+A hand-built weighted formula, not machine learning. It compares two people four ways and scores each from
+0 to 100%:
+
+1. **Genres** you lean towards (cosine similarity of score-weighted genre profiles)
+2. **How you rate** the titles you both scored (average gap between scores)
+3. **Titles** you both have (overlap of the two lists)
+4. **Favourites** you share
+
+The final percentage is a weighted average of whichever parts can be measured. If one of you has no list yet, it
+falls back to favourites alone. The code is in `backend/src/taste.js`, with tests.
 
 ## Project structure
 
 ```
 anitrack/
-  backend/     Express API (auth, list, anime proxy) + Postgres
+  backend/     Express API (auth, lists, custom lists, imports, anime proxy) + Postgres
   frontend/    React app (Vite)
+  docs/        Case study
 ```
 
 ## Running locally
@@ -35,14 +95,7 @@ cp .env.example .env   # then set JWT_SECRET and DATABASE_URL (your Neon connect
 npm run dev
 ```
 
-API runs on `http://localhost:5000`. The tables are created automatically on first run.
-
-Moving an old SQLite database over (one time):
-
-```
-npm install --no-save better-sqlite3
-node scripts/migrate-sqlite-to-postgres.js path/to/anitrack.db
-```
+The API runs on `http://localhost:5000`. Tables are created and upgraded automatically on start.
 
 ### 2. Frontend
 
@@ -52,68 +105,72 @@ npm install
 npm run dev
 ```
 
-App runs on `http://localhost:5173` and proxies `/api` calls to the backend.
+The app runs on `http://localhost:5173` and proxies `/api` calls to the backend.
 
-## Features
+### Tests
 
-- Anime catalogue: search with genre filters, seasonal and top-rated lists, a weekly airing schedule, and a live countdown to the next episode
-- Manga as its own section: trending and top-rated browse, search, detail pages and a separate list
-- Personal lists with status, score, progress and private notes, for both anime and manga
-- "Can't decide?" picker that chooses from your Plan-to list, plus a stats panel (status split, score spread, favourite genres, time watched)
-- Ratings in 0.5 steps, plus optional detailed ratings (story, characters, visuals/art, music/pacing, enjoyment) next to the overall score
-- Profile with photo, bio, public page, and favourites: a top 3 and a separate top 15 for anime, manga and characters
-- Export a list as JSON or CSV, or both lists as one Excel workbook (an Anime sheet and a Manga sheet)
-- Import from Excel (.xlsx), Word (.docx), CSV or JSON. Titles without an ID are matched against the catalogue, and you review the matches before anything is saved. Word files can use headings like "Completed" or "Plan to watch" to set statuses
-- Background music player (three original loops, pause/skip/volume, remembers your choice). Swap in your own tracks in `frontend/public/music/playlist.json`
-- Profile pages use a type mix: Fraunces for the name, bio and section titles, Archivo for numbers, JetBrains Mono for labels
-- Backend: login rate limiting, security headers, input validation, one shared list router for anime and manga
+```
+cd backend && node --test                       # 136 tests: validation, taste match, imports, SQL-free logic
+cd frontend && node --test src/lib/*.test.js    # 35 tests: importers, heatmap, swipe, countdown, card drawing
+```
 
-## Front-end stack
-
-React 18 + Vite, with Lenis (smooth scroll), GSAP + ScrollTrigger (animation, pinned scroll sections), and Vanta.js on three.js (interactive dot-field hero, lazy-loaded on desktop only). `three` is pinned to 0.134.0 because Vanta targets that release.
+The route handlers that run SQL are not covered yet: that needs a real Postgres in CI (see "Next steps").
 
 ## Deploying (free)
 
-The Express server also serves the built React app, so one web service runs everything.
+**Option A: one service.** The Express server also serves the built React app.
 
 1. Push the repo to GitHub.
 2. On [Render](https://render.com): **New + > Blueprint**, pick this repo (it reads `render.yaml`).
-   Or **New + > Web Service** with build command `npm run build`, start command `npm start`,
-   and env vars `NODE_ENV=production` and a long random `JWT_SECRET`.
-3. Open the URL Render gives you.
+3. Add `DATABASE_URL` (your Neon connection string). Data lives in Neon, so it survives restarts and deploys.
 
-4. Add a `DATABASE_URL` environment variable (your Neon connection string). The data lives in Neon, so it
-   survives Render restarts and deploys.
+**Option B: split (how the live demo runs).** The frontend sits on Cloudflare so it is always on, and only the
+API sleeps.
 
-> **Heads up:** Render's free tier sleeps after 15 minutes idle, so the first request after a nap is slow.
-> Neon also pauses an idle database and wakes it on the next request.
+1. Deploy the API on Render as above, and set `CORS_ORIGIN` to the frontend's address (no trailing slash).
+2. On Cloudflare (Workers static assets), connect the repo with root directory `frontend`, build command
+   `npm install && npm run build`, deploy command `npx wrangler deploy`, and the build variable `VITE_API_URL`
+   set to the Render address (no trailing slash, no `/api`). `frontend/wrangler.jsonc` serves the built `dist`
+   folder as a single-page app.
+
+> Render's free tier sleeps after 15 minutes idle, and Neon pauses an idle database. The first request after a
+> nap is slow; the app handles that with a banner and automatic retries.
 
 ## API overview
 
-| Method | Route              | Auth | Description                         |
-|--------|---------------------|------|--------------------------------------|
-| POST   | /api/auth/register  | —    | Create account, returns JWT          |
-| POST   | /api/auth/login     | —    | Log in, returns JWT                  |
-| GET    | /api/anime/search   | —    | Search anime (`?q=`)                 |
-| GET    | /api/anime/top      | —    | Top-rated anime                      |
-| GET    | /api/anime/season/now | —  | Currently airing season              |
-| GET    | /api/anime/airing   | JWT  | Airing episodes for your watching/plan list |
-| GET    | /api/anime/for-you  | JWT  | Recommendations based on your top-rated titles |
-| GET    | /api/users/:username/match | JWT | Taste match with a public profile |
-| GET    | /api/img?url=       | —    | Allowlisted image proxy (share card) |
-| GET    | /api/anime/:id      | —    | Full detail for one title            |
-| GET    | /api/list           | JWT  | Your list entries                    |
-| GET    | /api/list/stats     | JWT  | Episode/score stats                  |
-| POST   | /api/list           | JWT  | Add/update an entry                  |
-| POST   | /api/list/resolve   | JWT  | Match up to 25 titles to catalogue IDs (same under /api/manga-list) |
-| PATCH  | /api/list/:id       | JWT  | Update status/score/progress/review  |
-| DELETE | /api/list/:id       | JWT  | Remove an entry                      |
+| Method | Route                              | Auth | Description                                         |
+|--------|-------------------------------------|------|------------------------------------------------------|
+| POST   | /api/auth/register                  | none | Create account, returns JWT                          |
+| POST   | /api/auth/login                     | none | Log in, returns JWT                                  |
+| GET    | /api/anime/search                   | none | Search anime (`?q=`)                                 |
+| GET    | /api/anime/top                      | none | Top-rated anime                                      |
+| GET    | /api/anime/season/now               | none | Currently airing season                              |
+| GET    | /api/anime/batch?ids=1,2,3          | none | Details for up to 50 MyAnimeList ids (same under /api/manga) |
+| GET    | /api/anime/airing                   | JWT  | Next episodes for your watching/plan titles          |
+| GET    | /api/anime/for-you                  | JWT  | Recommendations from your top-rated titles           |
+| GET    | /api/anime/:id                      | none | Full detail, including where-to-watch links          |
+| GET    | /api/users/:username/match          | JWT  | Taste match with a public profile                    |
+| GET    | /api/list                           | JWT  | Your list entries (same under /api/manga-list)       |
+| GET    | /api/list/stats                     | JWT  | Episode and score stats                              |
+| POST   | /api/list                           | JWT  | Add or update an entry                               |
+| PATCH  | /api/list/:id                       | JWT  | Update status, score, progress, dates, review        |
+| DELETE | /api/list/:id                       | JWT  | Remove an entry                                      |
+| POST   | /api/list/import                    | JWT  | Bulk import up to 3000 entries                       |
+| GET    | /api/import/anilist                 | JWT  | Fetch a public AniList user's list (`?username=&kind=`) |
+| GET    | /api/custom-lists                   | JWT  | Your custom lists                                    |
+| POST   | /api/custom-lists                   | JWT  | Create a custom list                                 |
+| GET    | /api/custom-lists/discover          | none | Popular public lists                                 |
+| GET    | /api/custom-lists/:id               | opt. | One list (public, or yours)                          |
+| PUT    | /api/custom-lists/:id               | JWT  | Edit a list or replace its entries                   |
+| POST   | /api/custom-lists/:id/items         | JWT  | Add one entry to a list                              |
+| POST   | /api/custom-lists/:id/copy          | JWT  | Save a copy of a public list                         |
+| GET    | /api/custom-lists/user/:username    | none | A person's public lists (public profiles only)       |
+| GET    | /api/img?url=                       | none | Allowlisted image proxy (used when drawing cards)    |
 
-## Next steps / ideas
+## Next steps
 
-- Reviews page showing all your written reviews
-- Public profile pages (shareable list)
-- Automatic retry on transient Jikan/MAL failures
-- In future, add some manga option too- to also track manga read 
-- Character and staff pages (Jikan supports these too)
-- Rate-limit-aware request queue for Jikan (currently a simple 5-min cache)
+- Continuous integration: run the tests and a build on every push, with a Postgres service so the SQL routes are tested too
+- Per-list link previews (a small Cloudflare Worker that adds the list's title and cover to the page for chat apps)
+- Push notifications for new episodes
+- Character pages, and an "Add to list" button for characters
+- Keyboard shortcuts on desktop

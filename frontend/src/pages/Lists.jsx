@@ -5,10 +5,10 @@ import { useToast } from '../context/ToastContext.jsx';
 import ErrorState from '../components/ErrorState.jsx';
 import ListCard from '../components/ListCard.jsx';
 
-const IDEAS = ['Top 10 arcs', 'Best isekai', 'Comfort anime', 'Underrated gems'];
+const IDEAS = ['Top 10 arcs', 'Top 10 villains', 'Best isekai', 'Comfort anime'];
 const FAV_KINDS = [['anime', 'anime'], ['manga', 'manga'], ['character', 'characters']];
 
-// A Top 15 from the profile. Anime and manga ones can be turned into a normal list (to add notes, share or make a card).
+// A Top 15 from the profile. Each can be turned into a normal list (to add notes, share or make a card).
 function FavCard({ kind, label, items, onMakeList, busy }) {
   const covers = items.map((i) => i.image_url).filter(Boolean).slice(0, 4);
   return (
@@ -20,9 +20,7 @@ function FavCard({ kind, label, items, onMakeList, busy }) {
           <p>On your profile · edit there</p>
         </div>
       </Link>
-      {kind !== 'character' && (
-        <button type="button" className="btn btn-line btn-sm" onClick={onMakeList} disabled={busy}>Make it a list</button>
-      )}
+      <button type="button" className="btn btn-line btn-sm" onClick={onMakeList} disabled={busy}>Make it a list</button>
     </div>
   );
 }
@@ -82,6 +80,9 @@ export default function Lists() {
         <p className="kicker">Your collections</p>
         <h1 className="h1">My lists</h1>
       </div>
+      <div className="cl-actions">
+        <Link className="btn btn-line btn-sm" to="/lists/discover">Discover lists</Link>
+      </div>
 
       <form className="cl-create" onSubmit={create}>
         <div className="field">
@@ -114,7 +115,7 @@ export default function Lists() {
       {lists && lists.length === 0 && (
         <div className="empty-state">
           <p className="es-title">No lists yet</p>
-          <p>Make your top 10 arcs, your best isekai, or anything else you want to rank. Lists are private until you choose to share them.</p>
+          <p>Make your top 10 arcs, your best villains, or anything else you want to rank. Lists are private until you choose to share them.</p>
         </div>
       )}
       {lists && lists.length > 0 && (

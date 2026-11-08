@@ -7,3 +7,9 @@ export function parseServerDate(value) {
   const d = /^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d(\.\d+)?$/.test(text) ? new Date(`${text.replace(' ', 'T')}Z`) : new Date(text);
   return Number.isNaN(d.getTime()) ? null : d;
 }
+
+// Today as the person's own calendar day, "2026-11-08". Sent with list changes so a start or finish date
+// matches their clock rather than the server's.
+export function todayLocal(now = new Date()) {
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}

@@ -5,6 +5,7 @@ import { anilistQuery } from './anime.js';
 import { cleanImageUrl } from '../imageUrl.js';
 import { loggedDelta, autoStatus } from '../progress.js';
 import { errDetail } from '../inputs.js';
+import { dateField, todayFrom } from '../dates.js';
 
 // One router factory serves both lists. Table and column names come from these constants, never from user input.
 const KINDS = {
@@ -140,18 +141,22 @@ function makeRouter(cfg) {
     if (existing && keep_existing) return res.status(200).json(unpack(existing));
 
     const totalClean = Number.isNaN(totalVal) ? null : totalVal ?? null;
+    const today = todayFrom(req.body.today);
+    const startsNow = status === 'watching' || status === 'reading';
     if (existing) {
       const done = status === 'completed' && totalClean ? totalClean : existing[progress];
+      const started = existing.started_on || (startsNow ? today : null);
+      const finished = existing.finished_on || (status === 'completed' ? today : null);
       await db.run(
         `UPDATE ${t} SET status = ?, ${total} = COALESCE(?, ${total}), ${progress} = ?,
-          genres = COALESCE(?, genres), updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-        [status, totalClean, done, genres, existing.id]
+          genres = COALESCE(?, genres), started_on = ?, finished_on = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [status, totalClean, done, genres, started, finished, existing.id]
       );
     } else {
       await db.run(
-        `INSERT INTO ${t} (user_id, mal_id, title, image_url, status, ${total}, ${progress}, genres) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `INSERT INTO ${t} (user_id, mal_id, title, image_url, status, ${total}, ${progress}, genres, started_on, finished_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT (user_id, mal_id) DO NOTHING`,
-        [req.userId, malId, String(title).slice(0, 300), cover, status, totalClean, status === 'completed' && totalClean ? totalClean : 0, genres]
+        [req.userId, malId, String(title).slice(0, 300), cover, status, totalClean, status === 'completed' && totalClean ? totalClean : 0, genres, startsNow ? today : null, status === 'completed' ? today : null]
       );
     }
     const entry = await db.get(`SELECT * FROM ${t} WHERE user_id = ? AND mal_id = ?`, [req.userId, malId]);
@@ -244,7 +249,10 @@ function makeRouter(cfg) {
         review: typeof e.review === 'string' ? e.review.slice(0, 5000) || null : null,
         genres: packGenres(e.genres),
         ratings: ratings === false ? null : ratings,
-        tags: e.tags === undefined ? null : packTags(e.tags) || null
+        tags: e.tags === undefined ? null : packTags(e.tags) || null,
+        started_on: dateField(e.started_on) || null, // a missing or bad date is simply left empty
+        finished_on: dateField(e.finished_on) || null,
+        rewatches: Number.isInteger(e.rewatches) && e.rewatches > 0 ? Math.min(e.rewatches, 99) : 0
       });
     }
 
@@ -254,14 +262,16 @@ function makeRouter(cfg) {
     const col = (k) => uniq.map((r) => r[k]);
     if (uniq.length) {
       await db.run(
-        `INSERT INTO ${t} (user_id, mal_id, title, image_url, status, score, ${progress}, ${total}, review, genres, ratings, tags)
-         SELECT ?::int, * FROM unnest(?::int[], ?::text[], ?::text[], ?::text[], ?::float8[], ?::int[], ?::int[], ?::text[], ?::text[], ?::text[], ?::text[])
+        `INSERT INTO ${t} (user_id, mal_id, title, image_url, status, score, ${progress}, ${total}, review, genres, ratings, tags, started_on, finished_on, rewatches)
+         SELECT ?::int, * FROM unnest(?::int[], ?::text[], ?::text[], ?::text[], ?::float8[], ?::int[], ?::int[], ?::text[], ?::text[], ?::text[], ?::text[], ?::date[], ?::date[], ?::int[])
          ON CONFLICT (user_id, mal_id) DO UPDATE SET
            title = excluded.title, image_url = excluded.image_url, status = excluded.status, score = excluded.score,
            ${progress} = excluded.${progress}, ${total} = excluded.${total}, review = excluded.review,
            genres = COALESCE(excluded.genres, ${t}.genres), ratings = COALESCE(excluded.ratings, ${t}.ratings), tags = COALESCE(excluded.tags, ${t}.tags),
+           started_on = COALESCE(excluded.started_on, ${t}.started_on), finished_on = COALESCE(excluded.finished_on, ${t}.finished_on),
+           rewatches = GREATEST(excluded.rewatches, ${t}.rewatches),
            updated_at = CURRENT_TIMESTAMP`,
-        [req.userId, col('malId'), col('title'), col('image_url'), col('status'), col('score'), col('done'), col('total'), col('review'), col('genres'), col('ratings'), col('tags')]
+        [req.userId, col('malId'), col('title'), col('image_url'), col('status'), col('score'), col('done'), col('total'), col('review'), col('genres'), col('ratings'), col('tags'), col('started_on'), col('finished_on'), col('rewatches')]
       );
     }
     res.json({ imported: rows.length, skipped: list.length - rows.length });
@@ -295,11 +305,35 @@ function makeRouter(cfg) {
       if (tags === false) return res.status(400).json({ error: 'tags must be a list of short words' });
     }
 
+    const startedIn = dateField(body.started_on);
+    const finishedIn = dateField(body.finished_on);
+    if (Number.isNaN(startedIn) || Number.isNaN(finishedIn)) {
+      return res.status(400).json({ error: 'Dates must look like 2026-11-08 and cannot be in the future' });
+    }
+    let rewatches = entry.rewatches;
+    if (body.rewatches !== undefined) {
+      const r = intField(body.rewatches, { min: 0, max: 99 });
+      if (Number.isNaN(r) || r === null) return res.status(400).json({ error: 'The repeat count must be a whole number from 0 to 99' });
+      rewatches = r;
+    }
+
     const newDone = done === undefined ? entry[progress] : done;
     // choosing a status always wins; otherwise reaching the last episode/chapter completes the entry
     const status = autoStatus({ requested: body.status, current: entry.status, done: newDone, total: entry[total] });
+
+    // Starting (first progress, or choosing Watching/Reading) and finishing fill an empty date with today.
+    // A date the person typed in this request always wins, and an existing date is never overwritten.
+    const today = todayFrom(body.today);
+    let started = startedIn === undefined ? entry.started_on : startedIn;
+    let finished = finishedIn === undefined ? entry.finished_on : finishedIn;
+    if (startedIn === undefined && !started && (newDone > 0 || status === 'watching' || status === 'reading')) started = today;
+    if (finishedIn === undefined && !finished && status === 'completed') finished = today;
+    if ((startedIn !== undefined || finishedIn !== undefined) && started && finished && finished < started) {
+      return res.status(400).json({ error: 'The finish date cannot be before the start date' });
+    }
+
     await db.run(
-      `UPDATE ${t} SET status = ?, score = ?, ${progress} = ?, review = ?, ratings = ?, tags = ?, updated_at = CURRENT_TIMESTAMP
+      `UPDATE ${t} SET status = ?, score = ?, ${progress} = ?, review = ?, ratings = ?, tags = ?, started_on = ?, finished_on = ?, rewatches = ?, updated_at = CURRENT_TIMESTAMP
        WHERE id = ? AND user_id = ?`,
       [
         status,
@@ -308,6 +342,9 @@ function makeRouter(cfg) {
         body.review === undefined ? entry.review : String(body.review).slice(0, 5000) || null,
         ratings,
         tags,
+        started ?? null,
+        finished ?? null,
+        rewatches,
         entry.id,
         req.userId
       ]

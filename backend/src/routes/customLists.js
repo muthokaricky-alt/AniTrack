@@ -2,6 +2,7 @@ import { Router } from 'express';
 import db from '../db.js';
 import { requireAuth, optionalAuth } from '../middleware/auth.js';
 import { cleanListInput, MAX_LISTS, MAX_ITEMS } from '../customList.js';
+import { parsePage } from '../paging.js';
 
 const router = Router();
 const isId = (s) => /^\d{1,9}$/.test(String(s));
@@ -25,6 +26,8 @@ async function withCovers(rows) {
     is_public: r.is_public,
     count: r.count,
     covers: byList.get(r.id) || [],
+    ...(r.username ? { owner: { username: r.username } } : {}),
+    ...(r.saves != null ? { saves: r.saves } : {}),
     updated_at: r.updated_at
   }));
 }
@@ -80,6 +83,25 @@ router.get('/user/:username', async (req, res) => {
   if (!user || !user.is_public) return res.status(404).json({ error: 'User not found' });
   const rows = await db.all(`${SUMMARY_SQL} WHERE l.user_id = ? AND l.is_public ORDER BY l.updated_at DESC`, [user.id]);
   res.json({ username: user.username, lists: await withCovers(rows) });
+});
+
+// GET /api/custom-lists/discover?page=1  (public lists from public profiles with at least 3 titles, most saved first)
+router.get('/discover', async (req, res) => {
+  const { limit, offset } = parsePage(req.query.page);
+  const rows = await db.all(
+    `SELECT * FROM (
+       SELECT l.id, l.title, l.description, l.ranked, l.is_public, l.updated_at, u.username,
+              (SELECT COUNT(*) FROM custom_list_items i WHERE i.list_id = l.id) AS count,
+              (SELECT COUNT(*) FROM custom_lists c WHERE c.copied_from = l.id) AS saves
+       FROM custom_lists l JOIN users u ON u.id = l.user_id
+       WHERE l.is_public AND u.is_public
+     ) t
+     WHERE t.count >= 3
+     ORDER BY t.saves DESC, t.updated_at DESC
+     LIMIT ? OFFSET ?`,
+    [limit + 1, offset] // one extra row tells us whether there is another page
+  );
+  res.json({ lists: await withCovers(rows.slice(0, limit)), has_more: rows.length > limit });
 });
 
 // POST /api/custom-lists  { title, description?, ranked?, is_public?, items? }
@@ -156,6 +178,31 @@ router.post('/:id/items', requireAuth, async (req, res) => {
   });
   if (result.error) return res.status(result.status).json({ error: result.error });
   res.status(201).json({ ok: true, count: result.count });
+});
+
+// POST /api/custom-lists/:id/copy  (save a copy of a public list, or duplicate your own; the copy is private)
+router.post('/:id/copy', requireAuth, async (req, res) => {
+  if (!isId(req.params.id)) return res.status(404).json({ error: 'List not found' });
+  const source = await loadFull(Number(req.params.id), req.userId); // null when it is private and not yours
+  if (!source) return res.status(404).json({ error: 'List not found' });
+
+  const { n } = await db.get('SELECT COUNT(*) AS n FROM custom_lists WHERE user_id = ?', [req.userId]);
+  if (n >= MAX_LISTS) return res.status(400).json({ error: `You can have at most ${MAX_LISTS} lists. Delete one to make room.` });
+
+  const newId = await db.tx(async (t) => {
+    const made = await t.run(
+      'INSERT INTO custom_lists (user_id, title, description, ranked, is_public, copied_from) VALUES (?, ?, ?, ?, FALSE, ?) RETURNING id',
+      [req.userId, source.title, source.description, source.ranked, source.id]
+    );
+    const id = made.rows[0].id;
+    // the explicit cast lets Postgres know what the first value is
+    await t.run(
+      'INSERT INTO custom_list_items (list_id, position, kind, mal_id, title, image_url, note) SELECT ?::integer, position, kind, mal_id, title, image_url, note FROM custom_list_items WHERE list_id = ?',
+      [id, source.id]
+    );
+    return id;
+  });
+  res.status(201).json(await loadFull(newId, req.userId));
 });
 
 // DELETE /api/custom-lists/:id

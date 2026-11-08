@@ -18,6 +18,7 @@ test('shapes an anime entry into an import row', () => {
   assert.equal(skipped.length, 0);
   assert.deepEqual(rows[0], {
     title: 'Frieren', mal_id: 1, status: 'completed', score: 9, progress: 12, total: 28, review: 'great',
+    started_on: null, finished_on: null, rewatches: 0,
     genres: ['Adventure', 'Drama'], ratings: null, image_url: 'https://s4.anilist.co/x.jpg'
   });
 });
@@ -57,4 +58,15 @@ test('copes with empty, null and odd data', () => {
   assert.equal(rows[0].status, null);
   assert.deepEqual(rows[0].genres, []);
   assert.equal(rows[0].image_url, null);
+});
+
+test('start and finish dates and repeat counts come across when AniList has them', () => {
+  const { rows } = shapeCollection({ lists: [{ entries: [
+    entry({ startedAt: { year: 2024, month: 3, day: 9 }, completedAt: { year: 2024, month: 4, day: 1 }, repeat: 2 }, { idMal: 10 }),
+    entry({ startedAt: { year: 2024, month: null, day: null }, completedAt: { year: null, month: null, day: null }, repeat: 0 }, { idMal: 11 }),
+    entry({ repeat: 500 }, { idMal: 12 })
+  ] }] }, 'anime');
+  assert.deepEqual([rows[0].started_on, rows[0].finished_on, rows[0].rewatches], ['2024-03-09', '2024-04-01', 2]);
+  assert.deepEqual([rows[1].started_on, rows[1].finished_on, rows[1].rewatches], [null, null, 0]); // partial dates are dropped
+  assert.equal(rows[2].rewatches, 99);
 });

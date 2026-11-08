@@ -12,6 +12,7 @@ import AnimeCard from '../components/AnimeCard.jsx';
 import ScoreInput from '../components/ScoreInput.jsx';
 import RecommendButton from '../components/RecommendButton.jsx';
 import AddToList from '../components/AddToList.jsx';
+import EntryDates from '../components/EntryDates.jsx';
 import ReadLinks from '../components/ReadLinks.jsx';
 import WatchLinks from '../components/WatchLinks.jsx';
 
@@ -217,6 +218,7 @@ export default function AnimeDetail({ kind = 'anime' }) {
                     </button>
                     <RecommendButton kind={kind} malId={anime.mal_id} title={anime.title} />
                   </div>
+                  <EntryDates entry={entry} kind={kind} paper onSave={(patch) => run(() => updateEntry(entry.id, patch))} />
                   <details className="rate-detail" open={Object.keys(entry.ratings || {}).length > 0}>
                     <summary>Rate in detail <em>(optional)</em></summary>
                     <div className="rate-grid">
