@@ -7,14 +7,14 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 // Spoilers are removed completely (nobody opens a profile expecting plot twists), the rest becomes plain readable text.
 export function cleanCharacterText(text, max = 1200) {
   let s = String(text ?? '').replace(/\r/g, '');
-  s = s.replace(/~!([\s\S]*?)!~/g, ''); // spoiler blocks
-  s = s.replace(/~!|!~/g, ''); // a stray, unmatched spoiler marker
-  s = s.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, ''); // HTML
-  s = s.replace(/img\d*\([^)]*\)/gi, ''); // embedded pictures
-  s = s.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1'); // [text](link) keeps the text
-  s = s.replace(/(__|\*\*)(.+?)\1/g, '$2').replace(/~~(.+?)~~/g, '$1'); // bold and strike-through markers
+  s = s.replace(/~!([\s\S]*?)!~/g, '');
+  s = s.replace(/~!|!~/g, '');
+  s = s.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '');
+  s = s.replace(/img\d*\([^)]*\)/gi, '');
+  s = s.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
+  s = s.replace(/(__|\*\*)(.+?)\1/g, '$2').replace(/~~(.+?)~~/g, '$1');
   s = s.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
-  if (s.length > max) s = `${s.slice(0, max).replace(/\s+\S*$/, '')}…`; // cut at a word boundary
+  if (s.length > max) s = `${s.slice(0, max).replace(/\s+\S*$/, '')}…`;
   return s;
 }
 

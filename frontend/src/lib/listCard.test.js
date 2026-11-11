@@ -1,6 +1,7 @@
+// Tests for lib/listCard.js: text wrapping, caption order and file names for list cards.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { wrapLines, listText, cardFileName } from './listCard.js';
+import { wrapLines, listText, cardFileName, labels } from './listCard.js';
 
 // a fake canvas context where every character is 10px wide
 const ctx = { measureText: (t) => ({ width: t.length * 10 }) };
@@ -37,4 +38,18 @@ test('file names are safe and never empty', () => {
   assert.equal(cardFileName('???', 'png'), 'anitrack-list.png');
   assert.equal(cardFileName(undefined, 'png'), 'anitrack-list.png');
   assert.ok(cardFileName('x'.repeat(200), 'png').length < 60);
+});
+
+test('anime and manga lead with the note, characters lead with the name', () => {
+  assert.deepEqual(labels({ kind: 'anime', title: 'One Piece', note: 'Marineford' }), ['Marineford', 'One Piece']);
+  assert.deepEqual(labels({ kind: 'anime', title: 'One Piece', note: null }), ['One Piece', '']);
+  assert.deepEqual(labels({ kind: 'character', title: 'Lelouch Lamperouge', note: 'Code Geass' }), ['Lelouch Lamperouge', 'Code Geass']);
+  assert.deepEqual(labels({ kind: 'character', title: 'Johan Liebert', note: null }), ['Johan Liebert', '']);
+});
+
+test('the text list handles characters too', () => {
+  const text = listText({ title: 'Top 10 villains', items: [
+    { kind: 'character', title: 'Johan Liebert', note: 'Monster' }, { kind: 'character', title: 'Light Yagami', note: null }
+  ] });
+  assert.equal(text, 'Top 10 villains\n\n1. Johan Liebert (Monster)\n2. Light Yagami\n');
 });

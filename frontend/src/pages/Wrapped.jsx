@@ -1,3 +1,4 @@
+// Your year in anime and manga: summary slides with a downloadable image.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, imgSrc } from '../api/client.js';
@@ -90,7 +91,7 @@ export default function Wrapped() {
     const yr = events.filter((e) => e.kind === kind && new Date(e.ts).getFullYear() === year);
     const fromLog = yr.reduce((s, e) => s + e.delta, 0);
     const total = entries.reduce((s, e) => s + (e[cfg.progress] || 0), 0);
-    const logged = fromLog || total; // the log only starts when this version went live; before that, use everything on the list
+    const logged = fromLog || total;
     const byMonth = Array(12).fill(0);
     yr.forEach((e) => { byMonth[new Date(e.ts).getMonth()] += e.delta; });
     const bestMonth = Math.max(...byMonth);

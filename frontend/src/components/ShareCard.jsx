@@ -1,3 +1,4 @@
+// "Share card" dialog: draws a picture of your top three with your stats, ready to post
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { HEART_PATH, HEX_POINTS, shapeOf } from '../lib/avatarShape.js';
 import { api, imgSrc } from '../api/client.js';
@@ -18,7 +19,7 @@ const loadImage = (src) =>
   new Promise((resolve) => {
     if (!src) return resolve(null);
     const img = new Image();
-    img.crossOrigin = 'anonymous'; // lets the picture be saved into the card when the API is on another address
+    img.crossOrigin = 'anonymous';
     img.onload = () => resolve(img);
     img.onerror = () => resolve(null);
     img.src = src;
@@ -87,13 +88,11 @@ async function drawCard(canvas, { user, kind, items, stats, link }) {
   canvas.width = W;
   canvas.height = H;
 
-  // background and dot grid
   ctx.fillStyle = INK;
   ctx.fillRect(0, 0, W, H);
   ctx.fillStyle = 'rgba(255, 75, 31, 0.15)';
   for (let y = 18; y < H; y += 30) for (let x = 18; x < W; x += 30) { ctx.beginPath(); ctx.arc(x, y, 1.7, 0, Math.PI * 2); ctx.fill(); }
 
-  // brand
   ctx.fillStyle = ORANGE;
   ctx.fillRect(60, 56, 22, 22);
   ctx.fillStyle = TEXT;
@@ -103,11 +102,10 @@ async function drawCard(canvas, { user, kind, items, stats, link }) {
   ctx.fillText('ANITRACK', 96, 76);
   setSpacing(ctx, 0);
 
-  // avatar
   const [avatar, ...covers] = await Promise.all([loadImage(user.avatar), ...items.map((i) => loadImage(imgSrc(i.image_url)))]);
   const ax = 60, ay = 132, as = 132;
   ctx.save();
-  clipShape(ctx, shapeOf(user.avatar_shape), ax, ay, as); // the picture takes the shape the person chose
+  clipShape(ctx, shapeOf(user.avatar_shape), ax, ay, as);
   if (avatar) drawCover(ctx, avatar, ax, ay, as, as);
   else {
     ctx.fillStyle = ORANGE;
@@ -120,7 +118,6 @@ async function drawCard(canvas, { user, kind, items, stats, link }) {
   }
   ctx.restore();
 
-  // name: shrink until it fits next to the avatar
   let size = 104;
   ctx.fillStyle = TEXT;
   do {
@@ -134,7 +131,6 @@ async function drawCard(canvas, { user, kind, items, stats, link }) {
   ctx.fillText(`TOP ${items.length} ${KINDS[kind].name.toUpperCase()}`, ax + as + 38, ay + 122);
   setSpacing(ctx, 0);
 
-  // bio
   let y = ay + as + 52;
   if (user.bio) {
     ctx.fillStyle = '#cfc9bc';
@@ -145,9 +141,8 @@ async function drawCard(canvas, { user, kind, items, stats, link }) {
     }
   }
 
-  // covers
   const cw = 300, ch = 450, gap = 30;
-  const cy = Math.max(y + 24, 410); // 410 (not 440) keeps the gap under the header and the one above the stats about equal
+  const cy = Math.max(y + 24, 410);
   const startX = items.length === 3 ? 60 : (W - (items.length * cw + (items.length - 1) * gap)) / 2;
   items.forEach((it, i) => {
     const x = startX + i * (cw + gap);
@@ -161,7 +156,6 @@ async function drawCard(canvas, { user, kind, items, stats, link }) {
       ctx.fillText('No cover', x + cw / 2, cy + ch / 2);
       ctx.textAlign = 'left';
     }
-    // rank numeral, outlined so it reads on any cover
     ctx.font = '900 168px Archivo, sans-serif';
     ctx.lineJoin = 'round';
     ctx.lineWidth = 12;
@@ -181,7 +175,6 @@ async function drawCard(canvas, { user, kind, items, stats, link }) {
     }
   });
 
-  // stats
   const sy = 1100;
   ctx.fillStyle = TEXT;
   ctx.fillRect(60, sy, W - 120, 3);
@@ -194,7 +187,7 @@ async function drawCard(canvas, { user, kind, items, stats, link }) {
   cells.forEach(([n, label], i) => {
     const x = 60 + i * 340;
     ctx.fillStyle = TEXT;
-    let size = 88; // shrink a long number (like 12,345) until it fits its column
+    let size = 88;
     do {
       ctx.font = `900 ${size}px Archivo, sans-serif`;
       size -= 4;
@@ -205,7 +198,6 @@ async function drawCard(canvas, { user, kind, items, stats, link }) {
     ctx.fillText(label, x, sy + 148);
   });
 
-  // footer
   ctx.fillStyle = MUTED;
   ctx.font = '500 24px "JetBrains Mono", monospace';
   ctx.fillText(link || 'Tracked with AniTrack', 60, H - 44);
@@ -213,7 +205,6 @@ async function drawCard(canvas, { user, kind, items, stats, link }) {
   ctx.fillRect(W - 88, H - 66, 28, 28);
 }
 
-// "Share card" dialog: draws a picture of your top three with your stats, ready to post
 export default function ShareCard({ onClose }) {
   const { user } = useAuth();
   const anime = useList();
@@ -221,9 +212,9 @@ export default function ShareCard({ onClose }) {
   const toast = useToast();
   const canvas = useRef(null);
   const [kind, setKind] = useState('anime');
-  const shown = (kind === 'manga' ? manga : anime).stats; // the numbers for the list being shown
+  const shown = (kind === 'manga' ? manga : anime).stats;
   const [favs, setFavs] = useState(null);
-  const [state, setState] = useState('loading'); // loading | ready | empty | error
+  const [state, setState] = useState('loading');
   const canShare = useMemo(() => {
     try {
       return Boolean(navigator.canShare?.({ files: [new File([''], 'x.png', { type: 'image/png' })] }));
@@ -242,7 +233,6 @@ export default function ShareCard({ onClose }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  // your chosen top 3, topped up with your highest-rated titles if you picked fewer than three
   const items = useMemo(() => {
     if (!favs) return null;
     const src = kind === 'manga' ? manga : anime;

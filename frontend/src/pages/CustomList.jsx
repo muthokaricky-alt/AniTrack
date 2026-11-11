@@ -1,3 +1,4 @@
+// One custom list: view it, and if it is yours edit, reorder, add titles, share it and download it as a card.
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client.js';
@@ -6,6 +7,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import ErrorState from '../components/ErrorState.jsx';
 import TitlePicker from '../components/TitlePicker.jsx';
 import ListCardDownload from '../components/ListCardDownload.jsx';
+import ListShowcase from '../components/ListShowcase.jsx';
 
 const MAX_ITEMS = 50;
 
@@ -39,15 +41,15 @@ export default function CustomList() {
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(null);
+  const [mode, setMode] = useState(null); // 'showcase' or 'edit', chosen once the list has loaded
 
   const load = useCallback(() => {
     setError('');
     setMissing(false);
-    api.customLists.get(id).then(setList).catch((err) => (/not found/i.test(err.message) ? setMissing(true) : setError(err.message)));
+    api.customLists.get(id).then((res) => { setList(res); setMode((m) => m ?? (res.is_owner && res.items.length === 0 ? 'edit' : 'showcase')); }).catch((err) => (/not found/i.test(err.message) ? setMissing(true) : setError(err.message)));
   }, [id]);
   useEffect(load, [load]);
 
-  // Every change is saved straight away. Returns true when it worked.
   async function save(patch, okMessage) {
     setBusy(true);
     try {
@@ -64,7 +66,7 @@ export default function CustomList() {
 
   const changeItems = async (items) => {
     const before = list;
-    setList({ ...list, items }); // show it at once, put it back if the save fails
+    setList({ ...list, items });
     if (!(await save({ items }))) setList(before);
   };
 
@@ -134,6 +136,7 @@ export default function CustomList() {
 
   const owner = list.is_owner;
   const taken = new Set(list.items.map((it) => `${it.kind}:${it.mal_id}`));
+  const arranging = owner && mode === 'edit';
 
   return (
     <div className="wrap page-pad">
@@ -148,6 +151,11 @@ export default function CustomList() {
 
       {owner && !editing && (
         <div className="cl-actions">
+          <span className="cl-mode" role="group" aria-label="How to view this list">
+            {[['showcase', 'Showcase'], ['edit', 'Edit list']].map(([m, label]) => (
+              <button key={m} type="button" className={`chip ${mode === m ? 'on' : ''}`} aria-pressed={mode === m} onClick={() => setMode(m)}>{label}</button>
+            ))}
+          </span>
           <button type="button" className="btn btn-line btn-sm" onClick={() => { setDraft({ title: list.title, description: list.description || '', ranked: list.ranked, is_public: list.is_public }); setEditing(true); }}>Edit details</button>
           {list.is_public ? (
             <button type="button" className="btn btn-line btn-sm" onClick={copyLink}>Copy link</button>
@@ -192,13 +200,15 @@ export default function CustomList() {
 
       <ListCardDownload list={list} />
 
-      {owner && <TitlePicker taken={taken} onPick={add} disabled={busy || list.items.length >= MAX_ITEMS} />}
+      {arranging && <TitlePicker taken={taken} onPick={add} disabled={busy || list.items.length >= MAX_ITEMS} />}
 
       {list.items.length === 0 ? (
         <div className="empty-state">
           <p className="es-title">{owner ? 'Nothing here yet' : 'This list is empty'}</p>
-          {owner && <p>Search above and press Add to build your list.</p>}
+          {owner && <p>{arranging ? 'Search above and press Add to build your list.' : 'Switch to Edit list to add titles.'}</p>}
         </div>
+      ) : !arranging ? (
+        <ListShowcase list={list} />
       ) : (
         <ol className={`cl-items ${list.ranked ? 'is-ranked' : ''}`}>
           {list.items.map((it, i) => (
@@ -227,7 +237,7 @@ export default function CustomList() {
           ))}
         </ol>
       )}
-      {owner && <p className="muted cl-count">{list.items.length} of {MAX_ITEMS} titles</p>}
+      {arranging && <p className="muted cl-count">{list.items.length} of {MAX_ITEMS} titles</p>}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+// GSAP set-up (plugins registered once) and the reduced-motion check.
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';

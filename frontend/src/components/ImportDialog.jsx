@@ -1,3 +1,4 @@
+// Import preview: matches parsed rows to the catalogue, lets you review them, then saves them to your lists.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api/client.js';
 import { KINDS, STATUS_LABEL } from '../constants.js';
@@ -6,10 +7,10 @@ import { useList } from '../context/ListContext.jsx';
 import { useMangaList } from '../context/MangaListContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 
-const CHUNK = 16; // titles per catalogue request (the server accepts at most 25 and splits them further)
-const MAX_LOOKUPS = 250; // keeps one import from hammering the catalogue API
-const BATCH = 50; // ids per cover lookup (the server accepts at most 50)
-const SAVE_CHUNK = 1000; // entries per save request (the server accepts at most 3000)
+const CHUNK = 16;
+const MAX_LOOKUPS = 250;
+const BATCH = 50;
+const SAVE_CHUNK = 1000;
 const norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
 // Group the parsed sections by list, drop repeated titles within the file
@@ -31,7 +32,7 @@ function groupSections(sections, defaultKind) {
 export default function ImportDialog({ sections, defaultKind, note = '', onClose }) {
   const toast = useToast();
   const lists = { anime: useList(), manga: useMangaList() };
-  const [phase, setPhase] = useState('matching'); // matching | review | importing
+  const [phase, setPhase] = useState('matching');
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [groups, setGroups] = useState([]);
   const [error, setError] = useState('');
@@ -40,7 +41,6 @@ export default function ImportDialog({ sections, defaultKind, note = '', onClose
   const listsRef = useRef(lists);
   listsRef.current = lists;
 
-  // Find a catalogue ID for every row: an ID already in the file, a title already on the list, or a catalogue lookup
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -67,7 +67,6 @@ export default function ImportDialog({ sections, defaultKind, note = '', onClose
         return { kind, items };
       });
 
-      // Files from MyAnimeList carry ids but no covers or genres: fetch those so imported titles look complete
       const needArt = built.flatMap(({ kind, items }) => items.filter((it) => it.match && !it.existing && !it.match.image_url).map((it) => ({ kind, it })));
 
       if (toLookUp.length > MAX_LOOKUPS) {
@@ -102,7 +101,6 @@ export default function ImportDialog({ sections, defaultKind, note = '', onClose
       }
       if (cancelled) return;
 
-      // A failed cover lookup is not fatal: those titles are still imported, just without a picture for now
       let artFailed = 0;
       for (const kind of Object.keys(KINDS)) {
         const todo = needArt.filter((n) => n.kind === kind).map((n) => n.it);
@@ -131,7 +129,6 @@ export default function ImportDialog({ sections, defaultKind, note = '', onClose
       }
       if (artFailed) setNotice((n) => [n, `Covers could not be loaded for ${artFailed} title${artFailed === 1 ? '' : 's'} just now. They will still be imported.`].filter(Boolean).join(' '));
 
-      // two different titles can resolve to the same show; keep the first
       const final = built.map(({ kind, items }) => {
         const ids = new Set();
         return { kind, items: items.filter((it) => { if (!it.match) return true; if (ids.has(it.match.mal_id)) return false; ids.add(it.match.mal_id); return true; }) };
@@ -158,14 +155,11 @@ export default function ImportDialog({ sections, defaultKind, note = '', onClose
     return { found, missing, updates, failed };
   }, [groups]);
 
-  // Status: what the file says, else what is already on the list, else "completed" when the row has a score
-  // (people rarely score things they haven't watched), else the plan-to list.
   function statusFor(it) {
     const cfg = KINDS[it.kind];
     return statusKey(it.row.status, it.kind) || it.existing?.status || (it.row.score != null ? 'completed' : cfg.defaultStatus);
   }
 
-  // Blanks in the file never wipe what is already on the list
   function toEntry(it) {
     const cfg = KINDS[it.kind];
     const { row, match, existing: e } = it;

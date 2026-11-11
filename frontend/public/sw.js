@@ -25,9 +25,8 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET' || req.headers.has('range')) return;
   const url = new URL(req.url);
 
-  if (url.pathname.includes('/api/') || url.pathname.endsWith('.mp3')) return; // always live
+  if (url.pathname.includes('/api/') || url.pathname.endsWith('.mp3')) return;
 
-  // pages: network first, saved shell when offline
   if (req.mode === 'navigate') {
     e.respondWith(
       fetch(req).then((res) => {
@@ -39,7 +38,6 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // our own built files have hashed names: cache first
   if (url.origin === self.location.origin) {
     e.respondWith(
       caches.match(req).then((hit) => hit || fetch(req).then((res) => {
@@ -50,7 +48,6 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // cover art from AniList: show the saved one at once, refresh in the background
   if (/(^|\.)anilist\.co$/.test(url.hostname) && req.destination === 'image') {
     e.respondWith(
       caches.open(IMAGES).then(async (c) => {

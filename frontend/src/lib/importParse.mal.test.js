@@ -1,3 +1,4 @@
+// Tests for lib/importParse.js: MyAnimeList exports, dates, and spreadsheet and JSON imports.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { gzipSync } from 'node:zlib';
@@ -62,14 +63,14 @@ test('reads an anime export: ids, titles, statuses, scores and progress', () => 
     title: 'Cowboy Bebop', mal_id: 1, status: 'completed', score: 9, progress: 26, total: 26, review: 'Space jazz & noodles', started_on: null, finished_on: null, rewatches: 0, genres: undefined, ratings: undefined
   });
   assert.equal(aot.status, 'active');
-  assert.equal(aot.score, null); // 0 means "not scored"
+  assert.equal(aot.score, null);
   assert.equal(aot.review, null);
-  assert.equal(fma.title, 'Fullmetal Alchemist: Brotherhood & Friends'); // entities decoded
+  assert.equal(fma.title, 'Fullmetal Alchemist: Brotherhood & Friends');
   assert.equal(fma.status, 'plan');
-  assert.equal(fma.total, null); // 0 episodes means unknown
+  assert.equal(fma.total, null);
   assert.equal(sg.status, 'on_hold');
-  assert.deepEqual([sg.started_on, sg.finished_on, sg.rewatches], ['2024-03-09', null, 2]); // MyAnimeList's 0000-00-00 means none
-  assert.equal(eva.status, 'dropped'); // numeric status codes work too
+  assert.deepEqual([sg.started_on, sg.finished_on, sg.rewatches], ['2024-03-09', null, 2]);
+  assert.equal(eva.status, 'dropped');
 });
 
 test('reads a manga export using chapters as progress', () => {
@@ -93,7 +94,7 @@ test('does not choke on odd or hostile input', () => {
   const evil = '<!DOCTYPE x [<!ENTITY a "aaaa"><!ENTITY b "&a;&a;&a;">]><myanimelist><anime><series_animedb_id>7</series_animedb_id><series_title>&b; &#x1F600; &#0; &unknown;</series_title></anime></myanimelist>';
   const [sec] = parseMalXml(evil);
   assert.equal(sec.rows.length, 1);
-  assert.ok(!sec.rows[0].title.includes('aaaa')); // entities are never expanded
+  assert.ok(!sec.rows[0].title.includes('aaaa'));
   assert.ok(sec.rows[0].title.includes('😀'));
 });
 

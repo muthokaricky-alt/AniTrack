@@ -1,3 +1,4 @@
+// Tests for src/top3.js: the Top 15 begins with the Top 3 and never repeats a title.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TOP15_MAX, withTop3First, withoutTop3 } from '../src/top3.js';
@@ -31,7 +32,7 @@ test('changing the Top 3 changes the start of the Top 15 on its own', () => {
   const stored = [it(10), it(11)];
   assert.deepEqual(ids(withTop3First([it(1), it(2), it(3)], stored)), [1, 2, 3, 10, 11]);
   assert.deepEqual(ids(withTop3First([it(7), it(2), it(3)], stored)), [7, 2, 3, 10, 11]);
-  assert.deepEqual(ids(withTop3First([it(10), it(2), it(3)], stored)), [10, 2, 3, 11]); // 10 moved up into the Top 3
+  assert.deepEqual(ids(withTop3First([it(10), it(2), it(3)], stored)), [10, 2, 3, 11]);
 });
 
 test('what gets stored for the Top 15 leaves the Top 3 picks out', () => {

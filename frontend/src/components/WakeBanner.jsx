@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-
 // Shown while the API server is waking up (free hosting sleeps when it is quiet).
 // The api client announces slow requests; this just listens.
+import { useEffect, useState } from 'react';
+
 export default function WakeBanner() {
   const [waking, setWaking] = useState(false);
   const [seconds, setSeconds] = useState(0);

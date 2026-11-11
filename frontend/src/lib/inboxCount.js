@@ -1,8 +1,8 @@
+// How many recommendations are waiting for the signed-in person. It is fetched once when the app opens (and again after
+// someone logs in), never polled, so it costs the free database next to nothing.
 import { useEffect, useState } from 'react';
 import { api } from '../api/client.js';
 
-// How many recommendations are waiting for the signed-in person. It is fetched once when the app opens (and again after
-// someone logs in), never polled, so it costs the free database next to nothing.
 let count = 0;
 let loadedFor = null;
 const listeners = new Set();

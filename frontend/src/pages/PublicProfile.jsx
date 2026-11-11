@@ -1,3 +1,4 @@
+// A person's public profile: stats, taste match, favourites and public lists.
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client.js';
@@ -34,8 +35,6 @@ function Block({ label, data, unit }) {
     <div className="pub-block">
       <h2 className="mini-h">{label}</h2>
       {data.total === 0 ? (
-        // Stats are counted from the watch list. Favourites are picked separately, so someone with only
-        // favourites would otherwise see a row of zeros that looks broken.
         <p className="pub-empty">
           Nothing on their {label.toLowerCase()} list yet. These numbers come from the titles they track, and their favourites are picked separately.
         </p>
@@ -68,7 +67,6 @@ export default function PublicProfile() {
       .publicProfile(username)
       .then((res) => !cancelled && setData(res))
       .catch((e) => !cancelled && setError(e.message));
-    // Lists are a bonus on this page, so a failure here just means the section stays hidden
     api.customLists.forUser(username).then((res) => !cancelled && setLists(res.lists || [])).catch(() => {});
     return () => { cancelled = true; };
   }, [username]);

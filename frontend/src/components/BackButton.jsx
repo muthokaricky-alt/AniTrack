@@ -1,15 +1,14 @@
-import { useLocation, useNavigate } from 'react-router-dom';
-
 // A back arrow for the top bar, so people can go back a step on a phone (an installed app has no browser Back button) or
 // on a computer. On a page you reached from inside AniTrack it goes back one step, exactly like the browser's Back.
 // A page opened directly (a shared link, or the installed app's first screen) has nothing behind it inside AniTrack, so
 // there the arrow takes you to the home page instead. It is hidden on the home page itself.
+import { useLocation, useNavigate } from 'react-router-dom';
+
 export default function BackButton() {
   const { pathname, key } = useLocation();
   const navigate = useNavigate();
   if (pathname === '/') return null;
 
-  // React Router gives the first page of a visit the key 'default'; every page reached by navigating has its own key
   const hasHistory = key !== 'default';
   return (
     <button

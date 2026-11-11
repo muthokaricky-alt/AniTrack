@@ -1,3 +1,4 @@
+// Tests for src/links.js: cleaning AniList external links into official watch and read links.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { toOfficialLinks } from '../src/links.js';

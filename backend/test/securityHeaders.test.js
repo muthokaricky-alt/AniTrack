@@ -1,15 +1,16 @@
+// Tests for the content security policy and the other security headers.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildCsp, securityHeaders } from '../src/securityHeaders.js';
 
 test('the policy allows the places the site really loads from', () => {
   const csp = buildCsp();
-  assert.match(csp, /frame-src [^;]*https:\/\/w\.soundcloud\.com/); // music player
-  assert.match(csp, /frame-src [^;]*https:\/\/www\.youtube-nocookie\.com/); // trailers
-  assert.match(csp, /script-src [^;]*https:\/\/w\.soundcloud\.com/); // player API
+  assert.match(csp, /frame-src [^;]*https:\/\/w\.soundcloud\.com/);
+  assert.match(csp, /frame-src [^;]*https:\/\/www\.youtube-nocookie\.com/);
+  assert.match(csp, /script-src [^;]*https:\/\/w\.soundcloud\.com/);
   assert.match(csp, /style-src [^;]*https:\/\/fonts\.googleapis\.com/);
   assert.match(csp, /font-src [^;]*https:\/\/fonts\.gstatic\.com/);
-  assert.match(csp, /img-src [^;]*data:/); // profile photos
+  assert.match(csp, /img-src [^;]*data:/);
 });
 
 test('the policy blocks plugins and framing by other sites', () => {

@@ -1,7 +1,7 @@
 // Helpers for talking to a server that may be asleep (free hosting spins down when idle,
 // and the first request after that takes up to about a minute).
-export const SLOW_MS = 3500; // a request slower than this is probably waiting on a sleeping server
-export const RETRY_DELAYS = [2000, 4000, 8000, 12000, 15000]; // about 40 seconds of patience in total
+export const SLOW_MS = 3500;
+export const RETRY_DELAYS = [2000, 4000, 8000, 12000, 15000];
 
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

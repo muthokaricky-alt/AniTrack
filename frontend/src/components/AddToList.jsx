@@ -1,3 +1,5 @@
+// "Add to a list" on an anime or manga page: pick one of your custom lists (or start a new one) and optionally
+// write a note, like which arc you mean. The same title can go in a list more than once.
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
@@ -6,8 +8,6 @@ import { useToast } from '../context/ToastContext.jsx';
 
 const MAX_ITEMS = 50;
 
-// "Add to a list" on an anime or manga page: pick one of your custom lists (or start a new one) and optionally
-// write a note, like which arc you mean. The same title can go in a list more than once.
 export default function AddToList({ kind, malId, title, imageUrl }) {
   const [open, setOpen] = useState(false);
   return (
@@ -25,7 +25,7 @@ function AddToListDialog({ kind, malId, title, imageUrl, onClose }) {
   const [note, setNote] = useState('');
   const [newTitle, setNewTitle] = useState('');
   const [busy, setBusy] = useState(false);
-  const [added, setAdded] = useState(() => new Set()); // lists this title went into during this visit
+  const [added, setAdded] = useState(() => new Set());
 
   useEffect(() => {
     let off = false;
@@ -76,7 +76,6 @@ function AddToListDialog({ kind, malId, title, imageUrl, onClose }) {
     }
   }
 
-  // Rendered into <body>, like the recommend dialog, so the detail page's panel styling cannot leak in
   return createPortal(
     <div className="modal-back" onMouseDown={(e) => e.target === e.currentTarget && !busy && onClose()}>
       <div className="modal al-modal" role="dialog" aria-modal="true" aria-labelledby="al-title">

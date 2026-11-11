@@ -1,5 +1,6 @@
+// The Express app: security headers, CORS, rate limits, the API routes, the built frontend and error handling.
 import 'dotenv/config';
-import 'express-async-errors'; // lets async route handlers pass errors to the error middleware below
+import 'express-async-errors';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -26,7 +27,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Fail fast: without a real secret, tokens would be signed with a guessable key
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'change_this_to_a_long_random_string') {
-  // RENDER is set automatically on Render, so a forgotten NODE_ENV can't leave the site running on a public, guessable secret
   if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
     console.error('JWT_SECRET is missing or still the placeholder. Set a long random value.');
     process.exit(1);
@@ -37,7 +37,7 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'change_this_to_a_long
 
 const app = express();
 app.disable('x-powered-by');
-app.set('trust proxy', 1); // behind Render's proxy, so req.ip is the real client
+app.set('trust proxy', 1);
 const extraHeaders = securityHeaders(process.env);
 app.use((req, res, next) => {
   res.set({
@@ -53,9 +53,9 @@ app.use((req, res, next) => {
 // (Locally the Vite dev server runs on a different port, which is why it stays open outside production.)
 const onHost = process.env.NODE_ENV === 'production' || Boolean(process.env.RENDER);
 app.use(cors({ origin: process.env.CORS_ORIGIN || !onHost }));
-app.use(['/api/list/import', '/api/manga-list/import'], express.json({ limit: '2mb' })); // list backups can be large
+app.use(['/api/list/import', '/api/manga-list/import'], express.json({ limit: '2mb' }));
 // profile photos (data URLs) need a little more room than ordinary JSON bodies
-app.use('/api/profile/banner', express.json({ limit: '500kb' })); // an uploaded banner picture is larger than a profile photo
+app.use('/api/profile/banner', express.json({ limit: '500kb' }));
 app.use(['/api/auth/register', '/api/profile'], express.json({ limit: '200kb' }));
 app.use(express.json({ limit: '100kb' }));
 
@@ -107,7 +107,6 @@ if (fs.existsSync(distDir)) {
 }
 
 app.use((err, req, res, next) => {
-  // bad or oversized request bodies are the sender's mistake, not a server fault
   if (err.type === 'entity.too.large') return res.status(413).json({ error: 'That request is too large' });
   if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'The request was not valid JSON' });
   console.error(err);

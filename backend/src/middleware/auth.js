@@ -1,3 +1,4 @@
+// Login checks for routes: requireAuth turns logged-out visitors away, optionalAuth lets them through.
 import jwt from 'jsonwebtoken';
 import db from '../db.js';
 import { tokenMatchesUser } from '../tokenCheck.js';

@@ -1,3 +1,4 @@
+// Character search and detail from AniList, with spoilers removed (ids are AniList character ids).
 import { Router } from 'express';
 import { anilistQuery } from './anime.js';
 import { cleanQuery, isId, errDetail, CATALOG_DOWN } from '../inputs.js';

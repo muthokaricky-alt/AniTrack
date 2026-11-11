@@ -1,6 +1,5 @@
 // Turns an AniList MediaListCollection into the rows AniTrack's import preview already understands.
 // Pure functions only, so they can be tested without the network.
-
 // AniList usernames are letters, digits and underscores, 2 to 20 characters
 import { fuzzyToIso } from './dates.js';
 
@@ -53,7 +52,6 @@ export function shapeCollection(collection, kind) {
         title: title || `MyAnimeList #${m.idMal}`,
         mal_id: m.idMal,
         status: STATUS[e.status] || null,
-        // asked for on a 10-point scale already; 0 means "not scored"
         score: typeof e.score === 'number' && e.score > 0 ? Math.min(10, Math.round(e.score * 2) / 2) : null,
         progress: Number.isInteger(e.progress) && e.progress >= 0 ? e.progress : null,
         total: Number.isInteger(total) && total > 0 ? total : null,

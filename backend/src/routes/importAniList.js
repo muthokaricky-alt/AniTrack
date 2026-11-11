@@ -1,3 +1,4 @@
+// GET /api/import/anilist: fetches a public AniList profile's list for the import preview.
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { USERNAME_RE } from '../anilistList.js';

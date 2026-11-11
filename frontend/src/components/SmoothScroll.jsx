@@ -1,3 +1,4 @@
+// One Lenis instance for the whole app, driven by GSAP's ticker so ScrollTrigger stays in sync.
 import { useEffect, useRef } from 'react';
 import { useLocation, useNavigationType } from 'react-router-dom';
 import Lenis from 'lenis';
@@ -7,11 +8,10 @@ import { gsap, ScrollTrigger, prefersReducedMotion } from '../lib/gsap.js';
 let instance = null;
 export const getLenis = () => instance;
 
-// One Lenis instance for the whole app, driven by GSAP's ticker so ScrollTrigger stays in sync.
 export default function SmoothScroll() {
   const { pathname, key } = useLocation();
   const navType = useNavigationType();
-  const positions = useRef({}); // scroll position per history entry, so Back returns you to where you were
+  const positions = useRef({});
   const currentKey = useRef(key);
 
   useEffect(() => {
@@ -41,7 +41,6 @@ export default function SmoothScroll() {
     const jump = (y) => (instance ? instance.scrollTo(y, { immediate: true }) : window.scrollTo(0, y));
     const saved = navType === 'POP' ? positions.current[key] : undefined;
     if (!saved) { jump(0); return undefined; }
-    // the page is still filling in: keep trying for up to 2 seconds until it is tall enough
     let tries = 0;
     const timer = setInterval(() => {
       tries += 1;

@@ -1,3 +1,4 @@
+// Bell in the top bar: shows currently airing shows on your list that have episodes you have not watched yet
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client.js';
@@ -6,7 +7,6 @@ import { useList } from '../context/ListContext.jsx';
 
 const SEEN_KEY = 'anitrack:eps-seen';
 
-// Bell in the top bar: shows currently airing shows on your list that have episodes you have not watched yet
 export default function NewEpisodes() {
   const { user } = useAuth();
   const { entries } = useList();
@@ -15,7 +15,6 @@ export default function NewEpisodes() {
   const [seen, setSeen] = useState(() => { try { return localStorage.getItem(SEEN_KEY) || ''; } catch { return ''; } });
   const box = useRef(null);
 
-  // refetch on login and whenever the list changes (watching an episode lowers the count)
   const sig = entries.map((e) => `${e.mal_id}:${e.episodes_watched}:${e.status}`).join('|');
   useEffect(() => {
     if (!user) { setRows([]); return undefined; }

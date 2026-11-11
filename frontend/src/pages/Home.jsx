@@ -1,3 +1,4 @@
+// The home page: hero, airing ticker, featured spotlight and rails of popular titles.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../api/client.js';
@@ -122,7 +123,6 @@ export default function Home() {
   const [query, setQuery] = useState('');
   const season = useMemo(seasonLabel, []);
   const featured = useMemo(() => seasonal.filter((a) => a.banner).slice(0, 4), [seasonal]);
-  // a series that is already at its last episode is finished, not something to continue
   const watching = useMemo(() => entries.filter((e) => e.status === 'watching' && !(e.total_episodes > 0 && e.episodes_watched >= e.total_episodes)), [entries]);
 
   function load() {
@@ -138,7 +138,6 @@ export default function Home() {
   }
   useEffect(load, []);
 
-  // Sections below the pinned rail were measured before async content settled, so re-measure
   useEffect(() => {
     const id = setTimeout(() => ScrollTrigger.refresh(), 150);
     return () => clearTimeout(id);

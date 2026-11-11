@@ -1,6 +1,7 @@
+// Tests for src/customList.js: what a custom list accepts and rejects.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cleanListInput, MAX_ITEMS } from '../src/customList.js';
+import { cleanListInput, MAX_ITEMS, KINDS } from '../src/customList.js';
 
 const item = (over = {}) => ({ kind: 'anime', mal_id: 1, title: 'Cowboy Bebop', image_url: 'https://cdn.myanimelist.net/images/anime/4/19644.jpg', note: 'Session 5', ...over });
 
@@ -37,7 +38,7 @@ test('description and flags are checked', () => {
 });
 
 test('items need a kind, a positive MAL id and a name', () => {
-  for (const bad of [item({ kind: 'character' }), item({ kind: undefined }), item({ mal_id: 0 }), item({ mal_id: -2 }), item({ mal_id: 1.5 }), item({ mal_id: 'abc' }), item({ title: '' }), item({ title: '  ' }), null, 'nope']) {
+  for (const bad of [item({ kind: 'person' }), item({ kind: 'Character' }), item({ kind: undefined }), item({ mal_id: 0 }), item({ mal_id: -2 }), item({ mal_id: 1.5 }), item({ mal_id: 'abc' }), item({ title: '' }), item({ title: '  ' }), null, 'nope']) {
     assert.ok(cleanListInput({ items: [bad] }).error, `should reject ${JSON.stringify(bad)}`);
   }
   assert.ok(cleanListInput({ items: 'nope' }).error);
@@ -64,4 +65,20 @@ test('notes are limited and unsafe image links are dropped', () => {
 
 test('rejects bodies that are not objects', () => {
   for (const bad of [null, undefined, 'x', 5, [], [{ title: 'x' }]]) assert.ok(cleanListInput(bad).error);
+});
+
+test('characters can go in a list, next to anime and manga', () => {
+  const { value, error } = cleanListInput({ items: [
+    item({ kind: 'character', mal_id: 417, title: 'Lelouch Lamperouge', note: 'Best villain' }),
+    item({ kind: 'anime', mal_id: 417 }),
+    item({ kind: 'manga', mal_id: 417 })
+  ] });
+  assert.equal(error, undefined);
+  assert.deepEqual(value.items.map((i) => i.kind), ['character', 'anime', 'manga']);
+  assert.equal(value.items[0].note, 'Best villain');
+});
+
+test('only the three known kinds are accepted', () => {
+  assert.deepEqual(KINDS, ['anime', 'manga', 'character']);
+  assert.ok(cleanListInput({ items: [item({ kind: 'studio' })] }).error);
 });

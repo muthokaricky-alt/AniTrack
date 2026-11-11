@@ -1,3 +1,4 @@
+// Recommendations from friends (Received) and the ones you sent (Sent)
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client.js';
@@ -14,7 +15,6 @@ function ago(iso) {
   return new Date(iso).toLocaleDateString();
 }
 
-// Recommendations from friends (Received) and the ones you sent (Sent)
 export default function Inbox() {
   const toast = useToast();
   const [box, setBox] = useState('inbox');
@@ -26,7 +26,6 @@ export default function Inbox() {
     []
   );
 
-  // Opening the inbox shows what's new, then marks it all as seen (the "New" tags stay until you leave)
   useEffect(() => {
     load('inbox').then(() => api.markInboxRead().then(() => setInboxCount(0)).catch(() => {}));
   }, [load]);

@@ -1,3 +1,4 @@
+// One router factory serves both lists. Table and column names come from these constants, never from user input.
 import { Router } from 'express';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -7,7 +8,6 @@ import { loggedDelta, autoStatus } from '../progress.js';
 import { errDetail } from '../inputs.js';
 import { dateField, todayFrom } from '../dates.js';
 
-// One router factory serves both lists. Table and column names come from these constants, never from user input.
 const KINDS = {
   anime: {
     kind: 'anime',
@@ -34,7 +34,7 @@ const KINDS = {
 };
 
 const MAX_RESOLVE = 25;
-const BATCH = 8; // titles per AniList request
+const BATCH = 8;
 
 // Parse an optional integer field. Returns undefined when absent, null when cleared, NaN when invalid.
 function intField(value, { min, max }) {
@@ -125,8 +125,6 @@ function makeRouter(cfg) {
     });
   });
 
-  // Add an entry, or change the status of an existing one.
-  // keep_existing: true adds only when missing (quick-add), so a completed title is never reset.
   router.post('/', async (req, res) => {
     const { mal_id, title, image_url = null, status = defaultStatus, keep_existing = false } = req.body;
     if (!Number.isInteger(Number(mal_id)) || !title) return res.status(400).json({ error: 'mal_id and title are required' });
@@ -163,9 +161,6 @@ function makeRouter(cfg) {
     res.status(existing ? 200 : 201).json(unpack(entry));
   });
 
-  // Match plain titles (from a spreadsheet or Word file) to catalogue entries so they can be imported.
-  // Titles go to AniList in small batches (one alias per title). If a batch fails, its titles are retried one by one,
-  // so a single odd title or a busy moment costs only that title instead of the whole import.
   const fields = anilistType === 'MANGA' ? 'chapters' : 'episodes';
   async function lookup(queries) {
     const vars = {};
@@ -177,7 +172,7 @@ function makeRouter(cfg) {
     const data = await anilistQuery(`query (${defs}) { ${body} }`, vars, null, { tolerateErrors: true, retries: 2 });
     return queries.map((_, n) => {
       const m = data?.[`m${n}`];
-      if (!m || !m.idMal) return null; // list entries are keyed by MyAnimeList id, so a title without one can't be stored
+      if (!m || !m.idMal) return null;
       return {
         mal_id: m.idMal,
         title: (m.title?.english || m.title?.romaji || '').slice(0, 300),
@@ -217,14 +212,12 @@ function makeRouter(cfg) {
         }
       }
     }
-    // Nothing at all could be looked up: report it as an error instead of a list of "failed" rows
     if (wanted.length && failures === wanted.length) {
       return res.status(502).json({ error: 'Could not reach the anime catalogue just now. Try again in a moment.', detail: errDetail(lastError) });
     }
     res.json({ matches });
   });
 
-  // Bulk upsert from an AniTrack export (overwrites entries with the same mal_id)
   router.post('/import', async (req, res) => {
     const list = Array.isArray(req.body?.entries) ? req.body.entries : null;
     if (!list) return res.status(400).json({ error: 'entries must be an array' });
@@ -256,7 +249,6 @@ function makeRouter(cfg) {
       });
     }
 
-    // one row per title (the last one wins), sent to the database as parallel arrays in a single statement
     const byId = new Map(rows.map((r) => [r.malId, r]));
     const uniq = [...byId.values()];
     const col = (k) => uniq.map((r) => r[k]);
@@ -277,7 +269,6 @@ function makeRouter(cfg) {
     res.json({ imported: rows.length, skipped: list.length - rows.length });
   });
 
-  // Update status, overall score (0.5 steps), category ratings, progress, notes. Score, ratings and notes can be cleared with null.
   router.patch('/:id', async (req, res) => {
     if (!/^\d+$/.test(req.params.id)) return res.status(404).json({ error: 'Entry not found' });
     const entry = await db.get(`SELECT * FROM ${t} WHERE id = ? AND user_id = ?`, [req.params.id, req.userId]);
@@ -318,11 +309,8 @@ function makeRouter(cfg) {
     }
 
     const newDone = done === undefined ? entry[progress] : done;
-    // choosing a status always wins; otherwise reaching the last episode/chapter completes the entry
     const status = autoStatus({ requested: body.status, current: entry.status, done: newDone, total: entry[total] });
 
-    // Starting (first progress, or choosing Watching/Reading) and finishing fill an empty date with today.
-    // A date the person typed in this request always wins, and an existing date is never overwritten.
     const today = todayFrom(body.today);
     let started = startedIn === undefined ? entry.started_on : startedIn;
     let finished = finishedIn === undefined ? entry.finished_on : finishedIn;
@@ -349,7 +337,6 @@ function makeRouter(cfg) {
         req.userId
       ]
     );
-    // Logged for streaks and the weekly goal. A big jump (marking a long series as caught up) is capped, see progress.js
     const logged = done === undefined ? 0 : loggedDelta(entry[progress], done);
     if (logged > 0) {
       await db.run('INSERT INTO activity (user_id, kind, mal_id, delta) VALUES (?, ?, ?, ?)', [req.userId, cfg.kind, entry.mal_id, logged]);

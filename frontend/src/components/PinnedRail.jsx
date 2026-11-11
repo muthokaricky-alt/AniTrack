@@ -1,9 +1,9 @@
+// Apple-style section: the page pins in place and vertical scrolling slides the posters sideways.
+// Below 900px (or with reduced motion) it becomes a normal swipeable row.
 import { useRef } from 'react';
 import { gsap, useGSAP } from '../lib/gsap.js';
 import AnimeCard from './AnimeCard.jsx';
 
-// Apple-style section: the page pins in place and vertical scrolling slides the posters sideways.
-// Below 900px (or with reduced motion) it becomes a normal swipeable row.
 export default function PinnedRail({ anime, season }) {
   const root = useRef(null);
   const track = useRef(null);

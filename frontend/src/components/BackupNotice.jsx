@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-
 // Shown while pages are being served from the backup source (MyAnimeList via Jikan) because AniList is down.
 // The API client fires 'anitrack:backup' whenever an answer carries source: 'backup'. The notice fades out after a
 // while on its own, and comes straight back if more backup answers arrive.
+import { useEffect, useRef, useState } from 'react';
+
 export default function BackupNotice() {
   const [show, setShow] = useState(false);
   const timer = useRef(null);

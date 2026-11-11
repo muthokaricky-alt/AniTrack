@@ -1,8 +1,8 @@
+// Slide-down editor under a My List row: score, notes and tags without leaving the page
 import { useState } from 'react';
 import ScoreInput from './ScoreInput.jsx';
 import EntryDates from './EntryDates.jsx';
 
-// Slide-down editor under a My List row: score, notes and tags without leaving the page
 export default function RowPanel({ entry, kind, onSave, allTags }) {
   const [tag, setTag] = useState('');
   const tags = entry.tags || [];

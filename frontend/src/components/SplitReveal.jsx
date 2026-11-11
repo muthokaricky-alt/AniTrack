@@ -1,7 +1,7 @@
+// Letters rise out of a mask one after another (same idea as React Bits' SplitText, built on GSAP).
 import { useRef } from 'react';
 import { gsap, useGSAP } from '../lib/gsap.js';
 
-// Letters rise out of a mask one after another (same idea as React Bits' SplitText, built on GSAP).
 export default function SplitReveal({ text, className = '', delay = 0, stagger = 0.04 }) {
   const ref = useRef(null);
 

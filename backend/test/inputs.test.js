@@ -1,3 +1,4 @@
+// Tests for src/inputs.js: search text, page numbers and other request input checks.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { cleanQuery, clampPage, isId, bucketWindow, errDetail } from '../src/inputs.js';
@@ -29,10 +30,10 @@ test('ids must be 1 to 9 plain digits', () => {
 
 test('schedule windows are rounded outward to 5 minutes, so near-identical requests share a cache entry', () => {
   assert.deepEqual(bucketWindow(1000000, 1000300), [999900, 1000500]);
-  const a = bucketWindow(1700000110, 1700600000); // both "from" values sit in the same 5-minute step
+  const a = bucketWindow(1700000110, 1700600000);
   const b = bucketWindow(1700000250, 1700599999);
   assert.deepEqual(a, b);
-  assert.deepEqual(bucketWindow(1700000100, 1700600100), [1700000100, 1700600100]); // already on a 5-minute boundary: unchanged
+  assert.deepEqual(bucketWindow(1700000100, 1700600100), [1700000100, 1700600100]);
   assert.ok(bucketWindow(1700000123, 1700600321)[0] <= 1700000123);
   assert.ok(bucketWindow(1700000123, 1700600321)[1] >= 1700600321);
 });

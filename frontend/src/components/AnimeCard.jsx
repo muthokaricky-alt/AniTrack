@@ -1,3 +1,4 @@
+// A poster card for one anime or manga (pass kind="manga" for manga): cover, title, score and a quick add.
 import { Link } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import { gsap, prefersReducedMotion } from '../lib/gsap.js';
@@ -19,7 +20,6 @@ export default function AnimeCard({ anime, rank, kind = 'anime' }) {
   const [failed, setFailed] = useState(false);
   const poster = useRef(null);
 
-  // Poster tilts towards the pointer with a soft light that follows it. Mouse only, and not with reduced motion.
   useEffect(() => {
     const el = poster.current;
     if (!el || prefersReducedMotion() || !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return undefined;
@@ -105,4 +105,3 @@ export default function AnimeCard({ anime, rank, kind = 'anime' }) {
     </Link>
   );
 }
-

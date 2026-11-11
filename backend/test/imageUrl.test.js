@@ -1,3 +1,4 @@
+// Tests for src/imageUrl.js: only real AniList and MyAnimeList cover addresses are allowed.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { isAllowedImageUrl, cleanImageUrl } from '../src/imageUrl.js';

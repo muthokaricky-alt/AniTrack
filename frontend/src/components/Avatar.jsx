@@ -1,7 +1,7 @@
-import { shapeOf } from '../lib/avatarShape.js';
-
 // A user's photo, or their initial on an accent square when they haven't set one. It takes the shape the person chose
 // (`user.avatar_shape`), or `shape` when a preview needs to override it.
+import { shapeOf } from '../lib/avatarShape.js';
+
 export default function Avatar({ user, size = 32, className = '', shape }) {
   const style = { width: size, height: size, fontSize: Math.round(size * 0.45) };
   const form = shapeOf(shape ?? user?.avatar_shape);

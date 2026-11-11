@@ -27,7 +27,6 @@ export function securityHeaders(env = {}) {
   const headers = {
     [env.CSP_ENFORCE === '1' ? 'Content-Security-Policy' : 'Content-Security-Policy-Report-Only']: buildCsp()
   };
-  // Tell browsers to always use https for this site (only in production, where https is guaranteed)
   if (env.NODE_ENV === 'production') headers['Strict-Transport-Security'] = 'max-age=15552000';
   return headers;
 }

@@ -1,6 +1,6 @@
+// A 0.5-step slider for one rating. Empty until the user presses Rate; saves when they let go.
 import { useEffect, useRef, useState } from 'react';
 
-// A 0.5-step slider for one rating. Empty until the user presses Rate; saves when they let go.
 export default function ScoreInput({ label, value, onCommit, disabled = false }) {
   const [draft, setDraft] = useState(value ?? null);
   const saved = useRef(value ?? null);

@@ -1,9 +1,9 @@
+// "Because you loved X": AniList's recommendations for a few of your top-scored titles, one row per title.
 import { useEffect, useState } from 'react';
 import { api } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import AnimeCard from './AnimeCard.jsx';
 
-// "Because you loved X": AniList's recommendations for a few of your top-scored titles, one row per title.
 export default function ForYou() {
   const { user } = useAuth();
   const [rows, setRows] = useState(null);

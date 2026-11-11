@@ -1,3 +1,4 @@
+// Tests for lib/wake.js: retrying reads and noticing a sleeping server.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { isRead, looksAsleep, createWakeTracker } from './wake.js';

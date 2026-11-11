@@ -1,3 +1,4 @@
+// Placeholder rows shown while a list is loading.
 export default function ListSkeleton({ rows = 6 }) {
   return (
     <div className="list-skel" aria-busy="true" aria-label="Loading your list">

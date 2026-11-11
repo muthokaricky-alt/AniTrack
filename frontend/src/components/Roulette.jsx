@@ -1,8 +1,8 @@
+// "Can't decide?": shuffles through the Plan-to list and lands on one
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { KINDS } from '../constants.js';
 
-// "Can't decide?": shuffles through the Plan-to list and lands on one
 export default function Roulette({ pool, kind, onStart }) {
   const cfg = KINDS[kind];
   const [open, setOpen] = useState(false);
@@ -29,7 +29,7 @@ export default function Roulette({ pool, kind, onStart }) {
         return;
       }
       setShown(pool[Math.floor(Math.random() * pool.length)]);
-      timer.current = setTimeout(tick, 55 + n * n * 0.9); // slows down as it nears the end
+      timer.current = setTimeout(tick, 55 + n * n * 0.9);
     };
     tick();
   }

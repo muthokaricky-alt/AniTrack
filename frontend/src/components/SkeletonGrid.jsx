@@ -1,3 +1,4 @@
+// Placeholder poster grid shown while results are loading.
 export default function SkeletonGrid({ count = 12 }) {
   return (
     <div className="skeleton-grid">

@@ -1,19 +1,18 @@
+// Read-only display of a user's top 3 and top 15 lists, used on public profiles.
+// The Top 15 starts with the Top 3 (shown as the big tiles), so its grid continues from rank 4.
 import { useState } from 'react';
 import CharacterDialog from './CharacterDialog.jsx';
 
 const CONFIG = [
   { kind: 'anime', title: 'Favourite anime', href: (id) => `/anime/${id}` },
   { kind: 'manga', title: 'Favourite manga', href: (id) => `/manga/${id}` },
-  { kind: 'character', title: 'Favourite characters' } // opens the character dialog here instead of leaving for AniList
+  { kind: 'character', title: 'Favourite characters' }
 ];
 
-// Read-only display of a user's top 3 and top 15 lists, used on public profiles.
-// The Top 15 starts with the Top 3 (shown as the big tiles), so its grid continues from rank 4.
 export default function FavoritesShowcase({ favorites, navigate }) {
   const [openCharacter, setOpenCharacter] = useState(null);
   if (!favorites) return null;
 
-  // One tile. Anime and manga open their page; a character opens the dialog.
   function tile(kind, href, it, rank, big) {
     const inner = (
       <>

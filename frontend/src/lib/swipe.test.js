@@ -1,3 +1,4 @@
+// Tests for lib/swipe.js: what counts as a swipe.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { isHorizontal, swipeAction } from './swipe.js';
@@ -5,15 +6,15 @@ import { isHorizontal, swipeAction } from './swipe.js';
 test('only clearly sideways drags take over from scrolling', () => {
   assert.equal(isHorizontal(40, 5), true);
   assert.equal(isHorizontal(-40, 10), true);
-  assert.equal(isHorizontal(6, 0), false);   // too small to tell
-  assert.equal(isHorizontal(30, 30), false); // diagonal
-  assert.equal(isHorizontal(20, 60), false); // a scroll
+  assert.equal(isHorizontal(6, 0), false);
+  assert.equal(isHorizontal(30, 30), false);
+  assert.equal(isHorizontal(20, 60), false);
 });
 
 test('a long sideways drag is a swipe, in the direction it went', () => {
   assert.equal(swipeAction(120, 10), 'right');
   assert.equal(swipeAction(-120, -10), 'left');
-  assert.equal(swipeAction(80, 0), 'right'); // exactly the threshold counts
+  assert.equal(swipeAction(80, 0), 'right');
 });
 
 test('short or mostly vertical drags do nothing', () => {

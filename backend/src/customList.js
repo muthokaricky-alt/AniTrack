@@ -1,9 +1,13 @@
+// Rules for custom lists (limits and entry kinds) and cleanListInput, which checks what the browser sent.
 import { cleanImageUrl } from './imageUrl.js';
 
 // The same title can appear more than once, because a list like "Top 10 arcs" repeats shows (one entry per arc).
 // Limits keep one account from filling the database, and keep the page readable.
 export const MAX_ITEMS = 50;
 export const MAX_LISTS = 30;
+// What a list can hold. For anime and manga the id is the MyAnimeList id; for characters it is the AniList character id
+// (the same id the profile favourites use). The column keeps its old name, mal_id.
+export const KINDS = ['anime', 'manga', 'character'];
 
 // Checks and tidies what the browser sent. Only fields that are present are returned, so the same
 // function serves "create" and "edit". Returns { value } or { error } (a message that is safe to show).
@@ -38,8 +42,8 @@ export function cleanListInput(body) {
     for (const it of body.items) {
       const malId = Number(it?.mal_id);
       const title = typeof it?.title === 'string' ? it.title.trim().slice(0, 300) : '';
-      if (!(it?.kind === 'anime' || it?.kind === 'manga') || !Number.isInteger(malId) || malId <= 0 || !title) {
-        return { error: 'Each title needs a kind (anime or manga), a MyAnimeList id and a name' };
+      if (!KINDS.includes(it?.kind) || !Number.isInteger(malId) || malId <= 0 || !title) {
+        return { error: 'Each entry needs a kind (anime, manga or character), an id and a name' };
       }
       if (it.note != null && typeof it.note !== 'string') return { error: 'A note must be text' };
       const note = (it.note || '').trim();

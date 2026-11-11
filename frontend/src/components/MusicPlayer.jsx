@@ -1,3 +1,9 @@
+/*
+ * Background music. Browsers refuse to play sound before the visitor has interacted with the page,
+ * so the first visit starts paused. Once someone presses play we remember it, and on later visits
+ * the music starts on their first click or key press anywhere on the site.
+ * "on" = the visitor wants music (remembered). Pausing from the widget turns it off until they press play again.
+ */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import './musicSpotify.css';
 
@@ -44,19 +50,12 @@ function savePrefs(p) {
   }
 }
 
-/*
- * Background music. Browsers refuse to play sound before the visitor has interacted with the page,
- * so the first visit starts paused. Once someone presses play we remember it, and on later visits
- * the music starts on their first click or key press anywhere on the site.
- * "on" = the visitor wants music (remembered). Pausing from the widget turns it off until they press play again.
- */
 export default function MusicPlayer() {
   const audio = useRef(null);
   const [tracks, setTracks] = useState([]);
   const [tracksLoaded, setTracksLoaded] = useState(false);
   const [prefs, setPrefs] = useState(loadPrefs);
   const [playing, setPlaying] = useState(false);
-  // The SoundCloud embed loads third-party code, so it is only created once someone picks that tab
   const [scLoaded, setScLoaded] = useState(() => HAS_SC && loadPrefs().source === 'soundcloud');
   const scFrame = useRef(null);
   const scWidget = useRef(null);
@@ -90,7 +89,6 @@ export default function MusicPlayer() {
     return el.play().then(() => true, () => false);
   }, []);
 
-  // Load the selected track. Keep playing if the visitor already had music on.
   useEffect(() => {
     const el = audio.current;
     if (!el || !current) return;
@@ -101,12 +99,9 @@ export default function MusicPlayer() {
   }, [current, tryPlay]);
 
   useEffect(() => {
-    // squared so the bottom half of the slider is genuinely quiet (ears hear loudness on a curve)
     if (audio.current) audio.current.volume = prefs.volume ** 2;
   }, [prefs.volume]);
 
-  // Hook up the SoundCloud widget once its iframe exists, so the volume slider can control it.
-  // Volume is re-applied on every PLAY event because the widget can reset it when the song changes.
   useEffect(() => {
     if (!scLoaded) {
       scWidget.current = null;
@@ -130,7 +125,6 @@ export default function MusicPlayer() {
     if (scWidget.current) scWidget.current.setVolume(Math.round((prefs.scVolume ** 2) * 100));
   }, [prefs.scVolume]);
 
-  // Returning visitor who left music on: start at the first interaction the browser accepts
   useEffect(() => {
     if (!tracks.length || !prefs.on || playing) return undefined;
     let done = false;
@@ -150,7 +144,6 @@ export default function MusicPlayer() {
     return cleanup;
   }, [tracks.length, prefs.on, playing, tryPlay]);
 
-  // Don't keep playing in a background tab
   useEffect(() => {
     const onVis = () => {
       const el = audio.current;
@@ -177,16 +170,13 @@ export default function MusicPlayer() {
     }
   }
 
-  // SoundCloud is the only source when there are no built-in tracks (decided once the track list has finished loading)
   const showSC = HAS_SC && (prefs.source === 'soundcloud' || (tracksLoaded && tracks.length === 0));
   const hasBoth = HAS_SC && tracks.length > 0;
 
-  // Mount the SoundCloud player the first time it is needed and keep it mounted, so a song carries on when the widget is collapsed
   useEffect(() => {
     if (showSC) setScLoaded(true);
   }, [showSC]);
 
-  // Only one source plays at a time: entering SoundCloud pauses the built-in tracks, leaving it removes the SoundCloud player (which stops it)
   function chooseSource(src) {
     if (src === 'soundcloud') {
       audio.current?.pause();
@@ -209,7 +199,7 @@ export default function MusicPlayer() {
         onPause={() => setPlaying(false)}
         onEnded={() => {
           if (tracks.length < 2) {
-            audio.current.currentTime = 0; // single track: loop it
+            audio.current.currentTime = 0;
             tryPlay();
           } else next();
         }}

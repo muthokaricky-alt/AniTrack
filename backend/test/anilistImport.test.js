@@ -1,3 +1,4 @@
+// Tests for src/anilistImport.js: reading a person's AniList list in chunks, and the errors they can hit.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadAniList, MAX_CHUNKS } from '../src/anilistImport.js';

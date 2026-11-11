@@ -1,3 +1,4 @@
+// Tests for lib/dates.js: the person's own 'today'.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { todayLocal } from './dates.js';

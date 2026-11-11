@@ -331,7 +331,6 @@ img { display: block; max-width: 100%; }
   .auth-art { display: none; }
 }
 @media (max-width: 899px) {
-  /* rail becomes a native swipeable row */
   .rail { min-height: 0; padding: 88px 0 56px; gap: 32px; }
   .rail-view { overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
   .rail-view::-webkit-scrollbar { display: none; }
@@ -566,7 +565,6 @@ a, button, select, input, textarea, label { -webkit-tap-highlight-color: transpa
 button, a, select { touch-action: manipulation; }
 
 @media (max-width: 700px) {
-  /* two-row header: logo + account on top, links underneath, so nothing gets squeezed or cut off */
   .nav { flex-wrap: wrap; align-items: center; row-gap: 6px; }
   .brand { order: 1; }
   .nav-end { order: 2; margin-left: auto; }
@@ -707,7 +705,6 @@ button, a, select { touch-action: manipulation; }
   .fe-list li { grid-template-columns: 22px 40px 1fr; }
   .fe-ctl { grid-column: 2 / -1; }
 }
-
 
 /* ===== Type mix on profile pages =====
    Level 1: Fraunces (serif) for the name and bio, the human part of the page

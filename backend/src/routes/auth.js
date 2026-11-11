@@ -1,3 +1,4 @@
+// Account routes: register and log in. Passwords are hashed with bcrypt and sessions are JWTs.
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import db from '../db.js';
@@ -37,7 +38,7 @@ router.post('/register', async (req, res) => {
   try {
     created = await db.get(`INSERT INTO users (username, email, password_hash, avatar) VALUES (?, ?, ?, ?) RETURNING ${USER_COLUMNS}`, [username, email, passwordHash, avatar.value]);
   } catch (err) {
-    if (err.code === '23505') return res.status(409).json({ error: 'Username or email already in use' }); // two sign-ups raced
+    if (err.code === '23505') return res.status(409).json({ error: 'Username or email already in use' });
     throw err;
   }
 

@@ -1,3 +1,4 @@
+// Search anime with genre filters.
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../api/client.js';
@@ -22,7 +23,6 @@ export default function Search() {
 
   useEffect(() => setInput(q), [q]);
 
-  // Searching is driven by the URL, so results survive refresh/back and can be shared
   useEffect(() => {
     if (!q && !genre) {
       setResults([]);

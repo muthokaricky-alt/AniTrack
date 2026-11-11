@@ -1,7 +1,7 @@
-import { todayLocal } from '../lib/dates.js';
-
 // When you started and finished a title, and how many times you have been through it again.
 // paper: the light panel on a title's page. Otherwise it sits in the dark row editor on My List.
+import { todayLocal } from '../lib/dates.js';
+
 export default function EntryDates({ entry, kind, onSave, paper = false }) {
   const n = entry.rewatches || 0;
   const label = kind === 'manga' ? 'Reread' : 'Rewatched';

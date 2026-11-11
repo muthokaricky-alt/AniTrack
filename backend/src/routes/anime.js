@@ -1,3 +1,4 @@
+// Anime catalogue routes (search, top, season, schedule, airing, recommendations, batch, detail) over AniList.
 import { Router } from 'express';
 import fetch from 'node-fetch';
 import db from '../db.js';
@@ -42,7 +43,7 @@ export async function anilistQuery(query, variables, cacheKey, { tolerateErrors 
           signal: AbortSignal.timeout(12000)
         });
       } catch (netErr) {
-        if (attempt >= retries) throw Object.assign(netErr, { outage: true }); // timeout or dropped connection: try again, shared hosts hiccup
+        if (attempt >= retries) throw Object.assign(netErr, { outage: true });
         await sleep(1500 * (attempt + 1));
         continue;
       }
@@ -51,7 +52,6 @@ export async function anilistQuery(query, variables, cacheKey, { tolerateErrors 
       await sleep(Math.min(Number.isFinite(wait) && wait > 0 ? wait * 1000 : 2000 * (attempt + 1), 8000));
     }
     if (!response.ok) {
-      // Keep the start of AniList's reply for the server log: a Cloudflare block page and an AniList error look different.
       let body = '';
       try { body = (await response.text()).replace(/\s+/g, ' ').slice(0, 200); } catch { /* ignore */ }
       const err = new Error(`AniList request failed: ${response.status}`);
@@ -63,15 +63,14 @@ export async function anilistQuery(query, variables, cacheKey, { tolerateErrors 
     if (json.errors && !(tolerateErrors && json.data)) throw new Error(json.errors.map((e) => e.message).join('; '));
     breaker.success();
     if (cacheKey) {
-      if (cache.size > 500) cache.delete(cache.keys().next().value); // keep memory bounded
+      if (cache.size > 500) cache.delete(cache.keys().next().value);
       cache.set(cacheKey, { data: json.data, time: Date.now() });
     }
     return json.data;
   } catch (err) {
-    // Visitors only see "failed to reach the data source". The real reason (429, 403, timeout, ...) goes to the server log.
     if (err.outage) breaker.failure();
     console.warn('AniList lookup failed:', err.message, err.body ? `| AniList said: ${err.body}` : '');
-    if (cached) return cached.data; // better a slightly old answer than an error page
+    if (cached) return cached.data;
     throw err;
   }
 }
@@ -247,7 +246,7 @@ router.get('/search', async (req, res) => {
       pagination: { has_next_page: data.Page.pageInfo.hasNextPage }
     });
   } catch (err) {
-    const backup = genre ? null : await tryBackup(() => backupSearchAnime(q, page)); // genre-only searches have no backup
+    const backup = genre ? null : await tryBackup(() => backupSearchAnime(q, page));
     if (backup) return res.json(backup);
     res.status(502).json({ error: CATALOG_DOWN, detail: errDetail(err) });
   }
@@ -302,7 +301,6 @@ router.get('/schedule', async (req, res) => {
     return res.status(400).json({ error: 'from and to must be unix timestamps with to > from' });
   }
   if (Math.abs(fromRaw - now) > 90 * 86400) return res.status(400).json({ error: 'That date range is too far from today' });
-  // whole 5-minute steps, so near-identical requests share one cached answer instead of each asking AniList again
   const [from, to] = bucketWindow(fromRaw, Math.min(toRaw, fromRaw + 8 * 86400));
 
   try {
@@ -353,7 +351,7 @@ router.get('/airing', requireAuth, async (req, res) => {
       .filter((m) => m.idMal && m.nextAiringEpisode)
       .map((m) => {
         const mineRow = mine.get(m.idMal);
-        const aired = m.nextAiringEpisode.episode - 1; // episodes already out
+        const aired = m.nextAiringEpisode.episode - 1;
         return {
           mal_id: m.idMal,
           title: m.title?.english || m.title?.romaji || 'Untitled',

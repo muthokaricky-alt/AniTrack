@@ -1,3 +1,4 @@
+// My lists: create a list, see your lists and your profile Top 15s, and find Discover.
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client.js';
@@ -40,7 +41,6 @@ export default function Lists() {
     api.customLists.mine().then((res) => setLists(res.lists)).catch((err) => setError(err.message));
   }, []);
   useEffect(load, [load]);
-  // The profile favourites are a bonus here, so a failure to load them is not worth an error message
   useEffect(() => { api.favorites().then(setFavs).catch(() => setFavs(null)); }, []);
 
   async function create(e) {

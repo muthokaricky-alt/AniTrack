@@ -1,3 +1,4 @@
+// The help page: short how-to guides with search, each linking straight to where the feature lives.
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { isMac } from '../components/CommandPalette.jsx';
@@ -167,11 +168,11 @@ const GUIDES = [
     to: '/lists', cta: 'Open My lists', auth: true
   },
   {
-    id: 'public', group: 'Favourites and sharing', title: 'Make your profile public and compare tastes',
+    id: 'public', group: 'Favourites and sharing', title: 'Your public profile, privacy and comparing tastes',
     words: 'public profile compare taste match friends share link privacy',
     steps: [
-      'Open Profile, then the Settings tab, and switch on a public profile. It is off by default.',
-      'Share the link /u/yourname. Visitors see your bio, stats and favourites. Your email and full list stay private.',
+      'Profiles are public by default, so friends can find you at /u/yourname. To make yours private, open Profile, then the Settings tab, and switch the public profile off.',
+      'Visitors see your bio, stats, favourites and public lists. Your email and full list stay private.',
       'To compare, open the Compare tab, type a friend\'s username, and see your match percentage, shared titles and genres. Both of you need to be logged in, and their profile must be public.'
     ],
     to: '/profile', cta: 'Open Profile', auth: true

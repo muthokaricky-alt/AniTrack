@@ -1,7 +1,7 @@
+// Small popover in the navbar: dark / light / match device, plus an accent colour
 import { useEffect, useRef, useState } from 'react';
 import { ACCENTS, MODES, applyTheme, readTheme, saveTheme } from '../lib/theme.js';
 
-// Small popover in the navbar: dark / light / match device, plus an accent colour
 export default function ThemeMenu() {
   const [open, setOpen] = useState(false);
   const [t, setT] = useState(readTheme);

@@ -1,3 +1,4 @@
+// Tests for the profile banner checks: real image types by their first bytes, sizes and data URLs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { BANNER_MAX_CHARS, sniffImageType, dataUrlParts, parseBanner, clampPos, publicBanner } from '../src/banner.js';
@@ -17,7 +18,7 @@ test('pictures are recognised by their real first bytes, not by what they claim 
   assert.equal(sniffImageType(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"></svg>')), null);
   assert.equal(sniffImageType(Buffer.from('<script>alert(1)</script>')), null);
   assert.equal(sniffImageType(Buffer.alloc(0)), null);
-  assert.equal(sniffImageType(Buffer.from([0xff, 0xd8])), null); // too short to be a JPEG
+  assert.equal(sniffImageType(Buffer.from([0xff, 0xd8])), null);
 });
 
 test('a data URL only counts if the file inside really is the type it says', () => {
@@ -25,8 +26,8 @@ test('a data URL only counts if the file inside really is the type it says', () 
   assert.equal(dataUrlParts(dataUrl('png', PNG)).type, 'png');
   assert.equal(dataUrlParts(dataUrl('webp', WEBP)).type, 'webp');
   assert.deepEqual(dataUrlParts(dataUrl('jpeg', JPEG)).buffer, JPEG);
-  assert.equal(dataUrlParts(dataUrl('png', JPEG)), null); // says PNG, is a JPEG
-  assert.equal(dataUrlParts(dataUrl('jpeg', Buffer.from('<svg></svg>'))), null); // says JPEG, is SVG
+  assert.equal(dataUrlParts(dataUrl('png', JPEG)), null);
+  assert.equal(dataUrlParts(dataUrl('jpeg', Buffer.from('<svg></svg>'))), null);
   assert.equal(dataUrlParts('data:image/svg+xml;base64,PHN2Zz48L3N2Zz4='), null);
   assert.equal(dataUrlParts('data:image/jpeg;base64,not base64 !!'), null);
   assert.equal(dataUrlParts('data:text/html;base64,PHNjcmlwdD4='), null);
@@ -60,7 +61,7 @@ test('a series banner must be an AniList banner picture', () => {
   const ok = parseBanner(SERIES);
   assert.equal(ok.valid, true);
   assert.equal(ok.kind, 'series');
-  assert.equal(parseBanner(COVER).valid, false); // an AniList cover is not a banner
+  assert.equal(parseBanner(COVER).valid, false);
   assert.equal(parseBanner('https://evil.example/file/anilistcdn/media/anime/banner/x.jpg').valid, false);
   assert.equal(parseBanner('http://s4.anilist.co/file/anilistcdn/media/anime/banner/x.jpg').valid, false);
   assert.equal(parseBanner('https://s4.anilist.co.evil.example/media/anime/banner/x.jpg').valid, false);

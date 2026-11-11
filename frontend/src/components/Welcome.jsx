@@ -1,3 +1,4 @@
+// A three-step checklist for new accounts. Ticks itself and goes away when done or dismissed.
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client.js';
@@ -6,7 +7,6 @@ import { useMangaList } from '../context/MangaListContext.jsx';
 
 const KEY = 'anitrack:welcome-dismissed';
 
-// A three-step checklist for new accounts. Ticks itself and goes away when done or dismissed.
 export default function Welcome() {
   const anime = useList();
   const manga = useMangaList();

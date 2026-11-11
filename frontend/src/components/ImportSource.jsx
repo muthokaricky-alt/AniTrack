@@ -1,11 +1,11 @@
+// First step of importing: upload a file, or pull a public AniList profile by username.
+// Either way the result ends up in the same preview-and-confirm dialog (ImportDialog).
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api/client.js';
 import { KINDS } from '../constants.js';
 
-// First step of importing: upload a file, or pull a public AniList profile by username.
-// Either way the result ends up in the same preview-and-confirm dialog (ImportDialog).
 export default function ImportSource({ onFile, onSections, onClose }) {
-  const [step, setStep] = useState('choose'); // choose | anilist
+  const [step, setStep] = useState('choose');
   const [username, setUsername] = useState('');
   const [kinds, setKinds] = useState({ anime: true, manga: true });
   const [busy, setBusy] = useState(false);

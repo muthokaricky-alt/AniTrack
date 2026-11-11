@@ -1,3 +1,4 @@
+// Tests for src/taste.js (Rick's Algorithm): genres, ratings, shared titles and favourites.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { compareTaste, parseGenres } from '../src/taste.js';
@@ -87,7 +88,7 @@ const fav = (kind, mal_id) => ({ kind, mal_id, title: `F${mal_id}`, image_url: n
 test('compareFavourites finds shared favourites and applies the 40% rule', () => {
   const r = compareFavourites([fav('anime', 1), fav('anime', 2), fav('manga', 3), fav('anime', 4)], [fav('anime', 1), fav('manga', 3), fav('anime', 9)]);
   assert.deepEqual(r.shared.map((s) => `${s.kind}:${s.mal_id}`), ['anime:1', 'manga:3']);
-  assert.equal(r.overlap, 1); // 2 of the smaller set's 3 is well past 40%
+  assert.equal(r.overlap, 1);
   assert.equal(compareFavourites([fav('anime', 1)], [fav('anime', 2)]).overlap, 0);
 });
 

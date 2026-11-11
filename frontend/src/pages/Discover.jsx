@@ -1,10 +1,10 @@
+// Public lists from other people. Open them to look around, and save a copy to make it your own.
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client.js';
 import ErrorState from '../components/ErrorState.jsx';
 import ListCard from '../components/ListCard.jsx';
 
-// Public lists from other people. Open them to look around, and save a copy to make it your own.
 export default function Discover() {
   const [lists, setLists] = useState(null);
   const [page, setPage] = useState(1);

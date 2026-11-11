@@ -1,3 +1,4 @@
+// Follow routes: follow and unfollow people, and the lists of who follows whom.
 import { Router } from 'express';
 import db from '../db.js';
 import { requireAuth, optionalAuth } from '../middleware/auth.js';
@@ -6,7 +7,7 @@ import { loadTaste, compareTaste } from './profile.js';
 
 // Following is deliberately simple: no approvals, no notifications, no feed. Just "who do I follow" and "who follows me",
 // which is what makes the taste match useful across several people at once.
-const MAX_FOLLOWING = 100; // keeps the "match with everyone you follow" screen quick
+const MAX_FOLLOWING = 100;
 const LIST_LIMIT = 50;
 const MATCH_LIMIT = 30;
 const PRIVATE_MSG = 'This profile is private or does not exist';
@@ -45,7 +46,7 @@ userFollowRoutes.get('/:username/network', optionalAuth, async (req, res) => {
   const target = await findUser(req.params.username);
   if (!target || (!target.is_public && target.id !== req.userId)) return res.status(404).json({ error: PRIVATE_MSG });
   const type = req.query.type === 'following' ? 'following' : 'followers';
-  const [show, filter] = type === 'followers' ? ['follower_id', 'followee_id'] : ['followee_id', 'follower_id']; // fixed column names, never user input
+  const [show, filter] = type === 'followers' ? ['follower_id', 'followee_id'] : ['followee_id', 'follower_id'];
   const pub = target.id === req.userId ? '' : 'AND u.is_public = 1';
   const rows = await db.all(
     `SELECT u.username, u.avatar, u.avatar_shape, u.is_public FROM follows f JOIN users u ON u.id = f.${show} WHERE f.${filter} = ? ${pub} ORDER BY f.created_at DESC LIMIT ${LIST_LIMIT}`,

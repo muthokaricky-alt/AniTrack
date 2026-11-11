@@ -1,3 +1,4 @@
+// Compares the logged-in visitor with the profile they are looking at
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client.js';
@@ -8,7 +9,6 @@ const R = 74;
 const CIRC = 2 * Math.PI * R;
 
 function verdict(p, basis, sharedFavs) {
-  // With favourites alone, "nearly opposite" would be unfair: a handful of picks says little
   if (basis === 'favourites' && sharedFavs === 0) return 'No favourites in common yet';
   if (p >= 85) return 'Practically the same taste';
   if (p >= 70) return 'A strong match';
@@ -19,7 +19,6 @@ function verdict(p, basis, sharedFavs) {
 
 const PART_LABEL = { genres: 'Genres you lean towards', scores: 'How you rate shared titles', overlap: 'Titles you both have', favourites: 'Favourites you share' };
 
-// Compares the logged-in visitor with the profile they are looking at
 export default function TasteMatch({ username, viewer }) {
   const [state, setState] = useState({ loading: true });
   const ring = useRef(null);

@@ -1,3 +1,4 @@
+// Your own profile: details, favourites, friends, inbox, insights and settings in tabs.
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client.js';
@@ -36,8 +37,6 @@ function Favorites() {
     api.favorites().then(setFavs).catch((e) => setError(e.message));
   }, []);
 
-  // The Top 15 starts with the Top 3, so only the picks AFTER the Top 3 are saved for it. Changing the Top 3 reshuffles the
-  // start of the Top 15, so that list is reloaded from the server afterwards.
   async function change(k, list, next) {
     const before = favs;
     const locked = favs[k].top3.length;
@@ -45,7 +44,7 @@ function Favorites() {
       const group = f[k];
       if (list === 'top3') return { ...f, [k]: { top3: next, top15: withTop3First(next, group.top15.slice(group.top3.length)) } };
       return { ...f, [k]: { ...group, top15: next } };
-    }); // show it immediately, undo if the save fails
+    });
     try {
       const saved = await api.saveFavorites(k, list, list === 'top15' ? next.slice(locked) : next);
       if (list === 'top3') setFavs(await api.favorites());
@@ -109,8 +108,7 @@ function Settings() {
   const [pw, setPw] = useState({ current_password: '', new_password: '' });
   const [pwBusy, setPwBusy] = useState(false);
 
-  // A background refresh may bring in newer profile data
-  useEffect(() => setForm(fromUser(user)), [user.username, user.bio, user.avatar, user.avatar_shape, user.is_public]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => setForm(fromUser(user)), [user.username, user.bio, user.avatar, user.avatar_shape, user.is_public]);
 
   const saved = fromUser(user);
   const dirty = Object.keys(form).some((k) => form[k] !== saved[k]);
@@ -138,7 +136,7 @@ function Settings() {
     setPwBusy(true);
     try {
       const res = await api.changePassword(pw);
-      if (res.token) localStorage.setItem('anitrack_token', res.token); // other devices are signed out; this one gets a fresh login
+      if (res.token) localStorage.setItem('anitrack_token', res.token);
       setPw({ current_password: '', new_password: '' });
       toast('Password changed. Other devices were signed out.');
     } catch (err) {
@@ -199,7 +197,7 @@ function Settings() {
             <input type="checkbox" checked={form.is_public} onChange={(e) => setForm((f) => ({ ...f, is_public: e.target.checked }))} />
             <span>Let anyone with my link see my profile</span>
           </label>
-          <p className="muted">They'll see your username, photo, bio, stats, favourites and top-rated titles. Logged-in visitors can also compare tastes with you and will see a match percentage and the titles you both have. Your email and the rest of your list stay private. It's off by default.</p>
+          <p className="muted">They'll see your username, photo, bio, stats, favourites and top-rated titles. Logged-in visitors can also compare tastes with you and will see a match percentage and the titles you both have. Your email and the rest of your list stay private. New accounts start out public; switch this off to make your profile private.</p>
           {user.is_public && !dirty && (
             <div className="share-line">
               <Link to={`/u/${encodeURIComponent(user.username)}`}>{link}</Link>
@@ -246,18 +244,17 @@ export default function Profile() {
   const [tab, setTab] = useState(TABS.includes(params.get('tab')) ? params.get('tab') : 'favorites');
   const [card, setCard] = useState(false);
   const unread = useInboxCount(user);
-  const [banner, setBanner] = useState(null); // { src, x, y } or null
+  const [banner, setBanner] = useState(null);
   const [picker, setPicker] = useState(false);
 
   useEffect(() => {
     api.myBanner().then((r) => setBanner(r.banner ? { src: r.banner, x: r.x, y: r.y } : null)).catch(() => {});
   }, []);
 
-  // The navbar badge links to ?tab=friends&view=inbox, even when this page is already open
   useEffect(() => {
     const wanted = params.get('tab');
     if (TABS.includes(wanted)) setTab(wanted);
-  }, [params]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [params]);
 
   return (
     <div className="wrap page-pad">

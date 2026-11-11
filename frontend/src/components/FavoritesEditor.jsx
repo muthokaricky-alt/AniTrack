@@ -1,3 +1,5 @@
+// One ordered list (a "top 3" or "top 15"): add, reorder, remove. Every change is saved straight away.
+// locked: how many of the first rows come from the Top 3 (only for the Top 15). They can't be moved or removed here.
 import { useState } from 'react';
 import { api } from '../api/client.js';
 
@@ -62,8 +64,6 @@ function Picker({ kind, exclude, onPick }) {
   );
 }
 
-// One ordered list (a "top 3" or "top 15"): add, reorder, remove. Every change is saved straight away.
-// locked: how many of the first rows come from the Top 3 (only for the Top 15). They can't be moved or removed here.
 export default function FavoritesEditor({ kind, list, items, onChange, locked = 0 }) {
   const max = list === 'top3' ? 3 : 15;
   const title = `${list === 'top3' ? 'Top 3' : 'Top 15'} ${LABEL[kind]}`;

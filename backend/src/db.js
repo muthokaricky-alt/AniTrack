@@ -1,10 +1,10 @@
-import pg from 'pg';
-
 // PostgreSQL (Neon in production). One pool for the whole server.
 // Set DATABASE_URL in backend/.env locally and in Render's Environment tab.
 //
 // Some networks block the normal Postgres port (5432). Setting NEON_WEBSOCKET=1 in backend/.env makes the server talk to
 // Neon over a WebSocket on port 443 (the same port as any website) instead. Leave it off on Render.
+import pg from 'pg';
+
 let driver = pg;
 if (process.env.NEON_WEBSOCKET === '1') {
   const neon = await import('@neondatabase/serverless');
@@ -13,9 +13,9 @@ if (process.env.NEON_WEBSOCKET === '1') {
   driver = neon;
 }
 const { Pool, types } = driver;
-types.setTypeParser(20, (v) => Number(v));      // COUNT(*) and other bigints arrive as numbers
-types.setTypeParser(1700, (v) => parseFloat(v)); // NUMERIC as numbers
-types.setTypeParser(1082, (v) => v);              // DATE stays a plain 'YYYY-MM-DD' string (no time zone shifting)
+types.setTypeParser(20, (v) => Number(v));
+types.setTypeParser(1700, (v) => parseFloat(v));
+types.setTypeParser(1082, (v) => v);
 
 if (!process.env.DATABASE_URL) {
   console.error('DATABASE_URL is not set. Add your Neon connection string to backend/.env (and to Render > Environment).');
@@ -30,7 +30,7 @@ const pool = new Pool({
   connectionString,
   max: 5,
   idleTimeoutMillis: 20000,
-  connectionTimeoutMillis: 15000 // a sleeping Neon database needs a moment to wake
+  connectionTimeoutMillis: 15000
 });
 // Neon closes idle connections: that is normal, the pool simply opens a new one next time
 pool.on('error', (err) => console.warn('database connection dropped:', err.message));
@@ -51,9 +51,30 @@ function bind(runner) {
   };
 }
 
+// The anime and manga list tables are identical apart from their name, default status and progress columns.
+const entryTable = (name, status, done, total) => `CREATE TABLE IF NOT EXISTS ${name} (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        mal_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        image_url TEXT,
+        status TEXT NOT NULL DEFAULT '${status}',
+        score DOUBLE PRECISION,
+        ${done} INTEGER DEFAULT 0,
+        ${total} INTEGER,
+        review TEXT,
+        genres TEXT,
+        ratings TEXT,
+        tags TEXT,
+        updated_at TIMESTAMPTZ DEFAULT now(),
+        UNIQUE (user_id, mal_id)
+      );
+      ALTER TABLE ${name} ADD COLUMN IF NOT EXISTS started_on DATE;
+      ALTER TABLE ${name} ADD COLUMN IF NOT EXISTS finished_on DATE;
+      ALTER TABLE ${name} ADD COLUMN IF NOT EXISTS rewatches INTEGER NOT NULL DEFAULT 0;`;
+
 const db = {
   ...bind(pool),
-  // run several statements as one all-or-nothing unit: await db.tx(async (t) => { await t.run(...); ... })
   async tx(fn) {
     const client = await pool.connect();
     try {
@@ -77,7 +98,7 @@ const db = {
         password_hash TEXT NOT NULL,
         avatar TEXT,
         bio TEXT,
-        is_public INTEGER NOT NULL DEFAULT 0,
+        is_public INTEGER NOT NULL DEFAULT 1,
         created_at TIMESTAMPTZ DEFAULT now()
       );
       CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower ON users (lower(email));
@@ -89,48 +110,10 @@ const db = {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS banner_y INTEGER NOT NULL DEFAULT 50;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS banner_v INTEGER NOT NULL DEFAULT 0;
 
-      CREATE TABLE IF NOT EXISTS list_entries (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        mal_id INTEGER NOT NULL,
-        title TEXT NOT NULL,
-        image_url TEXT,
-        status TEXT NOT NULL DEFAULT 'plan_to_watch',
-        score DOUBLE PRECISION,
-        episodes_watched INTEGER DEFAULT 0,
-        total_episodes INTEGER,
-        review TEXT,
-        genres TEXT,
-        ratings TEXT,
-        tags TEXT,
-        updated_at TIMESTAMPTZ DEFAULT now(),
-        UNIQUE (user_id, mal_id)
-      );
-
-      CREATE TABLE IF NOT EXISTS manga_entries (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        mal_id INTEGER NOT NULL,
-        title TEXT NOT NULL,
-        image_url TEXT,
-        status TEXT NOT NULL DEFAULT 'plan_to_read',
-        score DOUBLE PRECISION,
-        chapters_read INTEGER DEFAULT 0,
-        total_chapters INTEGER,
-        review TEXT,
-        genres TEXT,
-        ratings TEXT,
-        tags TEXT,
-        updated_at TIMESTAMPTZ DEFAULT now(),
-        UNIQUE (user_id, mal_id)
-      );
-
-      ALTER TABLE list_entries ADD COLUMN IF NOT EXISTS started_on DATE;
-      ALTER TABLE list_entries ADD COLUMN IF NOT EXISTS finished_on DATE;
-      ALTER TABLE list_entries ADD COLUMN IF NOT EXISTS rewatches INTEGER NOT NULL DEFAULT 0;
-      ALTER TABLE manga_entries ADD COLUMN IF NOT EXISTS started_on DATE;
-      ALTER TABLE manga_entries ADD COLUMN IF NOT EXISTS finished_on DATE;
-      ALTER TABLE manga_entries ADD COLUMN IF NOT EXISTS rewatches INTEGER NOT NULL DEFAULT 0;
+      -- new accounts are public unless they choose otherwise; this changes only the default, never an existing profile
+      ALTER TABLE users ALTER COLUMN is_public SET DEFAULT 1;
+      ${entryTable('list_entries', 'plan_to_watch', 'episodes_watched', 'total_episodes')}
+      ${entryTable('manga_entries', 'plan_to_read', 'chapters_read', 'total_chapters')}
 
       CREATE TABLE IF NOT EXISTS favorites (
         user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

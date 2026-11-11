@@ -1,3 +1,4 @@
+// The sign-up page.
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -53,6 +54,7 @@ export default function Register() {
           <input id="password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required />
           <small>At least 6 characters.</small>
         </div>
+        <p className="auth-note">Your profile is public by default, so friends can find you and compare tastes. You can make it private any time under Profile, then Settings.</p>
         <button className="btn btn-signal btn-block" type="submit" disabled={busy}>{busy ? 'Creating…' : 'Create account'}</button>
         {error && <p className="error-text">{error}</p>}
         <p className="auth-switch">Already registered? <Link to="/login">Log in</Link></p>

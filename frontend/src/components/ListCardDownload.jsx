@@ -1,3 +1,4 @@
+// Download or share a list as a poster image, or as plain text
 import { useState } from 'react';
 import { imgSrc } from '../api/client.js';
 import { useToast } from '../context/ToastContext.jsx';
@@ -7,7 +8,7 @@ const loadImage = (url) =>
   new Promise((resolve) => {
     if (!url) return resolve(null);
     const img = new Image();
-    img.crossOrigin = 'anonymous'; // needed to save the card when the API is on another address
+    img.crossOrigin = 'anonymous';
     img.onload = () => resolve(img);
     img.onerror = () => resolve(null);
     img.src = imgSrc(url);
@@ -21,7 +22,6 @@ const canShareFiles = () => {
   }
 };
 
-// Download or share a list as a poster image, or as plain text
 export default function ListCardDownload({ list }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
@@ -56,7 +56,7 @@ export default function ListCardDownload({ list }) {
       const file = new File([await makeBlob()], cardFileName(list.title, 'png'), { type: 'image/png' });
       await navigator.share({ files: [file], title: list.title });
     } catch (e) {
-      if (e?.name !== 'AbortError') toast(e.message || 'Could not share', 'error'); // closing the share sheet is not an error
+      if (e?.name !== 'AbortError') toast(e.message || 'Could not share', 'error');
     }
     setBusy(false);
   }

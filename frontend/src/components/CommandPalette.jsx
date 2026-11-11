@@ -1,3 +1,4 @@
+// Ctrl+K (or Cmd+K): jump to a page, open something on your list, or search the catalogue and add to your list without leaving the page.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api/client.js';
@@ -26,7 +27,6 @@ const PAGES = [
 
 const norm = (s) => String(s).toLowerCase();
 
-// Ctrl+K (or Cmd+K): jump to a page, open something on your list, or search the catalogue and add to your list without leaving the page.
 export default function CommandPalette() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -43,7 +43,6 @@ export default function CommandPalette() {
 
   const close = useCallback(() => setOpen(false), []);
 
-  // open / close shortcuts
   useEffect(() => {
     const onKey = (e) => {
       if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'k') {
@@ -60,7 +59,6 @@ export default function CommandPalette() {
     };
   }, []);
 
-  // reset on open, freeze page scroll while open
   useEffect(() => {
     if (!open) return undefined;
     setQ('');
@@ -79,7 +77,6 @@ export default function CommandPalette() {
 
   useEffect(() => { setOpen(false); }, [pathname]);
 
-  // catalogue search, a quarter second after typing stops
   useEffect(() => {
     const term = q.trim();
     if (!open || term.length < 2) {
@@ -90,7 +87,7 @@ export default function CommandPalette() {
     setFound((f) => ({ ...f, busy: true }));
     const t = setTimeout(async () => {
       const [a, m] = await Promise.allSettled([api.searchAnime(term), api.searchManga(term)]);
-      if (mine !== ticket.current) return; // a newer search has started
+      if (mine !== ticket.current) return;
       setFound({
         anime: a.status === 'fulfilled' ? (a.value.data || []).slice(0, 5) : [],
         manga: m.status === 'fulfilled' ? (m.value.data || []).slice(0, 4) : [],
@@ -100,7 +97,6 @@ export default function CommandPalette() {
     return () => clearTimeout(t);
   }, [q, open]);
 
-  // everything that can be picked, in display order
   const groups = useMemo(() => {
     const term = norm(q.trim());
     const out = [];

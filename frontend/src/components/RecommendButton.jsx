@@ -1,3 +1,5 @@
+// "Recommend to a friend": shown on a title that is on your own list. Friends are people you follow who follow you back.
+// The server fills in the title, cover and your score from your list, so only the friend and a short note are sent from here.
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { api } from '../api/client.js';
@@ -5,8 +7,6 @@ import { REC_NOTE_MAX } from '../constants.js';
 import { useToast } from '../context/ToastContext.jsx';
 import Avatar from './Avatar.jsx';
 
-// "Recommend to a friend": shown on a title that is on your own list. Friends are people you follow who follow you back.
-// The server fills in the title, cover and your score from your list, so only the friend and a short note are sent from here.
 export default function RecommendButton({ kind, malId, title }) {
   const [open, setOpen] = useState(false);
   return (
@@ -53,7 +53,6 @@ function RecommendDialog({ kind, malId, title, onClose }) {
     }
   }
 
-  // Rendered into <body>: the detail page's list panel has its own light colours and form styling that must not leak in
   return createPortal(
     <div className="modal-back" onMouseDown={(e) => e.target === e.currentTarget && !busy && onClose()}>
       <div className="modal rec-modal" role="dialog" aria-modal="true" aria-labelledby="rec-title">

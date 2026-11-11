@@ -1,3 +1,4 @@
+// Serves /anime/:id and /manga/:id
 import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../api/client.js';
@@ -35,7 +36,6 @@ function Countdown({ at, episode }) {
   );
 }
 
-// Serves /anime/:id and /manga/:id
 export default function AnimeDetail({ kind = 'anime' }) {
   const cfg = KINDS[kind];
   const { id } = useParams();
@@ -64,7 +64,6 @@ export default function AnimeDetail({ kind = 'anime' }) {
     return () => { cancelled = true; };
   }, [id, kind]);
 
-  // Intro stagger + slow parallax on the banner
   useGSAP(
     () => {
       if (!anime) return;
@@ -82,7 +81,6 @@ export default function AnimeDetail({ kind = 'anime' }) {
     { scope: root, dependencies: [anime?.mal_id, kind] }
   );
 
-  // the whole site takes on this cover's colour while you're here
   useAccent(anime?.color);
 
   if (error) {

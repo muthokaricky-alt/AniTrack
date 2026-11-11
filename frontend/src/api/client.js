@@ -29,7 +29,6 @@ async function request(path, options = {}) {
           }
         });
       } catch {
-        // Offline is not the same as asleep: fail straight away instead of waiting
         if (mayRetry && navigator.onLine !== false) {
           await sleep(RETRY_DELAYS[attempt]);
           continue;
@@ -46,14 +45,13 @@ async function request(path, options = {}) {
       }
 
       if (res.status === 401 && !path.startsWith('/auth') && localStorage.getItem('anitrack_token')) {
-        // Token expired or invalid: sign the user out everywhere
         window.dispatchEvent(new Event('anitrack:unauthorized'));
       }
       if (!res.ok) {
-        if (data.detail) console.warn(`API detail (${path}):`, data.detail); // the upstream reason for a 502
+        if (data.detail) console.warn(`API detail (${path}):`, data.detail);
         throw new Error(data.error || (looksAsleep(res.status, data) ? 'The server is still waking up. Please try again in a moment.' : 'Request failed'));
       }
-      if (data && data.source === 'backup') window.dispatchEvent(new Event('anitrack:backup')); // served from the backup catalogue
+      if (data && data.source === 'backup') window.dispatchEvent(new Event('anitrack:backup'));
       return data;
     }
   } finally {
@@ -138,7 +136,6 @@ export const api = {
 
   importAniList: (username, kind) => request(`/import/anilist?username=${encodeURIComponent(username)}&kind=${kind}`),
 
-  // The anime list and the manga list share the same operations on different endpoints
   list: (kind) => {
     const base = kind === 'manga' ? '/manga-list' : '/list';
     return {
@@ -148,7 +145,6 @@ export const api = {
       remove: (id) => request(`${base}/${id}`, { method: 'DELETE' }),
       import: (entries) => request(`${base}/import`, { method: 'POST', body: JSON.stringify({ entries }) }),
       resolve: (titles) => request(`${base}/resolve`, { method: 'POST', body: JSON.stringify({ titles }) }),
-      // covers, genres and totals for up to 50 MyAnimeList ids at once
       batch: (ids) => request(`${kind === 'manga' ? '/manga' : '/anime'}/batch?ids=${ids.join(',')}`)
     };
   }

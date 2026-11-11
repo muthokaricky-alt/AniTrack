@@ -1,5 +1,4 @@
 // Dates on list entries are plain "2026-11-08" strings (no time, no time zone).
-
 const ISO = /^(\d{4})-(\d{2})-(\d{2})$/;
 export const isoDate = (d) => d.toISOString().slice(0, 10);
 
@@ -16,7 +15,7 @@ export function dateField(value, now = new Date()) {
   const m = typeof value === 'string' ? ISO.exec(value) : null;
   if (!m) return NaN;
   if (!real(Number(m[1]), Number(m[2]), Number(m[3])) || Number(m[1]) < 1950) return NaN;
-  return value > isoDate(new Date(now.getTime() + 86400000)) ? NaN : value; // ISO dates compare correctly as text
+  return value > isoDate(new Date(now.getTime() + 86400000)) ? NaN : value;
 }
 
 // "Today" for filling in a start or finish date. The browser knows the person's own day, so use it

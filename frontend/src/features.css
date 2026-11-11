@@ -1,6 +1,5 @@
 /* ===== Styles for: colour-themed pages, page curtain, tilt cards, airing strip, for-you row,
    taste match, command palette and share card. Loaded after index.css so these win ties. ===== */
-
 /* ---- The accent colour can animate. Detail pages swap --signal for the cover's colour; this makes it glide. ---- */
 @property --signal { syntax: '<color>'; inherits: true; initial-value: #ff4b1f; }
 @property --signal-hot { syntax: '<color>'; inherits: true; initial-value: #ff6a3d; }
@@ -166,7 +165,6 @@
 .guide-note { margin: 0 0 14px; }
 .guide-item .btn { margin-bottom: 22px; }
 
-
 /* ---- Followers / following ---- */
 .fol { margin: 28px 0 0; }
 .fol-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 28px; }
@@ -204,7 +202,6 @@
   .pf-tabs button { flex: 1; padding: 11px 6px; letter-spacing: 0.06em; font-size: 11px; }
 }
 
-
 /* ---- "AniList is down, showing backup data" notice ---- */
 .backup-note { position: fixed; top: 84px; left: 50%; transform: translateX(-50%); z-index: 80; display: flex; align-items: flex-start; gap: 14px; width: max-content; max-width: min(640px, calc(100vw - 24px)); padding: 12px 16px; background: var(--ink-2); border: 1px solid var(--signal); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); }
 .backup-note p { margin: 0; font-size: 14px; line-height: 1.45; }
@@ -212,7 +209,6 @@
 .backup-note button { flex: none; font-size: 22px; line-height: 1; padding: 0 4px; color: var(--muted); }
 .backup-note button:hover { color: var(--text); }
 @media (max-width: 700px) { .backup-note { top: 64px; } }
-
 
 /* ---- Recommend to a friend, inbox and the unread badge ---- */
 .rec-modal { width: min(520px, 100%); }
@@ -253,12 +249,10 @@
 .nav-dot { position: absolute; top: -5px; right: -8px; min-width: 18px; height: 18px; padding: 0 5px; display: grid; place-items: center; border-radius: 9px; background: var(--signal); color: var(--ink); font-family: var(--mono); font-size: 10px; font-weight: 800; line-height: 1; }
 @media (max-width: 700px) { .rec { grid-template-columns: 52px 1fr; gap: 12px; } .rec-cover { width: 52px; } }
 
-
 /* ---- Back arrow in the top bar ---- */
 .nav-back { flex: none; width: 36px; height: 36px; margin-right: -16px; display: grid; place-items: center; border: 1px solid var(--line-strong); color: var(--muted); transition: color 0.2s, border-color 0.2s; }
 .nav-back:hover { color: var(--text); border-color: var(--signal); }
 .nav-back:active svg { transform: translateX(-2px); }
-
 
 /* ---- Light mode polish --------------------------------------------------------------------------------------------
    In light mode the page colour (--ink) is cream. Two things were hard to read, most of all on the brighter accents
@@ -335,7 +329,6 @@ html[data-theme='light'] .guide-item summary::after { color: var(--signal-text);
 html[data-theme='light'] .guide-item ol li::marker { color: var(--signal-text); }
 html[data-theme='light'] .rec-friend.on { background: rgba(21, 19, 15, 0.05); }
 
-
 /* ---- Profile banner and the banner picker ---- */
 .banner { --fade: var(--ink); position: relative; width: 100%; height: clamp(130px, 21vw, 280px); overflow: hidden; background: var(--ink-2); border: 1px solid var(--line); }
 .banner img { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -372,7 +365,6 @@ html[data-theme='light'] .rec-friend.on { background: rgba(21, 19, 15, 0.05); }
    (in dark mode it works out to almost exactly the old colour). */
 .pf-bio, .pub-bio { color: color-mix(in srgb, var(--text) 85%, var(--ink)); }
 .bp-sliders input[type='range'] { width: 100%; accent-color: var(--signal); }
-
 
 /* ---- Profile picture shapes ----
    Circle is the default. Heart and hexagon are cut with clip-path (the heart outline is defined once in App.jsx). */
@@ -421,7 +413,6 @@ button.sc-tile { padding: 0; border: 0; background: none; color: inherit; font: 
 @media (min-width: 1001px) {
   .nav { gap: clamp(14px, 1.8vw, 32px); }
   .nav-links a { white-space: nowrap; }
-  /* if the bar is ever too full, the links scroll instead of spilling over the buttons next to them */
   .nav-links { min-width: 0; gap: clamp(14px, 1.7vw, 28px); overflow-x: auto; scrollbar-width: none; }
   .nav-links::-webkit-scrollbar { display: none; }
 }
@@ -437,7 +428,6 @@ button.sc-tile { padding: 0; border: 0; background: none; color: inherit; font: 
 html[data-theme='light'] .hero-shade { opacity: 1; }
 .d-syn { color: color-mix(in srgb, var(--text) 82%, var(--ink)); }
 
-
 /* ---- Ranked grids always end on a full row ----
    5 columns on desktop, 3 on tablets, 2 on phones. 15 titles fill 5 and 3 columns exactly; on phones the odd 15th is hidden
    so the last row isn't left with a single card. The 10-title Trending grid hides its 10th on tablets for the same reason. */
@@ -448,16 +438,15 @@ html[data-theme='light'] .hero-shade { opacity: 1; }
   .t10-grid.is-15 > :nth-child(n + 15) { display: none; }
 }
 
-
 /* ---- Detail pages on phones: a small poster beside the title, the way phone apps do it ----
    (A 240px-wide, 360px-tall poster took over 40% of the screen before the title even appeared.) */
 @media (max-width: 700px) {
   .d-body { grid-template-columns: 112px 1fr; gap: 10px 16px; align-items: end; padding-top: 14vh; }
   .d-poster { grid-column: 1; grid-row: 1 / span 2; max-width: none; align-self: end; }
-  .d-info { display: contents; } /* its children join the page grid, so only the title block sits beside the poster */
+  .d-info { display: contents; }
   .d-info > * { grid-column: 1 / -1; }
   .d-info > .kicker.d-in { grid-column: 2; grid-row: 1; align-self: end; margin: 0; }
-  .d-info > .d-title { grid-column: 2; grid-row: 2; align-self: start; margin: 0; font-size: clamp(20px, 6vw, 28px); line-height: 1.02; letter-spacing: -0.03em; overflow-wrap: anywhere; } /* a very long word breaks instead of poking off the screen */
+  .d-info > .d-title { grid-column: 2; grid-row: 2; align-self: start; margin: 0; font-size: clamp(20px, 6vw, 28px); line-height: 1.02; letter-spacing: -0.03em; overflow-wrap: anywhere; }
 }
 
 /* ===== v7: phone + desktop polish ===== */
@@ -468,25 +457,21 @@ html[data-theme='light'] .hero-shade { opacity: 1; }
   .page-pad { padding-top: 84px; padding-bottom: 72px; }
   .nav.is-solid { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
 
-  /* stats: numbers no longer crowd the dividers */
   .stat { padding: 16px 0; }
   .stat strong { font-size: clamp(26px, 8.4vw, 34px); letter-spacing: -0.04em; }
   .stat + .stat { padding-left: 12px; }
   .stat > span { font-size: 10px; letter-spacing: 0.08em; }
 
-  /* list tools: a tidy 2-column grid instead of six full-width bars */
   .list-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 28px; }
   .list-tools .tools-gap { display: none; }
   .list-tools > .btn { width: 100%; flex: none; justify-content: center; text-align: center; padding: 13px 6px; letter-spacing: 0.06em; }
   .list-tools > .roulette { grid-column: 1 / -1; }
 
-  /* status tabs: bleed to the screen edge, fade on the right so it is obvious they scroll */
   .status-tabs { margin-inline: -18px; padding-inline: 18px 44px; gap: 22px; scroll-snap-type: x proximity; scroll-padding-inline: 18px; scrollbar-width: none;
     -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); }
   .status-tabs::-webkit-scrollbar { display: none; }
   .status-tabs button { scroll-snap-align: start; padding-bottom: 12px; }
 
-  /* filter bar: search on top, selects side by side, view switch + Select underneath */
   .list-filter { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
   .list-filter .lf-search { grid-column: 1 / -1; min-width: 0; -webkit-appearance: none; appearance: none; }
   .list-filter select { grid-column: span 3; min-width: 0; width: 100%; }
@@ -495,13 +480,11 @@ html[data-theme='light'] .hero-shade { opacity: 1; }
   .list-filter > .btn { grid-column: span 2; justify-content: center; padding: 13px 6px; }
   .list-filter input, .list-filter select { font-size: 16px; padding: 13px 12px; }
 
-  /* list rows: +1, status and score on one line, Details and Remove as two even buttons */
   .list-rows.view-list .list-controls { display: flex; flex-wrap: wrap; gap: 8px; }
   .list-rows.view-list .list-controls .step-btn { flex: none; }
   .list-rows.view-list .list-controls select { flex: 1 1 calc(50% - 31.5px); min-width: 0; }
   .list-rows.view-list .list-controls .btn-quiet { flex: 1 1 calc(50% - 4.5px); justify-content: center; border: 1px solid var(--line); padding: 11px 6px; }
 
-  /* grid view cards are narrow: status on its own line, then +1 and score side by side */
   .list-rows.view-grid .list-controls { display: grid; grid-template-columns: 5fr 7fr; gap: 8px; align-items: stretch; }
   .list-rows.view-grid .list-controls select { width: 100%; min-width: 0; font-size: 16px; padding-inline: 8px; }
   .list-rows.view-grid .list-controls select[aria-label="Status"] { grid-column: 1 / -1; order: -1; }
@@ -655,3 +638,7 @@ html[data-theme='light'] .hero-shade { opacity: 1; }
 .ed-again button { width: 34px; height: 34px; font-size: 18px; line-height: 1; background: transparent; color: inherit; border: 1px solid currentColor; cursor: pointer; }
 .ed-again button:disabled { opacity: 0.3; cursor: default; }
 @media (max-width: 700px) { .ed input[type='date'] { width: 100%; } .ed label { flex: 1 1 140px; } }
+.cl-mode { display: inline-flex; gap: 6px; margin-right: 8px; }
+.cl-showcase .sc-section { padding-top: 8px; border-bottom: 0; }
+.cl-showcase button.sc-tile { padding: 0; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.auth-note { margin: 4px 0 16px; font-size: 13px; line-height: 1.5; color: var(--muted); }

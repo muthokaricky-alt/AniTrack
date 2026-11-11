@@ -1,7 +1,6 @@
 // Draws a custom list as a poster image. For lists like "Top 10 arcs" the note is the headline under each cover
 // (Marineford) and the show is the small line beneath it (One Piece). Titles without a note show the title itself.
 // The drawing is kept apart from the button so it can be tested, and loadImage is passed in.
-
 const INK = '#0a0a0a', TEXT = '#f4f1ea', MUTED = '#9b968b', ORANGE = '#ff4b1f';
 const COLS = 5, CW = 240, CH = 340, GX = 28, PAD = 70;
 export const CARD_WIDTH = PAD * 2 + COLS * CW + (COLS - 1) * GX;
@@ -27,13 +26,18 @@ export function wrapLines(ctx, text, max, n) {
     while (last.length > 1 && ctx.measureText(`${last}…`).width > max) last = last.slice(0, -1);
     return [...out.slice(0, n - 1), `${last}…`];
   }
-  // a single very long word can still be too wide: cut it too
   return out.map((l) => {
     if (ctx.measureText(l).width <= max) return l;
     let cut = l;
     while (cut.length > 1 && ctx.measureText(`${cut}…`).width > max) cut = cut.slice(0, -1);
     return `${cut}…`;
   });
+}
+
+// [headline, small line under it] for one entry
+export function labels(it) {
+  if (it.kind === 'character') return [it.title, it.note || ''];
+  return [it.note || it.title, it.note ? it.title : ''];
 }
 
 export async function drawListCard(canvas, { title, owner, ranked, items }, loadImage) {
@@ -45,9 +49,9 @@ export async function drawListCard(canvas, { title, owner, ranked, items }, load
   const probe = canvas.getContext('2d');
   probe.font = '600 64px Fraunces, Georgia, serif';
   const titleLines = wrapLines(probe, title, CARD_WIDTH - PAD * 2, 2);
-  const hasNotes = items.some((i) => i.note);
+  const hasNotes = items.some((i) => labels(i)[1]);
   const rowH = CH + (hasNotes ? 138 : 96);
-  const top = 252 + (titleLines.length - 1) * 76; // where the first row of covers starts
+  const top = 252 + (titleLines.length - 1) * 76;
   const rows = Math.ceil(items.length / COLS);
   const H = top + rows * rowH + 90;
 
@@ -79,22 +83,25 @@ export async function drawListCard(canvas, { title, owner, ranked, items }, load
       ctx.fillStyle = INK; ctx.font = '900 26px Archivo, sans-serif'; ctx.textAlign = 'center';
       ctx.fillText(String(i + 1), x + (i >= 99 ? 39 : i >= 9 ? 33 : 26), y + 29); ctx.textAlign = 'left';
     }
-    // the note is the headline when there is one, with the show as a small line under it
+    const [headText, subText] = labels(it);
     ctx.fillStyle = TEXT; ctx.font = '700 20px Archivo, sans-serif';
-    const head = wrapLines(ctx, it.note || it.title, CW, 2);
+    const head = wrapLines(ctx, headText, CW, 2);
     head.forEach((l, k) => ctx.fillText(l, x, y + CH + 30 + k * 26));
-    if (it.note) {
+    if (subText) {
       ctx.fillStyle = MUTED; ctx.font = '500 16px "JetBrains Mono", monospace';
-      ctx.fillText(wrapLines(ctx, it.title, CW, 1)[0] || '', x, y + CH + 30 + head.length * 26 + 6);
+      ctx.fillText(wrapLines(ctx, subText, CW, 1)[0] || '', x, y + CH + 30 + head.length * 26 + 6);
     }
   });
   ctx.fillStyle = MUTED; ctx.font = '500 18px "JetBrains Mono", monospace';
   ctx.fillText('made with AniTrack', PAD, H - 40);
 }
 
-// "1. Marineford (One Piece)" or "1. One Piece" when there is no note
+// "1. Marineford (One Piece)", "1. One Piece" with no note, and "1. Lelouch (Code Geass)" for a character with a note
 export function listText({ title, items }) {
-  const body = items.map((it, i) => `${i + 1}. ${it.note ? `${it.note} (${it.title})` : it.title}`).join('\n');
+  const body = items.map((it, i) => {
+    const [head, sub] = labels(it);
+    return `${i + 1}. ${sub ? `${head} (${sub})` : head}`;
+  }).join('\n');
   return `${title}\n\n${body}\n`;
 }
 

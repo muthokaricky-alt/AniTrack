@@ -1,6 +1,6 @@
+// Fades and lifts every matching element into place as it scrolls into view, in staggered batches.
 import { gsap, ScrollTrigger, useGSAP } from './gsap.js';
 
-// Fades and lifts every matching element into place as it scrolls into view, in staggered batches.
 export function useReveal(scopeRef, selector, deps = []) {
   useGSAP(
     () => {

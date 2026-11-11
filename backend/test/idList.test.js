@@ -1,3 +1,4 @@
+// Tests for src/idList.js: parsing comma-separated id lists.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseIdList } from '../src/idList.js';

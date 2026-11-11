@@ -1,3 +1,4 @@
+// Tests for the avatar and account detail checks.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseAvatar, publicUser, parseShape, AVATAR_SHAPES, DEFAULT_AVATAR_SHAPE } from '../src/userUtil.js';

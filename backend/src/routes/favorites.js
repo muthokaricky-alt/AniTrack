@@ -1,3 +1,4 @@
+// Favourites: each person's Top 3 and Top 15 for anime, manga and characters.
 import { Router } from 'express';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -14,7 +15,6 @@ export async function loadFavorites(userId) {
   const out = empty();
   const rows = await db.all('SELECT kind, list, item_id, title, image_url, sub FROM favorites WHERE user_id = ? ORDER BY kind, list, position', [userId]);
   for (const r of rows) out[r.kind]?.[r.list]?.push({ item_id: r.item_id, title: r.title, image_url: r.image_url, sub: r.sub });
-  // A Top 15 always starts with the Top 3. The stored Top 15 only holds the picks after them (see top3.js).
   for (const k of KINDS) out[k].top15 = withTop3First(out[k].top3, out[k].top15);
   return out;
 }
@@ -38,7 +38,7 @@ router.put('/:kind/:list', async (req, res) => {
     const id = Number(it?.item_id);
     const title = typeof it?.title === 'string' ? it.title.trim().slice(0, 300) : '';
     if (!Number.isInteger(id) || id <= 0 || !title) return res.status(400).json({ error: 'Each item needs an item_id and a title' });
-    if (seen.has(id)) continue; // ignore duplicates instead of failing the whole save
+    if (seen.has(id)) continue;
     seen.add(id);
     clean.push({
       id,
@@ -48,7 +48,6 @@ router.put('/:kind/:list', async (req, res) => {
     });
   }
 
-  // The Top 3 is shown first in the Top 15, so never store those picks a second time
   let toStore = clean;
   if (list === 'top15') {
     const top3 = await db.all("SELECT item_id FROM favorites WHERE user_id = ? AND kind = ? AND list = 'top3'", [req.userId, kind]);
@@ -63,7 +62,6 @@ router.put('/:kind/:list', async (req, res) => {
         [req.userId, kind, list, i, c.id, c.title, c.image_url, c.sub]
       );
     }
-    // A pick promoted into the Top 3 leaves the stored Top 15 picks, so it can't pop back up there if it is removed later
     if (list === 'top3') {
       for (const c of toStore) {
         await t.run("DELETE FROM favorites WHERE user_id = ? AND kind = ? AND list = 'top15' AND item_id = ?", [req.userId, kind, c.id]);

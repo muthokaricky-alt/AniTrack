@@ -1,6 +1,5 @@
 // Turns an uploaded file (JSON, CSV, Excel or Word) into plain rows, one list of rows per section.
 // Nothing here talks to the server. Matching titles to catalogue IDs happens afterwards, in ImportDialog.
-
 import { KINDS } from '../constants.js';
 
 export const MAX_FILE_BYTES = 5 * 1024 * 1024;
@@ -191,7 +190,6 @@ async function parseXlsx(buffer) {
     const kind = kindFromName(ws.name);
     const matrix = [];
     ws.eachRow({ includeEmpty: false }, (row) => matrix.push(row.values.slice(1).map(cellValue)));
-    // a sheet without a header row is only trusted when it is the only one in the workbook
     const rows = rowsFromMatrix(matrix, { allowHeaderless: wb.worksheets.length === 1 && i === 0 });
     if (rows.length) sections.push({ kind, rows });
   });
@@ -233,20 +231,18 @@ async function parseDocx(buffer) {
   const addLine = (text, isHeading = false) => {
     const t = text.trim();
     if (!t) return;
-    // A heading that mentions exactly one of "anime"/"manga" starts that section ("My Anime List", "Manga I've read")
     if (isHeading) {
       const hasA = /\banime\b/i.test(t), hasM = /\bmanga\b/i.test(t);
       if (hasA !== hasM) { flush(); kind = hasA ? 'anime' : 'manga'; status = null; return; }
     }
     const word = squash(t);
-    // A short line like "Anime", "Manga list", "Completed" or "Plan to watch:" acts as a heading for what follows
     if (t.length <= 30) {
       const k = /^(anime|manga)( list)?$/.exec(word);
       if (k) { flush(); kind = k[1]; status = null; return; }
       const s = normStatus(word);
       if (s && !/^(watched|read|done|finished)$/.test(word)) { status = s; return; }
     }
-    if (isHeading) return; // headings label sections; they are never titles
+    if (isHeading) return;
     const { title, score } = splitLine(t);
     if (title) rows.push({ title, mal_id: null, status, score, progress: null, total: null, review: null, genres: [], ratings: null });
   };
@@ -354,7 +350,7 @@ export function parseMalXml(text) {
   return sections;
 }
 
-const MAX_UNPACKED_BYTES = 25 * 1024 * 1024; // stops a tiny .gz from expanding into something huge
+const MAX_UNPACKED_BYTES = 25 * 1024 * 1024;
 
 async function gunzipText(file) {
   if (typeof DecompressionStream === 'undefined') {

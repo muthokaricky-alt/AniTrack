@@ -1,9 +1,8 @@
 // Rules for "recommend to a friend". Pure functions with no database, so they are easy to test.
-
-export const NOTE_MAX = 140; // a short note, like a text message
-export const MAX_PER_HOUR = 20; // most recommendations one person can send in an hour
-export const MAX_PER_RECIPIENT_PER_DAY = 10; // most they can send to one friend in a day
-export const BOX_LIMIT = 50; // how many items the inbox and the sent list show
+export const NOTE_MAX = 140;
+export const MAX_PER_HOUR = 20;
+export const MAX_PER_RECIPIENT_PER_DAY = 10;
+export const BOX_LIMIT = 50;
 
 export const parseKind = (value) => (value === 'anime' || value === 'manga' ? value : null);
 

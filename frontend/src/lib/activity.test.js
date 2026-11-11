@@ -1,3 +1,4 @@
+// Tests for lib/activity.js: daily counts, the heatmap grid and days watched.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { dayKey, dailyCounts, levelFor, buildHeatmap, daysWatched } from './activity.js';
@@ -5,7 +6,7 @@ import { ACTIVITY_STEP_CAP } from '../constants.js';
 
 // noon UTC keeps each event on the same calendar day in every time zone
 const ev = (iso, delta = 1, kind = 'anime') => ({ ts: `${iso}T12:00:00Z`, kind, delta });
-const NOW = new Date(2026, 10, 8, 15); // Sunday 8 November 2026, local time
+const NOW = new Date(2026, 10, 8, 15);
 
 test('dayKey matches the format the streak code uses', () => {
   assert.equal(dayKey(new Date(2026, 0, 5)), '2026-1-5');
@@ -33,19 +34,18 @@ test('levels run from 0 to 4 relative to the busiest day', () => {
   assert.equal(levelFor(6, 10), 3);
   assert.equal(levelFor(10, 10), 4);
   assert.equal(levelFor(1, 1), 4);
-  assert.equal(levelFor(5, 0), 4); // no division by zero
+  assert.equal(levelFor(5, 0), 4);
 });
 
 test('the grid has the right shape and today lands in the last column', () => {
   const h = buildHeatmap([ev('2026-11-08', 2), ev('2026-11-02', 6), ev('2026-05-20', 1)], NOW, 26);
   assert.equal(h.weeks.length, 26);
   assert.ok(h.weeks.every((w) => w.length === 7));
-  // 8 Nov 2026 is a Sunday, so it is the last cell of the last (Monday to Sunday) column
   const last = h.weeks[25][6];
   assert.equal(last.key, '2026-11-8');
   assert.equal(last.count, 2);
   assert.equal(last.future, false);
-  assert.equal(h.weeks[25][0].key, '2026-11-2'); // that week's Monday
+  assert.equal(h.weeks[25][0].key, '2026-11-2');
   assert.equal(h.total, 9);
   assert.equal(h.activeDays, 3);
   assert.equal(h.max, 6);
@@ -53,11 +53,11 @@ test('the grid has the right shape and today lands in the last column', () => {
 });
 
 test('days after today are marked as future and never counted', () => {
-  const wed = new Date(2026, 10, 4, 9); // Wednesday
+  const wed = new Date(2026, 10, 4, 9);
   const h = buildHeatmap([ev('2026-11-05', 9)], wed, 4);
   const lastWeek = h.weeks[3];
-  assert.equal(lastWeek[2].future, false); // Wednesday itself
-  assert.equal(lastWeek[3].future, true);  // Thursday
+  assert.equal(lastWeek[2].future, false);
+  assert.equal(lastWeek[3].future, true);
   assert.equal(lastWeek[3].count, 0);
   assert.equal(h.total, 0);
 });
@@ -70,7 +70,7 @@ test('an empty history gives an empty but well-formed grid', () => {
 });
 
 test('days watched is episodes times minutes, rounded to one decimal', () => {
-  assert.equal(daysWatched(60), 1); // 60 x 24 min = exactly 1 day
+  assert.equal(daysWatched(60), 1);
   assert.equal(daysWatched(3412), 56.9);
   assert.equal(daysWatched(10, 30), 0.2);
   assert.equal(daysWatched(0), 0);

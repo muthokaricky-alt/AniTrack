@@ -1,3 +1,4 @@
+// Tests for the rate limiter: a limit per IP address, answered with 429 and Retry-After.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { rateLimit } from '../src/middleware/rateLimit.js';

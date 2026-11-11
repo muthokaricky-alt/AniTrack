@@ -1,3 +1,4 @@
+// Choose a profile banner: a picture from one of your favourite series, or one of your own. `current` is { src, x, y } or null.
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { api } from '../api/client.js';
@@ -5,20 +6,18 @@ import { useToast } from '../context/ToastContext.jsx';
 import { fileToBanner } from '../lib/image.js';
 import Banner from './Banner.jsx';
 
-// Choose a profile banner: a picture from one of your favourite series, or one of your own. `current` is { src, x, y } or null.
 export default function BannerPicker({ current, onClose, onSaved }) {
   const toast = useToast();
   const fileInput = useRef(null);
   const [tab, setTab] = useState('series');
   const [options, setOptions] = useState(null);
   const [optionsError, setOptionsError] = useState('');
-  const [choice, setChoice] = useState(null); // a new picture picked in this dialog: { value, preview }
+  const [choice, setChoice] = useState(null);
   const [x, setX] = useState(current?.x ?? 50);
   const [y, setY] = useState(current?.y ?? 50);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  // The series list only loads when its tab is open (it asks AniList, so it is not free to do for nothing)
   useEffect(() => {
     if (tab !== 'series' || options !== null || optionsError) return undefined;
     let off = false;
@@ -37,7 +36,7 @@ export default function BannerPicker({ current, onClose, onSaved }) {
 
   function use(value) {
     setChoice({ value, preview: value });
-    setX(50); // a new picture starts centred
+    setX(50);
     setY(50);
     setError('');
   }

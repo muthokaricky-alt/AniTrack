@@ -1,3 +1,4 @@
+// Episodes from your Watching and Plan to watch lists that air in the next seven days, with live countdowns.
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { loadAiring } from '../lib/airing.js';
@@ -25,7 +26,6 @@ function dayLabel(ts, now) {
   return new Date(ts * 1000).toLocaleDateString(undefined, { weekday: 'long' });
 }
 
-// Episodes from your Watching and Plan to watch lists that air in the next seven days, with live countdowns.
 export default function AiringWeek() {
   const { entries, byMalId, updateEntry } = useList();
   const toast = useToast();

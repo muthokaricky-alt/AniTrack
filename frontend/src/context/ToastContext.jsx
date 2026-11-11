@@ -1,8 +1,8 @@
+// Small confirmations in the corner: toast('Saved'), toast('Something failed', 'error')
 import { createContext, useCallback, useContext, useRef, useState } from 'react';
 
 const ToastContext = createContext(() => {});
 
-// Small confirmations in the corner: toast('Saved'), toast('Something failed', 'error')
 export function ToastProvider({ children }) {
   const [items, setItems] = useState([]);
   const idRef = useRef(0);

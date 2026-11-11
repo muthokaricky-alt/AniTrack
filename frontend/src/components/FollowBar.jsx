@@ -1,3 +1,4 @@
+// Follower / following counts and the Follow button, shown on a public profile
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client.js';
@@ -30,11 +31,10 @@ export function People({ users, empty }) {
   );
 }
 
-// Follower / following counts and the Follow button, shown on a public profile
 export default function FollowBar({ username, viewer }) {
   const toast = useToast();
   const [info, setInfo] = useState(null);
-  const [open, setOpen] = useState(null); // 'followers' | 'following' | null
+  const [open, setOpen] = useState(null);
   const [lists, setLists] = useState({});
   const [busy, setBusy] = useState(false);
 
@@ -65,7 +65,7 @@ export default function FollowBar({ username, viewer }) {
       const res = info.is_following ? await api.unfollow(username) : await api.follow(username);
       setInfo((i) => ({ ...i, ...res }));
       if (open === 'followers') loadList('followers');
-      else setLists((l) => ({ ...l, followers: undefined })); // reload it next time it's opened
+      else setLists((l) => ({ ...l, followers: undefined }));
     } catch (e) {
       toast(e.message, 'error');
     } finally {

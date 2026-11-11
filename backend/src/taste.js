@@ -1,6 +1,5 @@
 // The taste-match maths. Pure functions (no database, no network), so they are easy to test.
 // Used by routes/profile.js (compare with one person) and routes/follows.js (compare with everyone you follow).
-
 const clamp01 = (x) => Math.max(0, Math.min(1, x));
 export const parseGenres = (text) => { try { const g = JSON.parse(text || '[]'); return Array.isArray(g) ? g : []; } catch { return []; } };
 
@@ -64,14 +63,12 @@ export function compareTaste(mine, theirs, favs = {}) {
   let sum = 0, wsum = 0;
   for (const k of Object.keys(parts)) if (parts[k] != null) { sum += parts[k] * weights[k]; wsum += weights[k]; }
 
-  // genres you both lean towards, by the smaller of the two weights
   const gm = genreVector(mine), gt = genreVector(theirs);
   const commonGenres = [...gm.keys()].filter((g) => gt.has(g)).sort((a, b) => Math.min(gt.get(b), gm.get(b)) - Math.min(gt.get(a), gm.get(a))).slice(0, 5);
 
   const pct = (x) => (x == null ? null : Math.round(x * 100));
   return {
     percent: wsum ? Math.round((sum / wsum) * 100) : 0,
-    // what the percentage is based on: both lists, favourites only (a list is empty), or lists only
     basis: !(mine.length && theirs.length) ? 'favourites' : fav.overlap != null ? 'both' : 'lists',
     parts: { genres: pct(parts.genres), scores: pct(parts.scores), overlap: pct(parts.overlap), favourites: pct(parts.favourites) },
     shared_count: shared.length,

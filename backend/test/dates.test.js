@@ -1,3 +1,4 @@
+// Tests for src/dates.js: date checks, the person's own 'today' and AniList dates.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { dateField, todayFrom, fuzzyToIso } from '../src/dates.js';
@@ -29,9 +30,9 @@ test('the future is not allowed, apart from a day of time zone slack', () => {
 });
 
 test("todayFrom uses the browser's day when it is close to the server's, and the server's otherwise", () => {
-  assert.equal(todayFrom('2026-11-09', NOW), '2026-11-09'); // someone ahead of UTC
-  assert.equal(todayFrom('2026-11-07', NOW), '2026-11-07'); // someone behind UTC
-  assert.equal(todayFrom('2026-11-01', NOW), '2026-11-08'); // a wrong clock
+  assert.equal(todayFrom('2026-11-09', NOW), '2026-11-09');
+  assert.equal(todayFrom('2026-11-07', NOW), '2026-11-07');
+  assert.equal(todayFrom('2026-11-01', NOW), '2026-11-08');
   assert.equal(todayFrom('rubbish', NOW), '2026-11-08');
   assert.equal(todayFrom(undefined, NOW), '2026-11-08');
 });

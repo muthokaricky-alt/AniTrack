@@ -1,3 +1,4 @@
+// Theme settings (dark, light, match device, accent colour): read, save and apply them.
 const KEY = 'anitrack:theme';
 export const ACCENTS = [
   { key: 'orange', label: 'Orange', color: '#ff4b1f' },

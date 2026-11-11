@@ -1,6 +1,6 @@
+// Choose the shape of your profile picture
 import { AVATAR_SHAPES } from '../lib/avatarShape.js';
 
-// Choose the shape of your profile picture
 export default function ShapePicker({ value, onChange }) {
   return (
     <div className="shape-picker" role="radiogroup" aria-label="Photo shape">

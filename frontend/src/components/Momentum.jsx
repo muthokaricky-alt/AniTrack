@@ -1,3 +1,4 @@
+// Streak, this week's count and a goal ring, built from the progress log
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client.js';
 import { ACTIVITY_STEP_CAP } from '../constants.js';
@@ -9,11 +10,10 @@ const GOAL_KEY = 'anitrack:weekgoal';
 function startOfWeek(now) {
   const d = new Date(now);
   d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // Monday
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
   return d;
 }
 
-// Streak, this week's count and a goal ring, built from the progress log
 export default function Momentum({ kind, total = 0 }) {
   const [events, setEvents] = useState(null);
   const [goal, setGoal] = useState(() => {
@@ -33,11 +33,10 @@ export default function Momentum({ kind, total = 0 }) {
     const today = new Date();
     let streak = 0;
     const cursor = new Date(today);
-    if (!days.has(dayKey(cursor))) cursor.setDate(cursor.getDate() - 1); // today not logged yet does not break it
+    if (!days.has(dayKey(cursor))) cursor.setDate(cursor.getDate() - 1);
     while (days.has(dayKey(cursor))) { streak += 1; cursor.setDate(cursor.getDate() - 1); }
     const from = startOfWeek(today).getTime();
     const week = events.filter((e) => new Date(e.ts).getTime() >= from);
-    // one update counts for at most ACTIVITY_STEP_CAP, so marking a long series as caught up can't fill the whole week
     const sum = (arr) => arr.reduce((s, e) => s + Math.min(e.delta, ACTIVITY_STEP_CAP), 0);
     return { streak, weekAnime: sum(week.filter((e) => e.kind === 'anime')), weekManga: sum(week.filter((e) => e.kind === 'manga')), any: events.length > 0 };
   }, [events]);

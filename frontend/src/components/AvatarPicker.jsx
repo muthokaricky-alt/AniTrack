@@ -1,3 +1,4 @@
+// Profile photo picker: choose an image and get it back as a small data URL, in the shape the person chose.
 import { useRef, useState } from 'react';
 import { fileToAvatar } from '../lib/image.js';
 import Avatar from './Avatar.jsx';

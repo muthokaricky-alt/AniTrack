@@ -1,5 +1,4 @@
 // Rules for saving progress on a list entry. Pure functions with no database, so they are easy to test.
-
 // The most episodes (or chapters) one update can add to the activity log. Jumping a long series straight to "caught up"
 // (say One Piece, 0 to 1158) used to be logged as 1,158 episodes watched this week and wrecked the weekly goal and ring.
 // Capped, an update still counts as an active day for the streak, but it can't inflate the weekly total.

@@ -1,3 +1,4 @@
+// Loads the next-episode times for your airing shows once per page and shares them with whoever asks.
 import { useEffect, useState } from 'react';
 import { api } from '../api/client.js';
 
@@ -7,7 +8,7 @@ export function loadAiring(maxAgeMs = 60000) {
   if (cache && Date.now() - cache.at < maxAgeMs) return cache.promise;
   const promise = api.airing().then((r) => r.data || []);
   cache = { at: Date.now(), promise };
-  promise.catch(() => { if (cache && cache.promise === promise) cache = null; }); // do not keep a failure around
+  promise.catch(() => { if (cache && cache.promise === promise) cache = null; });
   return promise;
 }
 

@@ -1,5 +1,4 @@
 // Swiping a list row: right for "+1", left for "remove". Plain DOM so it can be tested in a real browser.
-
 // Is this drag clearly sideways, so it should take over from scrolling?
 export function isHorizontal(dx, dy, slop = 10) {
   return Math.abs(dx) > slop && Math.abs(dx) > Math.abs(dy) * 1.4;
@@ -40,11 +39,10 @@ export function attachSwipe(el, { onRight, onLeft, canRight = () => true, canLef
     const dy = e.touches[0].clientY - startY;
     if (!dragging) {
       if (isHorizontal(dx, dy)) dragging = true;
-      else { if (Math.abs(dy) > 10) tracking = false; return; } // it is a scroll: leave it alone
+      else { if (Math.abs(dy) > 10) tracking = false; return; }
     }
     if (e.cancelable) e.preventDefault();
     const allowed = dx > 0 ? canRight() : canLeft();
-    // a direction that does nothing only wiggles a little
     const shown = allowed ? Math.max(-max, Math.min(max, dx)) : Math.max(-16, Math.min(16, dx * 0.2));
     el.style.transform = `translateX(${shown}px)`;
     el.classList.add('swiping');

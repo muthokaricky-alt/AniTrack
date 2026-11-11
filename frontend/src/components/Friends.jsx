@@ -1,3 +1,4 @@
+// "Friends" tab on your own profile: everyone you follow ranked by taste match, and who follows you
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client.js';
@@ -42,7 +43,6 @@ function Matches({ data }) {
   );
 }
 
-// "Friends" tab on your own profile: everyone you follow ranked by taste match, and who follows you
 export default function Friends() {
   const { user } = useAuth();
   const [params] = useSearchParams();
@@ -57,12 +57,10 @@ export default function Friends() {
     api.followInfo(user.username).then(setInfo).catch(() => {});
   }, [user.username]);
 
-  // The navbar badge links here with ?view=inbox, even when this tab is already open
   useEffect(() => {
     if (params.get('view') === 'inbox') setView('inbox');
   }, [params]);
 
-  // Each view loads once per visit to this tab
   useEffect(() => {
     let off = false;
     if (view === 'following' && matches === null) {

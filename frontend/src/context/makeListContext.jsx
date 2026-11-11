@@ -1,9 +1,9 @@
+// Builds a list provider + hook for one kind of media ('anime' or 'manga').
 import { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { api } from '../api/client.js';
 import { KINDS } from '../constants.js';
 import { useAuth } from './AuthContext.jsx';
 
-// Builds a list provider + hook for one kind of media ('anime' or 'manga').
 export function makeListContext(kind) {
   const cfg = KINDS[kind];
   const ops = api.list(kind);
@@ -14,7 +14,7 @@ export function makeListContext(kind) {
     const [entries, setEntries] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [savedAt, setSavedAt] = useState(null); // set when the list on screen is an offline copy
+    const [savedAt, setSavedAt] = useState(null);
     const entriesRef = useRef(entries);
     entriesRef.current = entries;
 
@@ -30,7 +30,6 @@ export function makeListContext(kind) {
           try { localStorage.setItem(cacheKey, JSON.stringify({ at: Date.now(), entries: fresh })); } catch { /* storage full or blocked */ }
         }
       } catch (e) {
-        // server asleep or catalogue down: fall back to the last copy this browser saw
         let copy = null;
         try { copy = cacheKey ? JSON.parse(localStorage.getItem(cacheKey) || 'null') : null; } catch { /* ignore */ }
         if (copy?.entries?.length) {
@@ -55,7 +54,6 @@ export function makeListContext(kind) {
       );
     }, []);
 
-    // keepExisting: add only if missing (quick-add), never overwrite an existing status
     const addToList = useCallback(
       async (item, status = cfg.defaultStatus, { keepExisting = false } = {}) => {
         const entry = await ops.add({
@@ -73,7 +71,6 @@ export function makeListContext(kind) {
       [upsert]
     );
 
-    // Optimistic update with rollback if the server rejects it
     const updateEntry = useCallback(
       async (id, patch) => {
         const previous = entriesRef.current.find((e) => e.id === id);
@@ -90,7 +87,6 @@ export function makeListContext(kind) {
       [upsert]
     );
 
-    // put back titles that were just removed (the Undo button), with their old status, score, notes and tags
     const restoreEntries = useCallback(async (list) => {
       await ops.import(list);
       await load();

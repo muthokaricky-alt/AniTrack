@@ -1,3 +1,4 @@
+// Full-bleed key-art slideshow (the Crunchyroll-style feature banner). Pauses on hover, static for reduced motion.
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -7,7 +8,6 @@ import { gsap, useGSAP, prefersReducedMotion } from '../lib/gsap.js';
 
 const INTERVAL = 7000;
 
-// Full-bleed key-art slideshow (the Crunchyroll-style feature banner). Pauses on hover, static for reduced motion.
 export default function Spotlight({ items }) {
   const { user } = useAuth();
   const { byMalId, addToList } = useList();

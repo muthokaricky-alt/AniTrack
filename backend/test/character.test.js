@@ -1,3 +1,4 @@
+// Tests for character text clean-up: spoilers removed and AniList mark-up turned into plain text.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { cleanCharacterText, birthdayText, characterShape } from '../src/character.js';
@@ -13,7 +14,7 @@ test('AniList mark-up becomes plain, readable text', () => {
   assert.equal(cleanCharacterText('**Bold** and ~~struck~~ words'), 'Bold and struck words');
   assert.equal(cleanCharacterText('See [the wiki](https://example.com/x) now'), 'See the wiki now');
   assert.equal(cleanCharacterText('Before img220(https://example.com/pic.jpg) after'), 'Before  after');
-  assert.equal(cleanCharacterText('<script>alert(1)</script>Hello <b>there</b>'), 'alert(1)Hello there'); // tags are dropped, never executed
+  assert.equal(cleanCharacterText('<script>alert(1)</script>Hello <b>there</b>'), 'alert(1)Hello there');
 });
 
 test('blank lines are tidied and the text is trimmed', () => {
@@ -27,7 +28,7 @@ test('long text is cut at a word boundary with an ellipsis', () => {
   const out = cleanCharacterText(long, 100);
   assert.ok(out.length <= 101, out.length);
   assert.ok(out.endsWith('…'));
-  assert.ok(!out.slice(0, -1).endsWith(' ')); // no dangling space
+  assert.ok(!out.slice(0, -1).endsWith(' '));
   assert.equal(cleanCharacterText('short text'), 'short text');
 });
 
@@ -59,7 +60,7 @@ test('a character is reshaped into safe fields, and only series that can be open
   assert.equal(out.birthday, 'July 15');
   assert.equal(out.favourites, 1234);
   assert.deepEqual(out.appears_in.map((a) => [a.mal_id, a.kind]), [[269, 'anime'], [2, 'manga']]);
-  assert.equal(out.appears_in[1].image_url, null); // a picture from another website is dropped
+  assert.equal(out.appears_in[1].image_url, null);
   assert.equal(out.image_url, 'https://s4.anilist.co/file/anilistcdn/character/large/b5-x.png');
 });
 

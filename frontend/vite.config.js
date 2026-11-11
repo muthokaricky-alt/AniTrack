@@ -1,3 +1,4 @@
+// Vite config: the React plugin, a dev proxy for /api and an optional sub-path for deploys.
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -6,6 +7,5 @@ export default defineConfig({
   plugins: [react()],
   base: process.env.VITE_BASE || '/',
   server: { proxy: { '/api': 'http://localhost:5000' } },
-  // three.js is lazy-loaded for the hero background, so its chunk is allowed to be large
   build: { chunkSizeWarningLimit: 1000 }
 });

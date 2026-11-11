@@ -1,7 +1,6 @@
 // Shared helpers for anything that returns or accepts user profile data
-
 const AVATAR_PATTERN = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/;
-const AVATAR_MAX_CHARS = 100000; // the client shrinks photos to ~256px, so real ones are far smaller
+const AVATAR_MAX_CHARS = 100000;
 
 // Returns { valid: true, value } where value is a data URL or null (no avatar), or { valid: false }
 export function parseAvatar(input) {

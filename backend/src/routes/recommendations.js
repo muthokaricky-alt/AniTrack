@@ -1,3 +1,8 @@
+// "Recommend to a friend". Rules that keep it from becoming a spam channel:
+//  - friends only: both people must follow each other
+//  - you can only recommend a title that is on YOUR list, and the title, cover and your score are copied from your own
+//    list row, so nobody can send a forged title or an arbitrary picture
+//  - the note is short plain text, there are hourly and daily limits, and the same title can't be sent to the same friend twice
 import { Router } from 'express';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -5,15 +10,10 @@ import { isId } from '../inputs.js';
 import { cleanImageUrl } from '../imageUrl.js';
 import { BOX_LIMIT, cleanNote, limitMessage, parseKind } from '../recommend.js';
 
-// "Recommend to a friend". Rules that keep it from becoming a spam channel:
-//  - friends only: both people must follow each other
-//  - you can only recommend a title that is on YOUR list, and the title, cover and your score are copied from your own
-//    list row, so nobody can send a forged title or an arbitrary picture
-//  - the note is short plain text, there are hourly and daily limits, and the same title can't be sent to the same friend twice
 const router = Router();
 router.use(requireAuth);
 
-const TABLES = { anime: 'list_entries', manga: 'manga_entries' }; // fixed names, never user input
+const TABLES = { anime: 'list_entries', manga: 'manga_entries' };
 const NOT_FRIENDS = 'You can only send recommendations to friends: people you follow who also follow you back.';
 
 // GET /api/recommendations/friends -> who you can send to (mutual follows)
@@ -82,7 +82,6 @@ router.post('/', async (req, res) => {
   const toName = String(body.to || '').trim().slice(0, 60);
   if (!toName) return res.status(400).json({ error: 'Choose a friend to send it to.' });
 
-  // The recipient must exist AND be a mutual follow. One message for both, so this can't be used to look people up.
   const friend = await db.get(
     `SELECT u.id, u.username FROM users u
       WHERE lower(u.username) = lower(?)

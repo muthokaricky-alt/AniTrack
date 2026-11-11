@@ -1,6 +1,5 @@
 // Small helpers that keep user-supplied search text, page numbers and ids within sane limits.
 // Pure functions, so they are easy to test.
-
 // Trim and cap free text (search boxes). Stops someone sending a 1 MB "search".
 export const cleanQuery = (value, max = 100) => String(value ?? '').trim().slice(0, max);
 

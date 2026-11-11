@@ -1,8 +1,9 @@
+// Fetches a person's public AniList anime or manga list in chunks and shapes it for the import preview.
 import { USER_AGENT } from './inputs.js';
 import { LIST_QUERY, shapeCollection } from './anilistList.js';
 
 const ANILIST_URL = process.env.ANILIST_URL || 'https://graphql.anilist.co';
-export const MAX_CHUNKS = 10; // 500 titles per chunk, so up to 5000 titles
+export const MAX_CHUNKS = 10;
 
 const fail = (status, message) => Object.assign(new Error(message), { status, expose: true });
 

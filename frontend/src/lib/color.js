@@ -1,7 +1,6 @@
 // Turns a cover's dominant colour (AniList gives "#e4a15d") into an accent that is safe on AniTrack's near-black pages.
 // Very dark covers would vanish and very light ones would glare, so lightness is held in a readable band
 // and washed-out colours get a little saturation back.
-
 function hexToHsl(hex) {
   const n = parseInt(hex.slice(1), 16);
   const r = ((n >> 16) & 255) / 255;
@@ -26,7 +25,7 @@ const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 export function accentFrom(hex) {
   if (typeof hex !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(hex)) return null;
   const { h, s, l } = hexToHsl(hex);
-  const sat = s < 0.08 ? s : clamp(s, 0.5, 0.95); // true greys stay grey
+  const sat = s < 0.08 ? s : clamp(s, 0.5, 0.95);
   const light = clamp(l, 0.58, 0.7);
   return {
     accent: `hsl(${h} ${Math.round(sat * 100)}% ${Math.round(light * 100)}%)`,

@@ -1,3 +1,4 @@
+// Browse manga: search, top-rated and trending.
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../api/client.js';
@@ -23,7 +24,6 @@ export default function Manga() {
 
   useEffect(() => setInput(q), [q]);
 
-  // Browse view (no search yet): trending + top rated
   useEffect(() => {
     if (hasQuery) return;
     let cancelled = false;
@@ -40,7 +40,6 @@ export default function Manga() {
     return () => { cancelled = true; };
   }, [hasQuery]);
 
-  // Search view, driven by the URL
   useEffect(() => {
     if (!hasQuery) return;
     let cancelled = false;

@@ -1,8 +1,8 @@
+// A number that counts up from zero the first time it scrolls into view. Later changes count from the old value.
+// Without JavaScript or with reduced motion it just shows the final number.
 import { useLayoutEffect, useRef } from 'react';
 import { gsap, ScrollTrigger, prefersReducedMotion } from '../lib/gsap.js';
 
-// A number that counts up from zero the first time it scrolls into view. Later changes count from the old value.
-// Without JavaScript or with reduced motion it just shows the final number.
 export default function CountUp({ value, decimals, className }) {
   const ref = useRef(null);
   const played = useRef(false);

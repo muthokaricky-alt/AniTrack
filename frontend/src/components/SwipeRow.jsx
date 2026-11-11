@@ -1,11 +1,11 @@
+// A list row that can be swiped (right for +1, left for remove) when enabled; otherwise just a div.
 import { useEffect, useRef } from 'react';
 import { attachSwipe } from '../lib/swipe.js';
 
-// A list row that can be swiped (right for +1, left for remove) when enabled; otherwise just a div.
 export default function SwipeRow({ enabled, onRight, onLeft, canRight, canLeft, children, ...rest }) {
   const ref = useRef(null);
   const handlers = useRef({});
-  handlers.current = { onRight, onLeft, canRight, canLeft }; // always the latest, without re-attaching listeners
+  handlers.current = { onRight, onLeft, canRight, canLeft };
   useEffect(() => {
     if (!enabled || !ref.current) return undefined;
     return attachSwipe(ref.current, {

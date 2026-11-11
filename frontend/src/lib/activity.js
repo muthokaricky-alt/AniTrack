@@ -1,3 +1,4 @@
+// Helpers for the activity heatmap and the 'days watched' total.
 import { ACTIVITY_STEP_CAP } from '../constants.js';
 
 // Same format the streak code has always used, so both agree on what "a day" is

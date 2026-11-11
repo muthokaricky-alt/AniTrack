@@ -1,3 +1,4 @@
+// Tests for lib/countdown.js: the 'in 2d 4h' wording.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { untilText } from './countdown.js';

@@ -1,3 +1,4 @@
+// Tests for src/anilistList.js: turning an AniList list into import rows (statuses, scores, dates).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { USERNAME_RE, shapeCollection } from '../src/anilistList.js';
@@ -67,6 +68,6 @@ test('start and finish dates and repeat counts come across when AniList has them
     entry({ repeat: 500 }, { idMal: 12 })
   ] }] }, 'anime');
   assert.deepEqual([rows[0].started_on, rows[0].finished_on, rows[0].rewatches], ['2024-03-09', '2024-04-01', 2]);
-  assert.deepEqual([rows[1].started_on, rows[1].finished_on, rows[1].rewatches], [null, null, 0]); // partial dates are dropped
+  assert.deepEqual([rows[1].started_on, rows[1].finished_on, rows[1].rewatches], [null, null, 0]);
   assert.equal(rows[2].rewatches, 99);
 });

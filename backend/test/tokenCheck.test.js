@@ -1,3 +1,4 @@
+// Tests for login token checks: current tokens, and tokens for accounts that are gone.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { tokenMatchesUser } from '../src/tokenCheck.js';

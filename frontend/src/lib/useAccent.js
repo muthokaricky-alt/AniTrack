@@ -1,8 +1,8 @@
+// While a page is on screen, swap the site's accent colour for the given cover colour.
+// The change is animated (see the @property rule in features.css) and undone when the page unmounts.
 import { useEffect } from 'react';
 import { accentFrom } from './color.js';
 
-// While a page is on screen, swap the site's accent colour for the given cover colour.
-// The change is animated (see the @property rule in features.css) and undone when the page unmounts.
 export function useAccent(color) {
   useEffect(() => {
     const a = accentFrom(color);

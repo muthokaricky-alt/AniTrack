@@ -27,7 +27,7 @@ const cols = (table) => lite.prepare(`PRAGMA table_info(${table})`).all().map((c
 const stamp = (v) => (v ? new Date(String(v).includes('T') ? v : `${String(v).replace(' ', 'T')}Z`) : null);
 
 await db.init();
-const idMap = new Map(); // old user id -> new user id
+const idMap = new Map();
 let counts = { users: 0, anime: 0, manga: 0, favorites: 0 };
 
 for (const u of lite.prepare('SELECT * FROM users ORDER BY id').all()) {

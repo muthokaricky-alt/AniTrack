@@ -1,3 +1,4 @@
+// The top of the React app: the page routes and the providers every page shares.
 import { Component } from 'react';
 import { Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
@@ -84,10 +85,9 @@ function Footer() {
 }
 
 function Shell() {
-  useKeyboardNav(); // Ctrl+Shift+Left / Right flips between the main pages
+  useKeyboardNav();
   return (
     <>
-      {/* the heart outline that heart-shaped profile pictures are cut to (see features.css) */}
       <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true" focusable="false">
         <defs>
           <clipPath id="avatar-heart" clipPathUnits="objectBoundingBox">

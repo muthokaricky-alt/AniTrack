@@ -1,3 +1,4 @@
+// Tests for the circuit breaker that pauses calls to a catalogue API that keeps failing.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeBreaker } from '../src/breaker.js';
@@ -30,9 +31,9 @@ test('reopens for another pause if the next try after the pause also fails', () 
   c.tick(29999);
   assert.equal(b.isOpen(), true);
   c.tick(2);
-  assert.equal(b.isOpen(), false); // one request may go through to check on the service
+  assert.equal(b.isOpen(), false);
   b.failure();
-  assert.equal(b.isOpen(), true); // still down: pause again
+  assert.equal(b.isOpen(), true);
 });
 
 test('closes for good once a request succeeds', () => {

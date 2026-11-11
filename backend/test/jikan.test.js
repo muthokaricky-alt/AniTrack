@@ -1,3 +1,4 @@
+// Tests for the backup catalogue (Jikan): reshaping its answers into what the pages expect.
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -53,7 +54,7 @@ test('anime are reshaped into what the pages expect', () => {
   assert.equal(a.studio, 'Madhouse');
   assert.equal(a.trailer, 'abc_DEF-123');
   assert.equal(a.banner, null);
-  assert.equal(a.images.jpg.image_url, 'https://cdn.myanimelist.net/images/anime/1/large.jpg'); // large picture preferred
+  assert.equal(a.images.jpg.image_url, 'https://cdn.myanimelist.net/images/anime/1/large.jpg');
 });
 
 test('anime: missing or odd data never crashes the page', () => {
@@ -61,10 +62,10 @@ test('anime: missing or odd data never crashes the page', () => {
   assert.equal(animeShape({ title: 'no id' }), null);
   const a = animeShape({ mal_id: 1, title: 'Plain', score: 0, status: 'Weird', type: 'TV Special', trailer: { youtube_id: '<script>' }, genres: null, images: {} });
   assert.equal(a.title, 'Plain');
-  assert.equal(a.score, null); // Jikan uses 0 for "no score"
+  assert.equal(a.score, null);
   assert.equal(a.status, null);
   assert.equal(a.type, 'TV_SPECIAL');
-  assert.equal('trailer' in a, false); // an unsafe trailer id is dropped
+  assert.equal('trailer' in a, false);
   assert.deepEqual(a.genres, []);
   assert.equal(a.images.jpg.image_url, null);
   assert.equal(animeShape({ mal_id: 3, title: 'Old', aired: { prop: { from: { year: 1998 } } } }).year, 1998);
@@ -143,7 +144,7 @@ test('answers are cached, so a second visitor does not cost another Jikan reques
 test('if Jikan fails but we have an older answer, the older answer is used', async () => {
   stubFetch(() => reply({ data: [fmab] }));
   await backupTopAnime('1');
-  jikanConfig.cacheMs = 0; // everything is now "old"
+  jikanConfig.cacheMs = 0;
   stubFetch(() => reply({}, 500));
   const out = await backupTopAnime('1');
   assert.equal(out.data[0].mal_id, 5114);
@@ -174,10 +175,10 @@ test('stays under Jikan\'s per-minute limit instead of getting blocked', async (
 });
 
 test('a long queue is refused rather than making visitors wait', async () => {
-  jikanConfig.spacingMs = 5000; // the next free slot is 5 seconds away...
-  jikanConfig.maxWaitMs = 4000; // ...which is longer than a visitor should wait
+  jikanConfig.spacingMs = 5000;
+  jikanConfig.maxWaitMs = 4000;
   stubFetch(() => reply({ data: [fmab] }));
-  await backupTopAnime('1'); // takes the first slot immediately
+  await backupTopAnime('1');
   await assert.rejects(() => backupTopAnime('2'), (err) => err.status === 503);
   assert.equal(calls.length, 1);
 });

@@ -5,7 +5,7 @@
 //   - an uploaded picture, as a small JPEG/PNG/WebP data URL (the browser shrinks it first)
 import { isAllowedImageUrl } from './imageUrl.js';
 
-export const BANNER_MAX_CHARS = 330000; // roughly 240 KB of picture
+export const BANNER_MAX_CHARS = 330000;
 
 const DATA_URL = /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$/;
 
@@ -38,7 +38,6 @@ export function parseBanner(value) {
     if (!dataUrlParts(value)) return invalid('Choose a JPEG, PNG or WebP picture.');
     return { valid: true, value, kind: 'upload' };
   }
-  // A series banner has to be an AniList banner picture, never some other address
   if (value.length <= 500 && isAllowedImageUrl(value) && /\/banner\//.test(value)) return { valid: true, value, kind: 'series' };
   return invalid("That banner isn't allowed. Pick one from your series, or upload a picture.");
 }

@@ -1,3 +1,4 @@
+// Downloads a favourites list (anime, manga or characters) as a poster image, or as a plain text list
 import { useState } from 'react';
 import { imgSrc } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -10,7 +11,7 @@ const W = PAD * 2 + COLS * CW + (COLS - 1) * GX;
 const load = (src) => new Promise((res) => {
   if (!src) return res(null);
   const i = new Image();
-  i.crossOrigin = 'anonymous'; // lets the picture be saved into the card when the API is on another address
+  i.crossOrigin = 'anonymous';
   i.onload = () => res(i); i.onerror = () => res(null); i.src = src;
 });
 
@@ -41,7 +42,7 @@ async function draw(canvas, username, label, items) {
     new Promise((r) => setTimeout(r, 3000))
   ]).catch(() => {});
   const rows = Math.ceil(items.length / COLS);
-  const top = 252; // where the first row of covers starts: leaves room for the logo, kicker and title above it
+  const top = 252;
   const H = top + rows * ROW + 90;
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
@@ -57,7 +58,7 @@ async function draw(canvas, username, label, items) {
   ctx.fillText(`${username.toUpperCase()}'S`, PAD, 134);
   if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
   ctx.fillStyle = TEXT; ctx.font = '600 64px Fraunces, Georgia, serif';
-  ctx.fillText(`Top ${items.length} ${label}`, PAD, 210); // 64px title: its tops reach about y=165, clear of the kicker above
+  ctx.fillText(`Top ${items.length} ${label}`, PAD, 210);
 
   const imgs = await Promise.all(items.map((i) => load(imgSrc(i.image_url))));
   items.forEach((it, i) => {
@@ -75,7 +76,6 @@ async function draw(canvas, username, label, items) {
   ctx.fillText('made with AniTrack', PAD, H - 40);
 }
 
-// Downloads a favourites list (anime, manga or characters) as a poster image, or as a plain text list
 export default function Top15Download({ kind, label, items }) {
   const { user } = useAuth();
   const toast = useToast();

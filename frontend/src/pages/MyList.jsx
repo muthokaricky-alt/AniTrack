@@ -1,6 +1,6 @@
+// My List: your anime and manga lists with filters, edits, stats, import and export.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../api/client.js';
 import { useList } from '../context/ListContext.jsx';
 import { useMangaList } from '../context/MangaListContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
@@ -56,7 +56,6 @@ export default function MyList() {
   const saved = useMemo(() => { try { return JSON.parse(sessionStorage.getItem('anitrack:listfilters') || '{}'); } catch { return {}; } }, []);
   const [tab, setTab] = useState(saved.tab || 'all');
   const [rowError, setRowError] = useState('');
-  // Swiping rows is for touch screens; a mouse has the buttons
   const touch = useMemo(() => typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(pointer: coarse)').matches, []);
   const airing = useAiringMap(kind === 'anime' && entries.length > 0);
   const [importSections, setImportSections] = useState(null);
@@ -97,7 +96,7 @@ export default function MyList() {
       progress: (a, b) => pct(b) - pct(a),
       added: (a, b) => a.id - b.id
     }[prefs.sort];
-    return by ? [...out].sort(by) : out; // 'recent' keeps the server order
+    return by ? [...out].sort(by) : out;
   }, [entries, tab, q, genre, tag, prefs.sort, cfg]);
   const pool = useMemo(() => entries.filter((e) => e.status === cfg.defaultStatus), [entries, cfg]);
 
@@ -184,7 +183,6 @@ export default function MyList() {
     download(`anitrack-${kind}-list.csv`, [head.join(','), ...rows].join('\n'), 'text/csv');
   }
 
-  // One workbook with an Anime sheet and a Manga sheet. Built in the browser from the lists already loaded.
   async function exportExcel() {
     setBusy(true);
     try {

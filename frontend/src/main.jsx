@@ -1,3 +1,4 @@
+// App entry point: mounts the React app.
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';

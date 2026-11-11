@@ -1,3 +1,4 @@
+// The weekly airing schedule.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client.js';
@@ -6,7 +7,7 @@ import { useList } from '../context/ListContext.jsx';
 import { STATUS_LABEL } from '../constants.js';
 import { useReveal } from '../lib/useReveal.js';
 
-const POPULAR_AT = 8000; // AniList "popularity" = how many users list the title
+const POPULAR_AT = 8000;
 
 function dayLabel(date) {
   const today = new Date();

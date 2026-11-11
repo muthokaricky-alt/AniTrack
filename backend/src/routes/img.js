@@ -1,10 +1,10 @@
+// Cover images come from other sites, and a browser refuses to export a canvas that contains pictures from a site
+// that doesn't allow it. The share-card maker loads covers through this route so they count as same-site.
+// Only a short list of image hosts is allowed, so this can't be used to reach anything else.
 import { Router } from 'express';
 import fetch from 'node-fetch';
 import { isAllowedImageUrl } from '../imageUrl.js';
 
-// Cover images come from other sites, and a browser refuses to export a canvas that contains pictures from a site
-// that doesn't allow it. The share-card maker loads covers through this route so they count as same-site.
-// Only a short list of image hosts is allowed, so this can't be used to reach anything else.
 const MAX_BYTES = 3 * 1024 * 1024;
 
 const router = Router();

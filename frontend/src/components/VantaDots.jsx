@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
-
 // Interactive 3D dot field behind the hero. Lazy-loaded, desktop only, skipped for reduced motion.
 // If WebGL is unavailable the CSS halftone underneath stays visible.
+import { useEffect, useRef } from 'react';
+
 export default function VantaDots() {
   const ref = useRef(null);
 
@@ -18,7 +18,6 @@ export default function VantaDots() {
       try {
         const [THREE, dots] = await Promise.all([import('three'), import('vanta/dist/vanta.dots.min')]);
         if (cancelled) return;
-        // Vanta's DOTS effect looks for a global THREE and ignores the option, so provide both
         window.THREE = THREE;
         const DOTS = dots.default || dots;
         effect = DOTS({
@@ -54,7 +53,6 @@ export default function VantaDots() {
 
     return () => {
       cancelled = true;
-      // destroy() throws if Vanta failed to start (its canvas was never attached); that must not crash React
       try {
         effect?.destroy();
       } catch {

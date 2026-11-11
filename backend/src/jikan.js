@@ -57,15 +57,15 @@ async function jikanGet(path, params, cacheKey) {
         signal: AbortSignal.timeout(jikanConfig.timeoutMs)
       });
       if (res.status !== 429) break;
-      await sleep(jikanConfig.retryMs); // told to slow down: wait once, then try again
+      await sleep(jikanConfig.retryMs);
     }
     if (!res.ok) throw Object.assign(new Error(`Jikan request failed: ${res.status}`), { status: res.status });
     const json = await res.json();
-    if (cache.size > 300) cache.delete(cache.keys().next().value); // keep memory bounded
+    if (cache.size > 300) cache.delete(cache.keys().next().value);
     cache.set(cacheKey, { json, time: Date.now() });
     return json;
   } catch (err) {
-    if (cached && err.status !== 404) return cached.json; // a slightly old answer beats an error page
+    if (cached && err.status !== 404) return cached.json;
     throw err;
   }
 }
@@ -77,7 +77,7 @@ const MANGA_STATUS = { Finished: 'FINISHED', Publishing: 'RELEASING', 'On Hiatus
 const MANGA_FORMAT = { Manga: 'MANGA', Manhwa: 'MANGA', Manhua: 'MANGA', Doujinshi: 'MANGA', 'One-shot': 'ONE_SHOT' };
 
 const cover = (item) => item.images?.jpg?.large_image_url || item.images?.jpg?.image_url || null;
-const score = (s) => (typeof s === 'number' && s > 0 ? s : null); // Jikan uses 0 or null for "no score yet"
+const score = (s) => (typeof s === 'number' && s > 0 ? s : null);
 const genreNames = (item) => (Array.isArray(item.genres) ? item.genres.map((g) => g?.name).filter(Boolean) : []);
 
 export function animeShape(item) {

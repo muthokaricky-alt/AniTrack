@@ -1,3 +1,4 @@
+// Custom lists: create, edit, add entries, copy, browse public lists and see a person's public lists.
 import { Router } from 'express';
 import db from '../db.js';
 import { requireAuth, optionalAuth } from '../middleware/auth.js';
@@ -44,7 +45,7 @@ async function loadFull(id, viewerId) {
   );
   if (!list) return null;
   const isOwner = viewerId != null && viewerId === list.user_id;
-  if (!list.is_public && !isOwner) return null; // a private list looks exactly like one that does not exist
+  if (!list.is_public && !isOwner) return null;
   const items = await db.all('SELECT kind, mal_id, title, image_url, note FROM custom_list_items WHERE list_id = ? ORDER BY position', [id]);
   return {
     id: list.id,
@@ -79,7 +80,6 @@ router.get('/', requireAuth, async (req, res) => {
 // GET /api/custom-lists/user/:username  (that person's public lists, only if their profile is public)
 router.get('/user/:username', async (req, res) => {
   const user = await db.get('SELECT id, username, is_public FROM users WHERE lower(username) = lower(?)', [String(req.params.username).slice(0, 60)]);
-  // A private profile answers exactly like a missing one. A single public list can still be opened by its own link.
   if (!user || !user.is_public) return res.status(404).json({ error: 'User not found' });
   const rows = await db.all(`${SUMMARY_SQL} WHERE l.user_id = ? AND l.is_public ORDER BY l.updated_at DESC`, [user.id]);
   res.json({ username: user.username, lists: await withCovers(rows) });
@@ -99,7 +99,7 @@ router.get('/discover', async (req, res) => {
      WHERE t.count >= 3
      ORDER BY t.saves DESC, t.updated_at DESC
      LIMIT ? OFFSET ?`,
-    [limit + 1, offset] // one extra row tells us whether there is another page
+    [limit + 1, offset]
   );
   res.json({ lists: await withCovers(rows.slice(0, limit)), has_more: rows.length > limit });
 });
@@ -164,7 +164,6 @@ router.post('/:id/items', requireAuth, async (req, res) => {
   const item = value.items[0];
 
   const result = await db.tx(async (t) => {
-    // Locking the list row makes two quick adds queue up instead of colliding on the same position
     const mine = await t.get('SELECT id FROM custom_lists WHERE id = ? AND user_id = ? FOR UPDATE', [id, req.userId]);
     if (!mine) return { status: 404, error: 'List not found' };
     const { n, next } = await t.get('SELECT COUNT(*) AS n, COALESCE(MAX(position) + 1, 0) AS next FROM custom_list_items WHERE list_id = ?', [id]);
@@ -183,7 +182,7 @@ router.post('/:id/items', requireAuth, async (req, res) => {
 // POST /api/custom-lists/:id/copy  (save a copy of a public list, or duplicate your own; the copy is private)
 router.post('/:id/copy', requireAuth, async (req, res) => {
   if (!isId(req.params.id)) return res.status(404).json({ error: 'List not found' });
-  const source = await loadFull(Number(req.params.id), req.userId); // null when it is private and not yours
+  const source = await loadFull(Number(req.params.id), req.userId);
   if (!source) return res.status(404).json({ error: 'List not found' });
 
   const { n } = await db.get('SELECT COUNT(*) AS n FROM custom_lists WHERE user_id = ?', [req.userId]);
@@ -195,7 +194,6 @@ router.post('/:id/copy', requireAuth, async (req, res) => {
       [req.userId, source.title, source.description, source.ranked, source.id]
     );
     const id = made.rows[0].id;
-    // the explicit cast lets Postgres know what the first value is
     await t.run(
       'INSERT INTO custom_list_items (list_id, position, kind, mal_id, title, image_url, note) SELECT ?::integer, position, kind, mal_id, title, image_url, note FROM custom_list_items WHERE list_id = ?',
       [id, source.id]

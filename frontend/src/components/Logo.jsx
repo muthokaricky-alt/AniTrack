@@ -1,6 +1,6 @@
+// A slanted, sliced "A": the diagonal cut is a mask, so the mark takes whatever colour the parent sets.
 import { useId } from 'react';
 
-// A slanted, sliced "A": the diagonal cut is a mask, so the mark takes whatever colour the parent sets.
 export default function Logo({ size = 30 }) {
   const id = useId().replace(/:/g, '');
   return (

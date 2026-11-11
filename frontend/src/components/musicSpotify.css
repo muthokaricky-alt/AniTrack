@@ -26,7 +26,6 @@
   .music-panel { flex-wrap: wrap; gap: 8px 12px; }
 }
 
-
 /* Close button inside the open panel (the round button below also toggles it) */
 .music-close { order: 99; flex: none; align-self: flex-start; margin-left: auto; width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid var(--line-strong); font-size: 13px; color: var(--muted); }
 .music-close:hover { color: var(--text); border-color: var(--signal); }
@@ -39,6 +38,6 @@
   .music .music-panel { order: 1; position: relative; width: 100%; padding-right: 48px; }
   .music .music-close { position: absolute; top: 8px; right: 8px; margin: 0; }
   .music .music-spotify { order: 2; position: static; width: 100%; }
-  .music .music-spotify.is-hidden { position: absolute; left: -9999px; width: 340px; } /* hidden, but still playing */
+  .music .music-spotify.is-hidden { position: absolute; left: -9999px; width: 340px; }
   .music .music-spotify.is-expanded iframe { height: min(300px, 38vh); min-height: 166px; }
 }

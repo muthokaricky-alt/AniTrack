@@ -1,11 +1,10 @@
+// A year (or half a year on a phone) of progress, one square a day, plus a rough "days watched" total
 import { useMemo } from 'react';
 import { buildHeatmap, daysWatched } from '../lib/activity.js';
 
 const fmt = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 
-// A year (or half a year on a phone) of progress, one square a day, plus a rough "days watched" total
 export default function ActivityHeatmap({ events, kind, total, unit }) {
-  // Wide screens get a full year, phones six months so the squares stay readable
   const weeks = typeof window !== 'undefined' && window.innerWidth >= 900 ? 52 : 26;
   const map = useMemo(() => buildHeatmap(events, new Date(), weeks, kind), [events, weeks, kind]);
   const days = kind === 'manga' ? 0 : daysWatched(total);

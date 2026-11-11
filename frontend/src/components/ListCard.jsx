@@ -1,7 +1,7 @@
-import { Link } from 'react-router-dom';
-
 // A card for one list: a strip of covers, the title and a short summary.
 // showVisibility is off on public pages, where every list is public anyway.
+import { Link } from 'react-router-dom';
+
 export default function ListCard({ list, showVisibility = true }) {
   const covers = (list.covers || []).slice(0, 4);
   const bits = [

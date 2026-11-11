@@ -1,3 +1,4 @@
+// Profile, password and sessions, banners, public user pages and the taste match.
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import db from '../db.js';
@@ -11,7 +12,7 @@ import { parseAvatar, publicUser } from '../userUtil.js';
 import { loadFavorites } from './favorites.js';
 import { compareTaste, parseGenres } from '../taste.js';
 
-export { compareTaste }; // follows.js imports it from here
+export { compareTaste };
 
 const router = Router();
 
@@ -71,9 +72,7 @@ router.patch('/password', requireAuth, async (req, res) => {
   const current = String(req.body?.current_password || '');
   const next = String(req.body?.new_password || '');
   if (next.length < 6) return res.status(400).json({ error: 'New password must be at least 6 characters' });
-  // 400 rather than 401 so a typo doesn't sign the user out
   if (!(await bcrypt.compare(current, user.password_hash))) return res.status(400).json({ error: 'Current password is incorrect' });
-  // Bumping token_version signs out every other device. This device gets a fresh token so it stays logged in.
   const updated = await db.get(`UPDATE users SET password_hash = ?, token_version = token_version + 1 WHERE id = ? RETURNING ${USER_COLUMNS}`, [await bcrypt.hash(next, 10), user.id]);
   res.json({ ok: true, token: signToken(updated) });
 });
@@ -105,7 +104,6 @@ router.put('/banner', requireAuth, async (req, res) => {
     if (!parsed.valid) return res.status(400).json({ error: parsed.error });
     banner = parsed.value;
     if (banner === null) {
-      // null (or an empty string) means "remove my banner"
       await db.run('UPDATE users SET banner = NULL, banner_x = 50, banner_y = 50, banner_v = banner_v + 1 WHERE id = ?', [req.userId]);
       return res.json({ banner: null, x: 50, y: 50 });
     }
@@ -113,7 +111,6 @@ router.put('/banner', requireAuth, async (req, res) => {
   if (!banner) return res.status(400).json({ error: 'Pick or upload a banner first' });
   const x = clampPos(body.x, current?.banner_x ?? 50);
   const y = clampPos(body.y, current?.banner_y ?? 50);
-  // banner_v changes with every save, so browsers replace any cached copy of an uploaded picture
   await db.run('UPDATE users SET banner = ?, banner_x = ?, banner_y = ?, banner_v = banner_v + 1 WHERE id = ?', [banner, x, y, req.userId]);
   res.json({ banner, x, y });
 });
@@ -128,7 +125,7 @@ router.delete('/banner', requireAuth, async (req, res) => {
 // highest-rated titles. The pictures live on AniList, so this needs it to be up; titles without a banner are skipped.
 const bannerQuery = (type) => `query ($ids: [Int]) { Page(perPage: 50) { media(idMal_in: $ids, type: ${type}) { idMal title { romaji english } bannerImage } } }`;
 router.get('/banner-options', requireAuth, async (req, res) => {
-  const wanted = { anime: [], manga: [] }; // ids in priority order
+  const wanted = { anime: [], manga: [] };
   const add = (kind, id, title) => {
     if (wanted[kind].length < 30 && !wanted[kind].some((w) => w.id === id)) wanted[kind].push({ id, title });
   };
@@ -150,7 +147,6 @@ router.get('/banner-options', requireAuth, async (req, res) => {
       const byId = new Map((data.Page.media || []).map((m) => [m.idMal, m]));
       for (const w of wanted[kind]) {
         const m = byId.get(w.id);
-        // only offer pictures that could actually be saved as a banner
         if (m?.bannerImage && parseBanner(m.bannerImage).valid) {
           options.push({ kind, mal_id: w.id, title: m.title?.english || m.title?.romaji || w.title, url: m.bannerImage });
         }
@@ -237,7 +233,6 @@ usersRoutes.get('/:username/match', requireAuth, async (req, res) => {
   if (!them || !them.is_public) return res.status(404).json({ error: 'This profile is private or does not exist' });
   if (them.id === req.userId) return res.status(400).json({ error: "That's your own profile" });
   const [mine, theirs, myFavs, theirFavs] = await Promise.all([loadTaste(req.userId), loadTaste(them.id), loadFavouriteTitles(req.userId), loadFavouriteTitles(them.id)]);
-  // A match needs two lists, or failing that two sets of favourites
   const comparable = (mine.length && theirs.length) || (myFavs.length && theirFavs.length);
   if (!comparable) {
     if (!mine.length && !myFavs.length) return res.status(400).json({ error: 'Add some titles to your list, or pick your favourites, then come back to compare' });

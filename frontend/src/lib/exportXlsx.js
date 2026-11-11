@@ -1,7 +1,7 @@
-import { KINDS, STATUS_LABEL } from '../constants.js';
-
 // One workbook, one sheet per list. The columns match what the importer understands,
 // so the file can be edited in Excel and imported straight back.
+import { KINDS, STATUS_LABEL } from '../constants.js';
+
 export async function buildWorkbook({ anime, manga }) {
   const { default: ExcelJS } = await import('exceljs');
   const wb = new ExcelJS.Workbook();
@@ -48,7 +48,6 @@ export async function buildWorkbook({ anime, manga }) {
     head.height = 22;
     ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: ws.columns.length } };
 
-    // A dropdown on Status so edits in Excel stay importable
     const options = cfg.statuses.map((s) => s.label).join(',');
     for (let r = 2; r <= Math.max(entries.length + 1, 2); r += 1) {
       ws.getCell(r, 2).dataValidation = { type: 'list', allowBlank: true, formulae: [`"${options}"`] };

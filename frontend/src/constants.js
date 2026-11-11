@@ -1,3 +1,4 @@
+// Shared settings: list statuses and labels, per-kind (anime and manga) settings, score options and genres.
 export const STATUSES = [
   { key: 'watching', label: 'Watching' },
   { key: 'completed', label: 'Completed' },

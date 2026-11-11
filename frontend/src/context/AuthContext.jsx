@@ -1,3 +1,4 @@
+// Who is signed in: the token and user, log in, register and log out, plus the offline copies kept in this browser.
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { api } from '../api/client.js';
 
@@ -52,7 +53,6 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
-  // Merge fresh profile fields (after an edit, or a refresh from the server) into state and storage
   const updateUser = useCallback((partial) => {
     setUser((prev) => {
       if (!prev) return prev;
@@ -66,13 +66,11 @@ export function AuthProvider({ children }) {
     });
   }, []);
 
-  // Pick up changes made on another device (new photo, new username) once per page load
   useEffect(() => {
     if (!localStorage.getItem('anitrack_token')) return;
     api.me().then((res) => updateUser(res.user)).catch(() => {});
   }, [updateUser]);
 
-  // The API client fires this when the server says our token is no longer valid
   useEffect(() => {
     window.addEventListener('anitrack:unauthorized', logout);
     return () => window.removeEventListener('anitrack:unauthorized', logout);

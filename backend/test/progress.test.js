@@ -1,3 +1,4 @@
+// Tests for src/progress.js: logging progress changes and capping big jumps.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAX_LOGGED_STEP, loggedDelta, autoStatus } from '../src/progress.js';

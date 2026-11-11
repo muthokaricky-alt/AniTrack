@@ -1,10 +1,10 @@
+// Character details inside AniTrack, so clicking a favourite character doesn't send anyone off to AniList.
+// The server removes spoilers from the description.
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client.js';
 
-// Character details inside AniTrack, so clicking a favourite character doesn't send anyone off to AniList.
-// The server removes spoilers from the description.
 export default function CharacterDialog({ id, onClose }) {
   const [state, setState] = useState({ loading: true, data: null, error: '' });
 

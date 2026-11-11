@@ -16,7 +16,7 @@ export async function fileToAvatar(file, size = 256) {
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#1c1c1c'; // JPEG has no transparency
+    ctx.fillStyle = '#1c1c1c';
     ctx.fillRect(0, 0, size, size);
     ctx.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, size, size);
 
@@ -61,7 +61,7 @@ export async function fileToBanner(file, maxChars = 330000) {
       canvas.width = w;
       canvas.height = h;
       const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#1c1c1c'; // JPEG has no transparency
+      ctx.fillStyle = '#1c1c1c';
       ctx.fillRect(0, 0, w, h);
       ctx.drawImage(img, 0, sy, sw, sh, 0, 0, w, h);
       for (const quality of [0.82, 0.72, 0.62, 0.5]) {

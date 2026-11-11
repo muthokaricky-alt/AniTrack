@@ -1,3 +1,4 @@
+// Tests for src/paging.js: page numbers to a limit and an offset.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parsePage, PER_PAGE, MAX_PAGE } from '../src/paging.js';

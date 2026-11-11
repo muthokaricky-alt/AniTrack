@@ -1,12 +1,11 @@
+// Marquee of airing titles. Scrolling the page speeds it up and flips its direction.
 import { useRef } from 'react';
 import { gsap, useGSAP, prefersReducedMotion } from '../lib/gsap.js';
 import { getLenis } from './SmoothScroll.jsx';
 
-// Marquee of airing titles. Scrolling the page speeds it up and flips its direction.
 export default function Ticker({ items }) {
   const track = useRef(null);
   const reduced = prefersReducedMotion();
-  // repeat so one "set" always overflows the viewport, then render two sets for the seamless loop
   const set = items.length >= 8 ? items : [...items, ...items, ...items];
 
   useGSAP(

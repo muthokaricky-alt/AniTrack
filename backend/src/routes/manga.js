@@ -1,3 +1,4 @@
+// Manga catalogue routes (search, top, trending, batch, detail) over AniList, shaped like the anime ones.
 import { Router } from 'express';
 import { anilistQuery, stripHtml, GENRES, safeColor } from './anime.js';
 import { cleanQuery, clampPage, isId, errDetail } from '../inputs.js';
@@ -109,7 +110,7 @@ router.get('/search', (req, res) => {
   const variables = { page, sort: [q ? 'SEARCH_MATCH' : 'POPULARITY_DESC'] };
   if (q) variables.search = q;
   if (genre) variables.genre = genre;
-  return pageOf(variables, `manga:search:${q}:${genre}:${page}`, res, genre ? null : () => backupSearchManga(q, page)); // no backup for genre-only searches
+  return pageOf(variables, `manga:search:${q}:${genre}:${page}`, res, genre ? null : () => backupSearchManga(q, page));
 });
 
 // GET /api/manga/top

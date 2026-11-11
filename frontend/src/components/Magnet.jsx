@@ -1,7 +1,7 @@
+// Pulls its child toward the cursor (the "Magnet" effect from React Bits, built on GSAP quickTo).
 import { useRef } from 'react';
 import { gsap, useGSAP } from '../lib/gsap.js';
 
-// Pulls its child toward the cursor (the "Magnet" effect from React Bits, built on GSAP quickTo).
 export default function Magnet({ children, strength = 0.35 }) {
   const ref = useRef(null);
 

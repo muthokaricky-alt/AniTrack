@@ -1,3 +1,4 @@
+// Taste profile computed from the user's own list: status split, score spread, favourite genres, time spent
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { STATUS_LABEL, KINDS } from '../constants.js';
 
@@ -7,14 +8,13 @@ const STATUS_COLOR = {
   on_hold: 'var(--amber)', dropped: 'var(--stone)', plan_to_watch: 'var(--line-strong)', plan_to_read: 'var(--line-strong)'
 };
 
-// Taste profile computed from the user's own list: status split, score spread, favourite genres, time spent
 export default function Insights({ entries, kind }) {
   const cfg = KINDS[kind];
   const root = useRef(null);
   const [seen, setSeen] = useState(false);
   useEffect(() => {
     const el = root.current;
-    if (!el) return undefined; // nothing rendered yet (empty list)
+    if (!el) return undefined;
     if (seen || typeof IntersectionObserver === 'undefined') { setSeen(true); return undefined; }
     const io = new IntersectionObserver(([e]) => e.isIntersecting && (setSeen(true), io.disconnect()), { threshold: 0.25 });
     io.observe(el);
